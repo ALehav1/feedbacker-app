@@ -117,11 +117,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       .then(({ data: { session } }) => {
         if (!isMounted) return;
         setUser(session?.user ?? null);
-        setIsLoading(false);
       })
       .catch((err) => {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        console.error('Error initializing auth:', err);
+        if (!(err instanceof DOMException && err.name === 'AbortError')) {
+          console.error('Error initializing auth:', err);
+        }
+      })
+      .finally(() => {
         if (isMounted) setIsLoading(false);
       });
 
