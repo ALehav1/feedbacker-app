@@ -48,7 +48,7 @@ npm create vite@latest . -- --template react-ts
 
 # Install core dependencies
 npm install @supabase/supabase-js openai resend
-npm install react-router-dom react-hot-toast
+npm install react-router-dom
 npm install -D tailwindcss postcss autoprefixer
 npm install -D @types/react @types/react-dom @types/node
 

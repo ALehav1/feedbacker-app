@@ -154,8 +154,7 @@ feedbacker-app/
 │   │   └── db-errors.ts         # User-friendly error translation
 │   │
 │   ├── config/                  # App configuration
-│   │   ├── index.ts             # Environment variables
-│   │   └── toaster.ts           # Toast notification config
+│   │   └── index.ts             # Environment variables
 │   │
 │   ├── styles/                  # Global styles
 │   │   └── globals.css          # Tailwind base + custom
@@ -166,6 +165,7 @@ feedbacker-app/
 ├── public/                      # Static assets
 ├── .env.example                 # Environment template
 ├── .gitignore                   # Security (includes .env)
+├── eslint.config.js             # ESLint 9 flat config
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
@@ -710,29 +710,31 @@ Requirements:
 
 ### Toast Notifications
 
-Use react-hot-toast for user feedback. Configure once in app root:
+Use shadcn/ui toast (built on Radix UI) for user feedback. The Toaster component is already set up in App.tsx.
 
-**`src/config/toaster.ts`:**
+**Usage:**
 ```typescript
-export const toasterConfig = {
-  position: "top-center" as const,
-  gutter: 12,
-  containerStyle: { top: 80 },
-  toastOptions: {
-    duration: 3000,
-    style: {
-      background: 'white',
-      color: '#374151',
-      borderRadius: '0.75rem',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-    },
-    success: { iconTheme: { primary: '#10b981', secondary: 'white' } },
-    error: { iconTheme: { primary: '#ef4444', secondary: 'white' } }
-  }
-};
-```
+import { useToast } from "@/hooks/use-toast"
 
-**Usage:** `toast.success('Saved!')` | `toast.error('Failed')` | `toast.promise(promise, {...})`
+function MyComponent() {
+  const { toast } = useToast()
+
+  const handleSuccess = () => {
+    toast({
+      title: "Saved!",
+      description: "Your changes have been saved.",
+    })
+  }
+
+  const handleError = () => {
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: "Something went wrong.",
+    })
+  }
+}
+```
 
 **Rule:** Never use `alert()`. Always use toast.
 
