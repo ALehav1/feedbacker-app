@@ -1,4 +1,4 @@
--- Presentation-Prep-Feedbacker Database Schema
+-- Feedbacker App Database Schema
 -- Run this in your Supabase SQL Editor
 
 -- Enable pgcrypto extension (provides gen_random_uuid())
