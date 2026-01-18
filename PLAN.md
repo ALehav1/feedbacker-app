@@ -55,29 +55,18 @@ We'll iterate after users try it.
 
 ---
 
-## Phase 3: Presenter Features (Days 5-8) 🔄 NEXT
+## Phase 3: Presenter Features (Days 5-8) 🔄 IN PROGRESS
 
-### Day 5: Dashboard Shell
+### Day 5: Dashboard Shell ✅
 
-- [ ] Dashboard layout
-- [ ] Empty state
-- [ ] Session list (active/archived tabs)
-- [ ] "Create New Session" button
-
-**Cascade prompt:**
-```
-Read .windsurfrules and docs/contract.md first.
-
-Task: Create the presenter dashboard:
-1. Create src/features/presenter/Dashboard.tsx
-   - Show empty state when no sessions
-   - List sessions when they exist (active first, then by date)
-   - Include "Create New Session" button
-2. Add proper loading and error states
-3. Test at 375px, 768px, 1024px
-
-Check contract.md completion criteria before saying done.
-```
+- [x] Dashboard layout
+- [x] Empty state
+- [x] Session list (active/archived sections)
+- [x] "Create New Session" button
+- [x] Session routes added (`/dashboard/sessions/new`, `/dashboard/sessions/:id`)
+- [x] Stub pages created (SessionCreate, SessionDetail)
+- [x] useSessions hook with proper date conversion
+- [x] Fixed redundant `new Date()` in SessionCard
 
 ### Day 6: Session Creation Wizard (Steps 1-2)
 
@@ -191,6 +180,13 @@ Check contract.md completion criteria before saying done.
 - Dev server port locked to 5173 (strictPort: true)
 - Naming consistency: "Feedbacker App" across all docs
 - Security documentation (docs/SECURITY.md)
+
+### Phase 3: Dashboard (Partial)
+- Dashboard shell with empty state and session list
+- useSessions hook for data fetching
+- Session routes (`/dashboard/sessions/new`, `/dashboard/sessions/:id`)
+- SessionCreate and SessionDetail stub pages
+- Fixed redundant date conversion in SessionCard
 
 ---
 

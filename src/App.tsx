@@ -5,6 +5,9 @@ import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { AuthCallback } from '@/features/auth/AuthCallback'
 import { ProfileSetup } from '@/features/presenter/ProfileSetup'
+import { Dashboard } from '@/features/presenter/Dashboard'
+import { SessionCreate } from '@/features/sessions/SessionCreate'
+import { SessionDetail } from '@/features/sessions/SessionDetail'
 
 function App() {
   return (
@@ -18,7 +21,7 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <DashboardPlaceholder />
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />
@@ -30,20 +33,27 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/dashboard/sessions/new"
+              element={
+                <ProtectedRoute>
+                  <SessionCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/sessions/:sessionId"
+              element={
+                <ProtectedRoute>
+                  <SessionDetail />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
           <Toaster />
         </div>
       </AuthProvider>
     </BrowserRouter>
-  )
-}
-
-function DashboardPlaceholder() {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-      <p className="mt-4 text-gray-600">You're authenticated!</p>
-    </div>
   )
 }
 

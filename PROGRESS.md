@@ -48,6 +48,25 @@
 - [x] TypeScript errors fixed (type-only imports)
 - [x] Build passing
 
+### Phase 3: Presenter Features (In Progress)
+- [x] **Dashboard shell created** (`src/features/presenter/Dashboard.tsx`)
+  - [x] Empty state with "Create Your First Session" CTA
+  - [x] Session list with active/archived sections
+  - [x] Loading and error states
+  - [x] Sign out functionality
+  - [x] Edit Profile button
+- [x] **useSessions hook created** (`src/hooks/useSessions.ts`)
+  - [x] Fetches sessions from Supabase
+  - [x] Filters into activeSessions and archivedSessions
+  - [x] Proper date conversion
+- [x] **Session routes added to App.tsx**
+  - [x] `/dashboard/sessions/new` → SessionCreate
+  - [x] `/dashboard/sessions/:sessionId` → SessionDetail
+- [x] **Stub pages created** (`src/features/sessions/`)
+  - [x] `SessionCreate.tsx` - Placeholder for wizard
+  - [x] `SessionDetail.tsx` - Placeholder for session management
+- [x] Fixed redundant `new Date()` call in SessionCard
+
 ### Setup & Configuration
 - [x] GitHub repo created (private): https://github.com/ALehav1/feedbacker-app
 - [x] Dev server port locked to 5173 (strictPort: true)
@@ -62,27 +81,29 @@
 
 ## 🔄 In Progress
 
-### Database Already Set Up ✅
+### Phase 3: Presenter Features (Continuing)
 
-The following steps have been completed:
-
-1. ✅ **Supabase Project Created**
-2. ✅ **Database Schema Deployed** (`supabase/schema.sql`)
-3. ✅ **RLS Policies Deployed** (`supabase/rls-policies.sql`)
-4. ✅ **Magic Link Configured**
-   - Site URL: `http://localhost:5173`
-   - Redirect URL: `http://localhost:5173/auth/callback`
-5. ✅ **Environment Variables Set** in `.env`
+**Next steps:**
+1. Implement session creation wizard in `SessionCreate.tsx`
+   - Step 1: Session length input
+   - Step 2: Summary input (text + file upload)
+   - Step 3: AI generation (themes, title, welcome message)
+   - Step 4: Review and copy shareable link
+2. Implement session detail view in `SessionDetail.tsx`
+   - Fetch session from Supabase
+   - Show session state and details
+   - Add state transition buttons (draft → active → completed → archived)
+3. Implement results view with aggregated feedback
 
 ---
 
 ## 📋 Upcoming Work
 
-### Phase 3: Presenter Features (Days 5-8)
-- [ ] Dashboard shell with session list
-- [ ] Profile edit page (for returning users)
+### Phase 3: Presenter Features (Remaining)
 - [ ] Session creation wizard (4 steps)
+- [ ] Session detail view with state management
 - [ ] Results view with aggregated feedback
+- [ ] Profile edit page (for returning users)
 
 ### Phase 4: Participant Features (Days 9-10)
 - [ ] Feedback form with theme selection
@@ -115,7 +136,17 @@ The following steps have been completed:
 - `src/features/auth/ProtectedRoute.tsx` - Route protection
 - `src/features/auth/LoginPage.tsx` - Magic link login UI
 - `src/features/auth/AuthCallback.tsx` - OAuth callback handler
+
+### Presenter Features
 - `src/features/presenter/ProfileSetup.tsx` - First-time profile setup
+- `src/features/presenter/Dashboard.tsx` - Main dashboard with session list
+
+### Session Features
+- `src/features/sessions/SessionCreate.tsx` - Session creation (stub)
+- `src/features/sessions/SessionDetail.tsx` - Session detail view (stub)
+
+### Hooks
+- `src/hooks/useSessions.ts` - Session data fetching and state
 
 ### Documentation
 - `docs/SECURITY.md` - Security architecture and notes
@@ -137,26 +168,38 @@ The following steps have been completed:
 
 ## 🎯 Current State
 
-**Status:** Foundation complete, database set up, ready for feature development
+**Status:** Dashboard complete, session routing working, ready for wizard implementation
 
 **What's Working:**
 - ✅ Project builds successfully (`npm run build`)
 - ✅ Lint passes (`npm run lint`)
 - ✅ TypeScript types properly defined
 - ✅ Auth components created and integrated
-- ✅ Routing structure in place
+- ✅ Dashboard loads with session list
+- ✅ "Create Your First Session" → `/dashboard/sessions/new` works
+- ✅ Session card click → `/dashboard/sessions/:id` works
 - ✅ Database schema deployed to Supabase
 - ✅ RLS policies active
 - ✅ Magic link auth configured
 
 **What's Next:**
-- Build dashboard with session list
 - Implement session creation wizard
-- Create participant feedback form
+- Implement session detail view
+- Add results view with aggregated feedback
 
 ---
 
 ## 🔍 Architecture Notes
+
+### Route Structure
+```
+/                           → LoginPage
+/auth/callback              → AuthCallback
+/dashboard                  → Dashboard (protected)
+/dashboard/profile          → ProfileSetup (protected)
+/dashboard/sessions/new     → SessionCreate (protected)
+/dashboard/sessions/:id     → SessionDetail (protected)
+```
 
 ### Authentication Flow
 ```
@@ -196,19 +239,30 @@ draft → active → completed → archived
 
 ## 🐛 Known Issues
 
-**None Currently:** Build passes, TypeScript clean, database deployed.
+**ESLint Warnings (Non-Critical):**
+- Fast refresh warnings in button.tsx, form.tsx, AuthContext.tsx
+- These are cosmetic and don't affect functionality
+
+**No Critical Issues:** Build passes, TypeScript clean.
 
 ---
 
 ## 📝 Testing Checklist
 
+### Auth Flow
 - [x] Magic link email received
 - [x] Click link redirects to /auth/callback
 - [x] New user redirects to /dashboard/profile
 - [ ] Returning user redirects to /dashboard
 - [ ] Protected routes block unauthenticated access
 - [ ] Sign out works correctly
-- [ ] No console errors
+
+### Dashboard
+- [ ] Dashboard loads with session list
+- [ ] Empty state shows "Create Your First Session"
+- [ ] "Create Your First Session" → /dashboard/sessions/new
+- [ ] Session card click → /dashboard/sessions/:id
+- [ ] "Back to Dashboard" buttons work
 
 ---
 
@@ -222,4 +276,4 @@ draft → active → completed → archived
 
 ---
 
-**Ready for Phase 3: Presenter Features!**
+**Ready for: Session Creation Wizard Implementation**
