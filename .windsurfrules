@@ -155,9 +155,15 @@ Use Tailwind classes directly:
 ✅ Error: User-friendly message + console detail
 
 ### Forms
-✅ Controlled components  
-✅ Disable submit during loading  
+✅ Controlled components
+✅ Disable submit during loading
 ✅ Clear feedback on success/error
+
+### Dev Server Port (LOCKED)
+- Port **5173** is locked via `strictPort: true` in vite.config.ts
+- Supabase auth redirects to `http://localhost:5173/auth/callback`
+- If port 5173 is busy, dev server will **fail** (not try 5174, etc.)
+- **Never change the port** without updating Supabase redirect URLs
 
 ---
 
