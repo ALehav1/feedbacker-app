@@ -52,6 +52,8 @@ We'll iterate after users try it.
 - [ ] Profile edit capability
 - [ ] Logo upload (Supabase Storage)
 - [x] Redirect logic (new user → profile, returning → dashboard)
+- [x] **Navigator Lock fix** - Disabled Navigator Lock API to fix AbortError during Vite HMR
+- [x] **Auth flow fully functional** - Magic link → callback → dashboard working end-to-end
 
 ---
 
@@ -214,3 +216,5 @@ We'll iterate after users try it.
 - Update agents.md when state changes significantly
 - Commit after each successful feature
 - Use Tailwind utilities consistently (not shadcn CSS variables)
+- **Navigator Lock is disabled** - See PROGRESS.md Troubleshooting section if auth issues occur
+- **No React StrictMode** - Removed to prevent double effect invocation during HMR

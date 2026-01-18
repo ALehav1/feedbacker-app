@@ -47,6 +47,11 @@
 - [x] TypeScript types updated (participantEmail, followupEmail, participantToken)
 - [x] TypeScript errors fixed (type-only imports)
 - [x] Build passing
+- [x] **Supabase Navigator Lock fix** (see Troubleshooting section below)
+  - [x] Disabled Navigator Lock API to fix AbortError during Vite HMR
+  - [x] Implemented singleton pattern with version control
+  - [x] Removed React StrictMode to prevent double effect invocation
+  - [x] Added retry mechanism for getSession with AbortError handling
 
 ### Phase 3: Presenter Features (In Progress)
 - [x] **Dashboard shell created** (`src/features/presenter/Dashboard.tsx`)
@@ -168,19 +173,21 @@
 
 ## 🎯 Current State
 
-**Status:** Dashboard complete, session routing working, ready for wizard implementation
+**Status:** Dashboard complete, auth flow working, session routing ready, ready for wizard implementation
 
 **What's Working:**
 - ✅ Project builds successfully (`npm run build`)
 - ✅ Lint passes (`npm run lint`)
 - ✅ TypeScript types properly defined
 - ✅ Auth components created and integrated
+- ✅ **Magic link auth flow fully functional**
 - ✅ Dashboard loads with session list
 - ✅ "Create Your First Session" → `/dashboard/sessions/new` works
 - ✅ Session card click → `/dashboard/sessions/:id` works
 - ✅ Database schema deployed to Supabase
 - ✅ RLS policies active
 - ✅ Magic link auth configured
+- ✅ **Navigator Lock issue resolved** (see Troubleshooting below)
 
 **What's Next:**
 - Implement session creation wizard
@@ -273,6 +280,65 @@ draft → active → completed → archived
 3. **Email Spam Folder:** Magic links sometimes go to spam
 4. **Browser Console:** Keep it open to catch any errors
 5. **Database Verification:** Use Supabase Table Editor to verify data
+
+---
+
+## 🔧 Troubleshooting
+
+### Supabase Navigator Lock AbortError
+
+**Problem:** During development with Vite HMR, you may see errors like:
+```
+AbortError: signal is aborted without reason
+navigatorLock @ @supabase_supabase-js.js
+_acquireLock @ @supabase_supabase-js.js
+```
+
+**Root Cause:** Supabase uses the Navigator Lock API for cross-tab session synchronization. During Vite's Hot Module Replacement (HMR), modules get re-evaluated, causing lock conflicts when the old client's lock is still held while a new client tries to acquire it.
+
+**Solution Applied (in `src/lib/supabase.ts`):**
+
+1. **Disable Navigator Lock API** before Supabase initializes:
+   ```typescript
+   // Disable Navigator Lock API before Supabase checks for it
+   if (!globalThis.__navigatorLocksDisabled && typeof navigator !== 'undefined') {
+     try {
+       Object.defineProperty(navigator, 'locks', {
+         get: () => undefined,
+         configurable: true,
+       })
+       globalThis.__navigatorLocksDisabled = true
+     } catch {
+       console.warn('Could not disable Navigator Lock API')
+     }
+   }
+   ```
+
+2. **Singleton with version control** to force new client creation after config changes:
+   ```typescript
+   const CLIENT_VERSION = 4  // Bump when config changes
+
+   if (globalThis.__feedbackerSupabaseVersion !== CLIENT_VERSION) {
+     globalThis.__feedbackerSupabase = undefined
+   }
+   ```
+
+3. **React StrictMode removed** from `src/main.tsx` to prevent double effect invocation in development.
+
+4. **Retry mechanism** added to `getSession()` in AuthContext to handle transient AbortErrors.
+
+**If the issue persists:**
+1. Clear Vite cache: `rm -rf node_modules/.vite`
+2. Clear browser localStorage for localhost:5173
+3. Hard refresh: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows/Linux)
+4. Restart dev server: `npm run dev`
+
+**Files Modified:**
+- `src/lib/supabase.ts` - Navigator Lock bypass and singleton pattern
+- `src/main.tsx` - StrictMode removed
+- `src/features/auth/AuthContext.tsx` - Retry mechanism for getSession
+
+**Note:** This fix is specific to development. In production, Navigator Lock works correctly because there's no HMR causing module re-evaluation.
 
 ---
 

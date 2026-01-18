@@ -304,6 +304,39 @@ ls -la docs/contract.md          # Should show -> ~/repos/docs/contract.md
 
 ---
 
+## Development Troubleshooting
+
+### Supabase Navigator Lock AbortError
+
+**Symptom:** Console shows `AbortError: signal is aborted without reason` with stack traces pointing to `navigatorLock` in Supabase.
+
+**Cause:** Supabase uses the Navigator Lock API for cross-tab session synchronization. During Vite HMR, this causes lock conflicts.
+
+**Solution Applied:**
+1. Navigator Lock API disabled in `src/lib/supabase.ts` via `Object.defineProperty`
+2. Singleton pattern with version control to force new client on config changes
+3. React StrictMode removed from `src/main.tsx`
+4. Retry mechanism added to `getSession()` in AuthContext
+
+**If it recurs:**
+```bash
+# Clear Vite cache
+rm -rf node_modules/.vite
+
+# Clear browser localStorage for localhost:5173
+# (DevTools → Application → Local Storage → Clear)
+
+# Hard refresh browser
+# Mac: Cmd+Shift+R | Windows/Linux: Ctrl+Shift+R
+
+# Restart dev server
+npm run dev
+```
+
+**See:** `PROGRESS.md` Troubleshooting section for full technical details.
+
+---
+
 ## When Cascade Goes Off Track
 
 ### Reset Prompt

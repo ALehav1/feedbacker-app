@@ -101,8 +101,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[Auth] onAuthStateChange:', event, session ? 'has session' : 'no session');
         try {
-          console.log('Auth state changed:', event);
           await handleSession(session);
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -113,19 +113,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     );
 
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        if (!isMounted) return;
-        setUser(session?.user ?? null);
-      })
-      .catch((err) => {
-        if (!(err instanceof DOMException && err.name === 'AbortError')) {
-          console.error('Error initializing auth:', err);
+    const getSessionWithRetry = async (retries = 3): Promise<void> => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log('[Auth] getSession result:', session ? 'has session' : 'no session');
+          if (!isMounted) return;
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            const p = await fetchPresenter(session.user.id);
+            if (isMounted) setPresenter(p);
+          }
+          return;
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') {
+            console.log('[Auth] getSession AbortError, retrying...', i + 1);
+            await new Promise(r => setTimeout(r, 100 * (i + 1)));
+            continue;
+          }
+          console.error('[Auth] getSession error:', err);
+          return;
         }
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
+      }
+      console.warn('[Auth] getSession failed after retries');
+    };
+
+    getSessionWithRetry().finally(() => {
+      if (isMounted) setIsLoading(false);
+    });
 
     return () => {
       isMounted = false;
