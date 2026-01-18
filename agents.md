@@ -1,4 +1,4 @@
-# Presentation-Prep-Feedbacker — Agent Instructions
+# Feedbacker App — Agent Instructions
 
 **Last Updated:** January 17, 2026  
 **Version:** 1.0

@@ -67,7 +67,7 @@ export function ProfileSetup() {
 
       toast({
         title: 'Profile created',
-        description: 'Welcome to Presentation-Prep-Feedbacker!',
+        description: 'Welcome to Feedbacker App!',
       });
 
       navigate('/dashboard');

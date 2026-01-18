@@ -1,4 +1,4 @@
-# Presentation-Prep-Feedbacker - Architecture Documentation
+# Feedbacker App - Architecture Documentation
 
 **Last Updated:** January 17, 2026  
 **Version:** 1.0

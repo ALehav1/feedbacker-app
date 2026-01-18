@@ -2,7 +2,7 @@
 
 **Last Updated:** January 18, 2026
 
-This document explains the security model, known limitations, and production recommendations for the Presentation-Prep-Feedbacker application.
+This document explains the security model, known limitations, and production recommendations for the Feedbacker App application.
 
 ---
 

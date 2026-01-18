@@ -93,7 +93,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Presentation-Prep-Feedbacker</CardTitle>
+          <CardTitle>Feedbacker App</CardTitle>
           <CardDescription>
             Sign in to create sessions and view feedback
           </CardDescription>

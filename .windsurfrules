@@ -1,4 +1,4 @@
-# 🌊 Windsurf Rules — Presentation-Prep-Feedbacker
+# 🌊 Windsurf Rules — Feedbacker App
 
 This file defines how coding agents must operate on this project.
 
@@ -183,7 +183,7 @@ Use Tailwind classes directly:
 ---
 
 # PART B — PROJECT-SPECIFIC RULES
-(Presentation-Prep-Feedbacker ONLY)
+(Feedbacker App ONLY)
 
 ## Additional Reading (After Universal Rules)
 

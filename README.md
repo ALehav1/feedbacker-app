@@ -1,4 +1,4 @@
-# Presentation-Prep-Feedbacker
+# Feedbacker App
 
 **AI-powered presentation feedback tool that helps presenters tailor their talks to what audiences actually want to hear.**
 

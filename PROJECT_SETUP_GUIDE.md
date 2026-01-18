@@ -2,7 +2,7 @@
 
 ## What Was Created
 
-This package contains the documentation foundation for Presentation-Prep-Feedbacker, designed to keep Cascade on track.
+This package contains the documentation foundation for Feedbacker App, designed to keep Cascade on track.
 
 ### File Structure
 
@@ -139,7 +139,7 @@ mkdir -p src/styles
 ### First Message Template
 
 ```
-PROJECT: Presentation-Prep-Feedbacker
+PROJECT: Feedbacker App
 GOAL: [Specific feature/task]
 
 Before proceeding:
@@ -156,7 +156,7 @@ No code yet - just the plan.
 ### For Feature Implementation
 
 ```
-PROJECT: Presentation-Prep-Feedbacker
+PROJECT: Feedbacker App
 FEATURE: [Feature name]
 
 Context from docs:

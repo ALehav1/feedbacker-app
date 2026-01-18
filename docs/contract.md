@@ -305,7 +305,7 @@ Before any PR:
 
 ## Project-Specific Addendum
 
-### For Presentation-Prep-Feedbacker
+### For Feedbacker App
 
 **Additional completion criteria:**
 
