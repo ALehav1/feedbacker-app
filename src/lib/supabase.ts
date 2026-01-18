@@ -14,5 +14,8 @@ export const supabase: SupabaseClient =
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: 'feedbacker-auth',
+      // Disable Navigator Lock to prevent AbortError during Vite HMR
+      // @ts-expect-error - lock option exists but not in TS types
+      lock: false,
     },
   }))
