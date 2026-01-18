@@ -1,0 +1,867 @@
+# Presentation-Prep-Feedbacker - Architecture Documentation
+
+**Last Updated:** January 17, 2026  
+**Version:** 1.0
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Project Structure](#project-structure)
+3. [Core Concepts](#core-concepts)
+4. [Data Flow](#data-flow)
+5. [Component Architecture](#component-architecture)
+6. [State Management](#state-management)
+7. [External Services](#external-services)
+8. [Database Schema](#database-schema)
+9. [API Design](#api-design)
+10. [Development Guidelines](#development-guidelines)
+
+---
+
+## Overview
+
+### Purpose
+
+Web application enabling presenters to gather structured audience feedback before presentations, then receive AI-generated prioritized outlines based on collective interest.
+
+### Core Problem
+
+Presenters guess what audiences want to hear. This app flips the model: share what you're working on → collect interest signals → tailor presentation to actual demand.
+
+### User Roles
+
+| Role | Description | Authentication |
+|------|-------------|----------------|
+| **Presenter** | Creates sessions, views aggregated feedback | Magic link via email |
+| **Participant** | Responds to sessions with interests | Email entry (no verification) |
+
+### Tech Stack
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| Frontend | React 18 + TypeScript + Vite | UI framework |
+| Styling | Tailwind CSS + shadcn/ui | Mobile-first design system |
+| Database | Supabase (PostgreSQL) | Data persistence |
+| Storage | Supabase Storage | File uploads (logos, PDFs) |
+| AI | OpenAI GPT-4o | Theme generation, outline creation |
+| Email | Resend | Magic links, notifications |
+| Hosting | Vercel | Deployment |
+
+### shadcn/ui Setup (IMPORTANT)
+
+shadcn/ui provides accessible, customizable components that live in YOUR codebase (not node_modules). This is critical for AI-assisted development because Cascade can read and modify these components.
+
+**Initial Setup:**
+```bash
+# Initialize shadcn (choose default settings)
+pnpm dlx shadcn@latest init
+
+# Add essential components
+npx shadcn@latest add button card dialog form input label toast skeleton tabs dropdown-menu alert textarea
+```
+
+**Why shadcn over other libraries:**
+- Components are copied INTO your repo (AI can edit them)
+- Built on Radix UI primitives (accessibility included)
+- Tailwind-based (consistent with your styling)
+- No runtime dependencies to break
+
+**Component locations:**
+- `src/components/ui/` - shadcn primitives (button, input, etc.)
+- `src/components/` - Your custom composite components
+
+---
+
+## Project Structure
+
+```
+presentation-prep-feedbacker/
+├── .windsurfrules               # Cascade agent rules (MANDATORY READ)
+├── agents.md                    # Project-specific agent instructions
+├── PLAN.md                      # Day-by-day implementation plan
+├── docs/
+│   ├── contract.md              # Universal + project rules
+│   ├── ARCHITECTURE.md          # This file
+│   └── SPEC.md                  # Product requirements
+│
+├── src/
+│   ├── features/                # Feature-based modules
+│   │   ├── auth/                # Magic link handling
+│   │   │   ├── MagicLinkHandler.tsx
+│   │   │   └── AuthContext.tsx
+│   │   │
+│   │   ├── presenter/           # Presenter-only views
+│   │   │   ├── Dashboard.tsx         # Session list + create
+│   │   │   ├── ProfileSetup.tsx      # First-time setup
+│   │   │   ├── SessionCreate/        # Multi-step creation
+│   │   │   │   ├── index.tsx
+│   │   │   │   ├── StepLength.tsx
+│   │   │   │   ├── StepSummary.tsx
+│   │   │   │   ├── StepReview.tsx
+│   │   │   │   └── StepComplete.tsx
+│   │   │   ├── SessionView.tsx       # Active session details
+│   │   │   ├── ResultsView.tsx       # Aggregated feedback
+│   │   │   └── ArchivedSessions.tsx  # Archived list
+│   │   │
+│   │   └── participant/         # Participant-only views
+│   │       ├── SessionAccess.tsx     # Email entry
+│   │       ├── FeedbackForm.tsx      # Theme selection + free-form
+│   │       ├── ThankYou.tsx          # Post-submission
+│   │       └── SessionClosed.tsx     # Archived session message
+│   │
+│   ├── components/              # Shared UI components
+│   │   ├── ui/                  # shadcn/ui primitives
+│   │   ├── ThemeSelector.tsx    # 👍/👎 theme interaction
+│   │   ├── SummaryEditor.tsx    # Summary input with guidance
+│   │   ├── SummaryDisplay.tsx   # Expandable summary view
+│   │   ├── FileUploader.tsx     # PDF/PPT/Word upload
+│   │   ├── OutlineDisplay.tsx   # Generated outline view
+│   │   ├── ExportOptions.tsx    # Copy/download controls
+│   │   ├── ResponseList.tsx     # Individual responses view
+│   │   ├── AggregatedThemes.tsx # Theme interest counts
+│   │   ├── SpotlightList.tsx    # AI-suggested spotlights
+│   │   ├── WriteInSummary.tsx   # Participant write-in summary
+│   │   └── LoadingStates.tsx    # Skeleton components
+│   │
+│   ├── hooks/                   # Custom React hooks
+│   │   ├── usePresenter.ts      # Presenter profile CRUD
+│   │   ├── useSessions.ts       # Session CRUD + state transitions
+│   │   ├── useResponses.ts      # Response fetching + aggregation
+│   │   ├── useThemes.ts         # Theme CRUD
+│   │   ├── useAIGeneration.ts   # OpenAI calls (themes, outline)
+│   │   ├── useFileUpload.ts     # File handling + parsing
+│   │   └── useMagicLink.ts      # Auth flow
+│   │
+│   ├── lib/                     # External service clients
+│   │   ├── supabase.ts          # Supabase client + helpers
+│   │   ├── openai.ts            # OpenAI client + prompts
+│   │   └── resend.ts            # Email client
+│   │
+│   ├── types/                   # TypeScript definitions
+│   │   ├── index.ts             # Re-exports
+│   │   ├── presenter.ts         # Presenter types
+│   │   ├── session.ts           # Session + state types
+│   │   ├── response.ts          # Response + selection types
+│   │   └── database.ts          # Supabase generated types
+│   │
+│   ├── utils/                   # Utility functions
+│   │   ├── fileParser.ts        # PDF/Word/PPT text extraction
+│   │   ├── slugGenerator.ts     # Readable URL slug creation
+│   │   ├── themeCalculation.ts  # Interest aggregation logic
+│   │   ├── exportFormatters.ts  # Outline → PDF/Word/Text
+│   │   └── db-errors.ts         # User-friendly error translation
+│   │
+│   ├── config/                  # App configuration
+│   │   ├── index.ts             # Environment variables
+│   │   └── toaster.ts           # Toast notification config
+│   │
+│   ├── styles/                  # Global styles
+│   │   └── globals.css          # Tailwind base + custom
+│   │
+│   ├── App.tsx                  # Root component + routing
+│   └── main.tsx                 # Entry point
+│
+├── public/                      # Static assets
+├── .env.example                 # Environment template
+├── .gitignore                   # Security (includes .env)
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── README.md
+```
+
+### Key Principles
+
+1. **Feature-based organization** - Code grouped by user journey, not file type
+2. **Hooks for data** - All database/API operations through hooks
+3. **Components for UI** - Presentational components in `/components`
+4. **Types are first-class** - Explicit types for all data shapes
+5. **Services isolated** - External integrations in `/lib`
+
+---
+
+## Styling Guidelines
+
+### Use Tailwind Classes Directly
+
+Tailwind's utility classes ARE the design system. No custom token files needed.
+
+**Color preferences:**
+- Backgrounds: `bg-white`, `bg-gray-50` (not pure white everywhere)
+- Text: `text-gray-900` (primary), `text-gray-600` (secondary), `text-gray-400` (muted)
+- Accent: `bg-violet-600`, `hover:bg-violet-700`
+- Borders: `border-gray-200`
+
+**Spacing:** Use Tailwind's scale (`p-4`, `m-2`, `gap-3`, etc.)
+
+**Border radius:** `rounded-lg` (12px) for cards, `rounded-md` (8px) for inputs
+
+### Touch Targets
+
+```typescript
+// Minimum 48px for all interactive elements
+<button className="min-h-[48px] min-w-[48px] ...">
+
+// Primary actions should be larger (56px)
+<button className="min-h-[56px] px-6 ...">
+```
+
+### Loading & Empty States
+
+- **Loading:** Use shadcn Skeleton component
+- **Empty:** Message + helpful CTA
+- **Error:** User-friendly message + retry button
+
+### Transitions
+
+Add to all interactive elements:
+```
+className="transition-all duration-200 ease-in-out"
+```
+
+---
+
+## Configuration
+
+### Central Config File
+
+All runtime configuration in one place:
+
+**`src/config/index.ts`:**
+```typescript
+interface AppConfig {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  openaiApiKey: string;
+  resendApiKey: string;
+  appUrl: string;
+  env: 'development' | 'production';
+}
+
+export const config: AppConfig = {
+  supabaseUrl: import.meta.env.VITE_SUPABASE_URL ?? '',
+  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+  openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY ?? '',
+  resendApiKey: import.meta.env.VITE_RESEND_API_KEY ?? '',
+  appUrl: import.meta.env.VITE_APP_URL ?? 'http://localhost:5173',
+  env: import.meta.env.PROD ? 'production' : 'development',
+};
+
+// Validation (fail fast in development)
+if (config.env === 'development') {
+  const required = ['supabaseUrl', 'supabaseAnonKey'] as const;
+  for (const key of required) {
+    if (!config[key]) {
+      console.warn(`⚠️ Missing required config: ${key}`);
+    }
+  }
+}
+```
+
+**Rule:** Never hardcode URLs, keys, or environment-specific values. Always read from `config`.
+
+### Security Note: OpenAI API Key
+
+For v1, the OpenAI key is in frontend environment variables. This is a known compromise.
+
+**Why:** Adding a serverless proxy adds complexity we don't need yet.  
+**Risk:** Key could be extracted from browser. Mitigated by OpenAI rate limits and usage caps.  
+**Future:** Move to Vercel Edge Function before production launch with real users.
+
+---
+
+## Core Concepts
+
+### 1. Session States
+
+Sessions follow a strict state machine:
+
+```
+┌───────┐     share link      ┌────────┐    presenter     ┌───────────┐    presenter    ┌──────────┐
+│ DRAFT │ ─────────────────▶ │ ACTIVE │ ────clicks────▶ │ COMPLETED │ ───clicks────▶ │ ARCHIVED │
+└───────┘                     └────────┘                  └───────────┘                 └──────────┘
+    │                             │                            │                            │
+    │                             │                            │                            │
+    ▼                             ▼                            ▼                            ▼
+Presenter can:              Presenter can:              Presenter can:               Presenter can:
+- Edit summary              - View responses            - View results               - View (read-only)
+- Edit themes               - Edit summary/themes       - Export outline             - Use as template
+- Delete                    - Mark completed            - Move to archived           - Delete
+                            - Delete                    - Delete
+                            
+Participants:               Participants:               Participants:                Participants:
+- Cannot access             - Can respond               - Can still respond          - See "closed" message
+                            - Can edit response         - Can edit response
+```
+
+**State Invariants:**
+- Draft → Active: Triggered by presenter copying/sharing link
+- Active → Completed: Explicit presenter action only
+- Completed → Archived: Explicit presenter action only
+- Archived → Draft: "Use as template" creates NEW session (copies summary/themes, removes responses)
+
+### 2. Theme Interest Model
+
+Participants indicate interest using a three-state model per theme:
+
+| State | User Action | Database Value | Display |
+|-------|-------------|----------------|---------|
+| More Interested | Tap 👍 | `'more'` | Filled thumb up |
+| Less Interested | Tap 👎 | `'less'` | Filled thumb down |
+| Neutral | No tap | No row | Empty thumbs |
+
+**Aggregation:**
+```
+Net Interest = (more_count) - (less_count)
+Themes sorted by net interest descending
+```
+
+### 3. AI Generation Pipeline
+
+```
+Summary Input
+    │
+    ▼
+┌─────────────────┐
+│ Theme Generator │ ──▶ 5-10 themes (based on session length)
+│   (GPT-4o)      │
+└─────────────────┘
+    │
+    ▼
+┌─────────────────┐
+│ Title Generator │ ──▶ Session title
+│   (GPT-4o)      │
+└─────────────────┘
+    │
+    ▼
+┌─────────────────┐
+│Welcome Generator│ ──▶ Participant welcome message
+│   (GPT-4o)      │
+└─────────────────┘
+    │
+    ▼
+┌─────────────────┐
+│ Slug Generator  │ ──▶ Readable URL slug
+│   (GPT-4o)      │
+└─────────────────┘
+
+[After responses collected]
+
+Responses
+    │
+    ▼
+┌─────────────────┐
+│Spotlight Finder │ ──▶ Unique/interesting suggestions
+│   (GPT-4o)      │
+└─────────────────┘
+    │
+    ▼
+┌─────────────────┐
+│WriteIn Summarize│ ──▶ Grouped free-form summary
+│   (GPT-4o)      │
+└─────────────────┘
+    │
+    ▼
+┌─────────────────┐
+│Outline Generator│ ──▶ Sections + sub-points
+│   (GPT-4o)      │
+└─────────────────┘
+```
+
+### 4. File Upload Flow
+
+```
+User selects file
+    │
+    ├─▶ PDF ──▶ pdf-parse library ──▶ extracted text
+    ├─▶ Word ──▶ mammoth library ──▶ extracted text
+    └─▶ PPT ──▶ pptx library ──▶ extracted text
+         │
+         ▼
+    On parse error:
+    - Show what could be extracted
+    - Offer manual paste fallback
+         │
+         ▼
+    Extracted text → Summary editor
+```
+
+---
+
+## Data Flow
+
+### Presenter Flow
+
+```
+Homepage (/login)
+    │
+    ▼
+Enter email ──▶ Resend magic link ──▶ Email received
+    │
+    ▼
+Click link ──▶ /auth/callback?token=xxx
+    │
+    ├─▶ [First time] ──▶ ProfileSetup ──▶ Save presenter
+    │
+    └─▶ [Returning] ──▶ Dashboard
+                           │
+                           ├─▶ Create new ──▶ SessionCreate wizard
+                           │                        │
+                           │                        ▼
+                           │                   Generate ──▶ Copy link
+                           │
+                           ├─▶ View active ──▶ SessionView
+                           │                        │
+                           │                        ▼
+                           │                   Results ──▶ Export
+                           │
+                           └─▶ Archived ──▶ ArchivedSessions
+```
+
+### Participant Flow
+
+```
+Shared link (/s/:slug)
+    │
+    ▼
+SessionAccess (enter email)
+    │
+    ├─▶ [New] ──▶ FeedbackForm (empty)
+    │
+    └─▶ [Returning] ──▶ FeedbackForm (pre-filled)
+                              │
+                              ▼
+                         Submit ──▶ ThankYou
+```
+
+---
+
+## Component Architecture
+
+### Display Components (Presentational)
+
+| Component | Purpose | Props | Used In |
+|-----------|---------|-------|---------|
+| `ThemeSelector` | Single theme with 👍/👎 | `theme`, `selection`, `onSelect` | FeedbackForm |
+| `SummaryDisplay` | Expandable summary | `condensed`, `full`, `expanded` | FeedbackForm |
+| `OutlineDisplay` | Sections + sub-points | `outline` | ResultsView |
+| `AggregatedThemes` | Theme with counts | `themes`, `responses` | ResultsView |
+| `SpotlightList` | AI-highlighted items | `spotlights` | ResultsView |
+| `ResponseList` | Individual responses | `responses` | ResultsView |
+
+### Feature Views (Smart Components)
+
+| Component | Purpose | Hooks Used |
+|-----------|---------|------------|
+| `Dashboard` | Session management | `useSessions`, `usePresenter` |
+| `ProfileSetup` | First-time profile | `usePresenter` |
+| `SessionCreate` | Multi-step wizard | `useSessions`, `useAIGeneration`, `useFileUpload` |
+| `SessionView` | Active session detail | `useSessions`, `useResponses` |
+| `ResultsView` | Aggregated feedback | `useResponses`, `useAIGeneration` |
+| `FeedbackForm` | Participant input | `useResponses`, `useThemes` |
+
+---
+
+## State Management
+
+### Pattern: Hooks + React Context
+
+No Redux. Use React's built-in state + custom hooks.
+
+### Primary Data Hooks
+
+#### `usePresenter`
+```typescript
+{
+  presenter: Presenter | null;
+  loading: boolean;
+  error: string | null;
+  createPresenter: (data: CreatePresenterInput) => Promise<void>;
+  updatePresenter: (data: UpdatePresenterInput) => Promise<void>;
+  refetch: () => Promise<void>;
+}
+```
+
+#### `useSessions`
+```typescript
+{
+  sessions: Session[];
+  activeSessions: Session[];
+  archivedSessions: Session[];
+  loading: boolean;
+  error: string | null;
+  createSession: (data: CreateSessionInput) => Promise<Session>;
+  updateSession: (id: string, data: UpdateSessionInput) => Promise<void>;
+  transitionState: (id: string, newState: SessionState) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
+  useAsTemplate: (id: string) => Promise<Session>;
+  refetch: () => Promise<void>;
+}
+```
+
+#### `useResponses`
+```typescript
+{
+  responses: Response[];
+  responseCount: number;
+  aggregatedThemes: AggregatedTheme[];
+  spotlights: Spotlight[];
+  writeInSummary: string;
+  generatedOutline: Outline | null;
+  loading: boolean;
+  error: string | null;
+  submitResponse: (data: SubmitResponseInput) => Promise<void>;
+  updateResponse: (id: string, data: UpdateResponseInput) => Promise<void>;
+  generateOutline: () => Promise<Outline>;
+  refetch: () => Promise<void>;
+}
+```
+
+### Context Providers
+
+#### `AuthContext`
+```typescript
+{
+  presenter: Presenter | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  signIn: (email: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
+```
+
+---
+
+## External Services
+
+### Supabase
+
+**Tables:**
+- `presenters` - Presenter profiles
+- `sessions` - Session metadata
+- `themes` - Generated themes per session
+- `responses` - Participant responses
+- `theme_selections` - Interest signals per response
+
+**Storage Buckets:**
+- `presenter-assets` - Logos, brand guidelines
+
+**Auth:**
+- Magic link via `supabase.auth.signInWithOtp()`
+- Session management via `onAuthStateChange`
+
+### OpenAI
+
+**Model:** `gpt-4o`
+
+**Temperature Settings:**
+- Theme generation: 0.7 (creative)
+- Outline generation: 0.5 (balanced)
+- Summarization: 0.3 (focused)
+
+**Rate Limiting:**
+- Retry with exponential backoff
+- User-friendly error on quota exceeded
+
+### Resend
+
+**Emails Sent:**
+1. Magic link to presenters
+2. New response notification to presenters
+
+**Sender:** `onboarding@resend.dev` (default for v1)
+
+---
+
+## Database Schema
+
+```sql
+-- Presenters (users who create sessions)
+CREATE TABLE presenters (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  organization TEXT NOT NULL,
+  logo_url TEXT,
+  brand_guidelines_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Sessions
+CREATE TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  presenter_id UUID REFERENCES presenters(id) ON DELETE CASCADE,
+  state TEXT NOT NULL DEFAULT 'draft' CHECK (state IN ('draft', 'active', 'completed', 'archived')),
+  length_minutes INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  welcome_message TEXT NOT NULL,
+  summary_full TEXT NOT NULL,
+  summary_condensed TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Themes (generated from summary)
+CREATE TABLE themes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+  text TEXT NOT NULL,
+  sort_order INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Responses (participant feedback)
+CREATE TABLE responses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  name TEXT,
+  contact_email TEXT,
+  free_form_text TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(session_id, email)
+);
+
+-- Theme Selections (interest signals)
+CREATE TABLE theme_selections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  response_id UUID REFERENCES responses(id) ON DELETE CASCADE,
+  theme_id UUID REFERENCES themes(id) ON DELETE CASCADE,
+  selection TEXT NOT NULL CHECK (selection IN ('more', 'less')),
+  UNIQUE(response_id, theme_id)
+);
+
+-- Indexes
+CREATE INDEX idx_sessions_presenter ON sessions(presenter_id);
+CREATE INDEX idx_sessions_slug ON sessions(slug);
+CREATE INDEX idx_sessions_state ON sessions(state);
+CREATE INDEX idx_themes_session ON themes(session_id);
+CREATE INDEX idx_responses_session ON responses(session_id);
+CREATE INDEX idx_responses_email ON responses(session_id, email);
+CREATE INDEX idx_selections_response ON theme_selections(response_id);
+CREATE INDEX idx_selections_theme ON theme_selections(theme_id);
+```
+
+---
+
+## API Design
+
+### Route Structure
+
+```
+/                           → Login/landing page
+/auth/callback              → Magic link handler
+/dashboard                  → Presenter dashboard (protected)
+/dashboard/profile          → Profile setup/edit (protected)
+/dashboard/create           → Session creation wizard (protected)
+/dashboard/session/:id      → Session detail view (protected)
+/dashboard/session/:id/results → Results view (protected)
+/dashboard/archived         → Archived sessions (protected)
+/s/:slug                    → Participant session access (public)
+```
+
+### Protected Routes
+
+All `/dashboard/*` routes require authenticated presenter.
+
+Use `ProtectedRoute` wrapper:
+```typescript
+<Route path="/dashboard/*" element={
+  <ProtectedRoute>
+    <DashboardLayout />
+  </ProtectedRoute>
+} />
+```
+
+---
+
+## Development Guidelines
+
+### Mobile-First (CRITICAL)
+
+Test at these breakpoints in order:
+1. **375px** — Phone baseline (MUST work first)
+2. **768px** — Tablet
+3. **1024px** — Desktop
+
+Requirements:
+- Touch targets ≥ 48×48px
+- No horizontal scroll
+- Readable text without zoom
+
+### TypeScript Rules
+
+- No `any` types
+- `unknown` with explicit narrowing only
+- Interfaces for all props and data shapes
+- Strict mode enabled
+
+### React Patterns
+
+- Navigation: `useNavigate()` only (never `window.location`)
+- Auth: `onAuthStateChange` listener (never one-time `getUser()`)
+- Async: Always show loading + error states
+- Forms: Controlled components
+
+### Toast Notifications
+
+Use react-hot-toast for user feedback. Configure once in app root:
+
+**`src/config/toaster.ts`:**
+```typescript
+export const toasterConfig = {
+  position: "top-center" as const,
+  gutter: 12,
+  containerStyle: { top: 80 },
+  toastOptions: {
+    duration: 3000,
+    style: {
+      background: 'white',
+      color: '#374151',
+      borderRadius: '0.75rem',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+    },
+    success: { iconTheme: { primary: '#10b981', secondary: 'white' } },
+    error: { iconTheme: { primary: '#ef4444', secondary: 'white' } }
+  }
+};
+```
+
+**Usage:** `toast.success('Saved!')` | `toast.error('Failed')` | `toast.promise(promise, {...})`
+
+**Rule:** Never use `alert()`. Always use toast.
+
+### Database Error Translation
+
+Translate database errors to user-friendly messages:
+
+```typescript
+// src/utils/db-errors.ts
+export const translateDBError = (error: unknown): string => {
+  const err = error as { message?: string; code?: string };
+  const errorMap: Record<string, string> = {
+    '23505': 'This already exists. Please try another.',
+    '23503': 'Cannot delete - this is being used elsewhere.',
+    'row-level security': 'Permission denied. Please try again.',
+    'JWT expired': 'Session expired. Please sign in again.',
+  };
+  
+  for (const [key, message] of Object.entries(errorMap)) {
+    if (err.message?.includes(key) || err.code === key) return message;
+  }
+  return 'Something went wrong. Please try again.';
+};
+```
+
+### Error Handling
+
+- User-friendly message in UI
+- Technical details in console
+- Retry option for recoverable errors
+
+### Before Claiming Done
+
+- [ ] Tested at 375px, 768px, 1024px
+- [ ] Zero console errors
+- [ ] Loading states for all async
+- [ ] Error states for all async
+- [ ] No `any` types
+- [ ] Touch targets ≥ 48px
+
+---
+
+## Appendix: Type Definitions
+
+See `/src/types/` for complete definitions.
+
+### Core Types Preview
+
+```typescript
+// Session states
+type SessionState = 'draft' | 'active' | 'completed' | 'archived';
+
+// Theme selection
+type ThemeSelection = 'more' | 'less';
+
+// Presenter profile
+interface Presenter {
+  id: string;
+  email: string;
+  name: string;
+  organization: string;
+  logoUrl?: string;
+  brandGuidelinesUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Session
+interface Session {
+  id: string;
+  presenterId: string;
+  state: SessionState;
+  lengthMinutes: number;
+  title: string;
+  welcomeMessage: string;
+  summaryFull: string;
+  summaryCondensed: string;
+  slug: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Theme
+interface Theme {
+  id: string;
+  sessionId: string;
+  text: string;
+  sortOrder: number;
+}
+
+// Response
+interface Response {
+  id: string;
+  sessionId: string;
+  email: string;
+  name?: string;
+  contactEmail?: string;
+  freeFormText?: string;
+  selections: ThemeSelectionRecord[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Theme selection record
+interface ThemeSelectionRecord {
+  themeId: string;
+  selection: ThemeSelection;
+}
+
+// Aggregated theme (for results)
+interface AggregatedTheme {
+  theme: Theme;
+  moreCount: number;
+  lessCount: number;
+  netInterest: number;
+}
+
+// Generated outline
+interface Outline {
+  sections: OutlineSection[];
+  generatedAt: Date;
+}
+
+interface OutlineSection {
+  title: string;
+  subPoints: string[];
+}
+```
+
+---
+
+*End of Architecture Documentation*
