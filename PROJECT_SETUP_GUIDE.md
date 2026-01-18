@@ -7,7 +7,7 @@ This package contains the documentation foundation for Presentation-Prep-Feedbac
 ### File Structure
 
 ```
-presentation-prep-feedbacker-setup/
+feedbacker-app/
 ├── .windsurfrules          # Cascade agent rules (MOST IMPORTANT)
 ├── .gitignore              # Security - prevents committing secrets
 ├── .env.example            # Environment variable template
@@ -29,9 +29,9 @@ presentation-prep-feedbacker-setup/
 ### 1. Create Your Project Repository
 
 ```bash
-# Create new project folder
-mkdir presentation-prep-feedbacker
-cd presentation-prep-feedbacker
+# Clone repository
+git clone https://github.com/ALehav1/feedbacker-app.git
+cd feedbacker-app
 
 # Copy all these files into it
 # (or use this as your starting point)

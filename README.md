@@ -44,8 +44,8 @@ These rules prevent regressions. Follow them strictly:
 
 ```bash
 # Clone repository
-git clone [repo-url]
-cd presentation-prep-feedbacker
+git clone https://github.com/ALehav1/feedbacker-app.git
+cd feedbacker-app
 
 # Install dependencies
 npm install

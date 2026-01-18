@@ -77,7 +77,7 @@ npx shadcn@latest add button card dialog form input label toast skeleton tabs dr
 ## Project Structure
 
 ```
-presentation-prep-feedbacker/
+feedbacker-app/
 ├── .windsurfrules               # Cascade agent rules (MANDATORY READ)
 ├── agents.md                    # Project-specific agent instructions
 ├── PLAN.md                      # Day-by-day implementation plan
