@@ -1,25 +1,17 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { config } from '@/config'
 
+// Disable Navigator Lock API to prevent AbortError during Vite HMR
+// This is safe - the lock is only used to prevent concurrent token refreshes
+// across tabs, which isn't critical for development
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  // @ts-expect-error - intentionally disabling navigator.locks in dev
+  window.navigator.locks = undefined
+}
+
 declare global {
   // eslint-disable-next-line no-var
   var __feedbackerSupabase: SupabaseClient | undefined
-}
-
-// Custom storage that doesn't use Navigator Lock
-const customStorage = {
-  getItem: (key: string) => {
-    if (typeof window === 'undefined') return null
-    return window.localStorage.getItem(key)
-  },
-  setItem: (key: string, value: string) => {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem(key, value)
-  },
-  removeItem: (key: string) => {
-    if (typeof window === 'undefined') return
-    window.localStorage.removeItem(key)
-  },
 }
 
 export const supabase: SupabaseClient =
@@ -30,6 +22,5 @@ export const supabase: SupabaseClient =
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: 'feedbacker-auth',
-      storage: customStorage,
     },
   }))
