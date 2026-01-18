@@ -1,6 +1,6 @@
 # Feedbacker App — Development Plan
 
-**Last Updated:** January 17, 2026
+**Last Updated:** January 18, 2026
 
 ---
 
@@ -11,92 +11,51 @@ We'll iterate after users try it.
 
 ---
 
-## Phase 1: Foundation (Days 1-2)
+## Phase 1: Foundation (Days 1-2) ✅ COMPLETE
 
-### Day 1: Project Initialization
+### Day 1: Project Initialization ✅
 
-- [ ] Initialize Vite + React + TypeScript
-- [ ] Install Tailwind CSS
-- [ ] Install and configure shadcn/ui
-- [ ] Set up folder structure (feature-based)
-- [ ] Create `.env` from `.env.example`
-- [ ] Verify dev server runs at 375px
+- [x] Initialize Vite + React + TypeScript
+- [x] Install Tailwind CSS
+- [x] Install and configure shadcn/ui
+- [x] Set up folder structure (feature-based)
+- [x] Create `.env` from `.env.example`
+- [x] Verify dev server runs at 375px
+- [x] ESLint 9 flat config created
+- [x] Build passing
 
-**Cascade prompt:**
-```
-Read .windsurfrules and docs/contract.md first.
+### Day 2: Supabase + Types ✅
 
-Task: Initialize the project foundation:
-1. Create Vite + React + TypeScript project
-2. Install Tailwind CSS with default config
-3. Initialize shadcn with default settings
-4. Add these shadcn components: button, card, dialog, form, input, label, toast, skeleton, tabs, dropdown-menu, alert, textarea
-5. Create feature-based folder structure per ARCHITECTURE.md
-
-Verify: Dev server runs, no console errors, test at 375px.
-```
-
-### Day 2: Supabase + Types
-
-- [ ] Create Supabase project
-- [ ] Run database schema SQL
-- [ ] Configure RLS policies
-- [ ] Set up Supabase client (`src/lib/supabase.ts`)
-- [ ] Create TypeScript types from schema
-- [ ] Test database connection
-
-**Cascade prompt:**
-```
-Read .windsurfrules and docs/contract.md first.
-
-Task: Set up Supabase integration:
-1. Create src/lib/supabase.ts with typed client
-2. Create src/types/database.ts with all table types per ARCHITECTURE.md schema
-3. Create src/types/index.ts re-exporting all types
-4. Test: import supabase client, log connection status
-
-Types must match ARCHITECTURE.md exactly. No 'any' types.
-```
+- [x] Create Supabase project
+- [x] Run database schema SQL
+- [x] Configure RLS policies
+- [x] Set up Supabase client (`src/lib/supabase.ts`)
+- [x] Create TypeScript types from schema
+- [x] Test database connection
 
 ---
 
-## Phase 2: Auth (Days 3-4)
+## Phase 2: Auth (Days 3-4) ✅ COMPLETE
 
-### Day 3: Magic Link Auth
+### Day 3: Magic Link Auth ✅
 
-- [ ] AuthContext with onAuthStateChange listener
-- [ ] Magic link request flow
-- [ ] /auth/callback handler
-- [ ] ProtectedRoute component
-- [ ] Basic login page
+- [x] AuthContext with onAuthStateChange listener
+- [x] Magic link request flow
+- [x] /auth/callback handler
+- [x] ProtectedRoute component
+- [x] Basic login page
 
-**Cascade prompt:**
-```
-Read .windsurfrules and docs/contract.md first.
+### Day 4: Profile Setup ✅
 
-Task: Implement magic link authentication:
-1. Create src/features/auth/AuthContext.tsx
-   - Use onAuthStateChange listener (REQUIRED - see agents.md)
-   - Expose: user, loading, signIn, signOut
-2. Create src/features/auth/ProtectedRoute.tsx
-3. Create src/features/auth/LoginPage.tsx
-4. Create src/pages/AuthCallback.tsx
-
-Pattern must follow ARCHITECTURE.md auth section exactly.
-Test: Enter email → receive magic link → click → authenticated.
-```
-
-### Day 4: Profile Setup
-
-- [ ] Profile form component
-- [ ] Profile creation on first login
+- [x] Profile form component
+- [x] Profile creation on first login (with correct id = auth.uid())
 - [ ] Profile edit capability
 - [ ] Logo upload (Supabase Storage)
-- [ ] Redirect logic (new user → profile, returning → dashboard)
+- [x] Redirect logic (new user → profile, returning → dashboard)
 
 ---
 
-## Phase 3: Presenter Features (Days 5-8)
+## Phase 3: Presenter Features (Days 5-8) 🔄 NEXT
 
 ### Day 5: Dashboard Shell
 
@@ -104,6 +63,21 @@ Test: Enter email → receive magic link → click → authenticated.
 - [ ] Empty state
 - [ ] Session list (active/archived tabs)
 - [ ] "Create New Session" button
+
+**Cascade prompt:**
+```
+Read .windsurfrules and docs/contract.md first.
+
+Task: Create the presenter dashboard:
+1. Create src/features/presenter/Dashboard.tsx
+   - Show empty state when no sessions
+   - List sessions when they exist (active first, then by date)
+   - Include "Create New Session" button
+2. Add proper loading and error states
+3. Test at 375px, 768px, 1024px
+
+Check contract.md completion criteria before saying done.
+```
 
 ### Day 6: Session Creation Wizard (Steps 1-2)
 
@@ -187,12 +161,36 @@ Test: Enter email → receive magic link → click → authenticated.
 - [ ] Batch session creation
 - [ ] Analytics dashboard
 - [ ] Custom branding preview
+- [ ] Profile edit page
+- [ ] Logo upload to Supabase Storage
 
 ---
 
 ## Completed ✅
 
-*Move items here when done*
+### Phase 1: Foundation
+- Vite + React + TypeScript initialized
+- Tailwind CSS v3 configured (ESM import for animate plugin)
+- shadcn/ui components installed (button, card, dialog, form, input, label, toast, skeleton, tabs, dropdown-menu, alert, textarea)
+- Feature-based folder structure created
+- ESLint 9 flat config
+- Build passing
+
+### Phase 2: Auth & Database
+- Supabase project created
+- Database schema deployed with security fixes
+- RLS policies deployed with MVP limitations documented
+- AuthContext with onAuthStateChange listener
+- Magic link login flow
+- /auth/callback handler
+- ProtectedRoute component
+- ProfileSetup page (id = auth.uid() pattern)
+
+### Setup & Configuration
+- GitHub repo created (private): https://github.com/ALehav1/feedbacker-app
+- Dev server port locked to 5173 (strictPort: true)
+- Naming consistency: "Feedbacker App" across all docs
+- Security documentation (docs/SECURITY.md)
 
 ---
 
@@ -204,6 +202,14 @@ Test: Enter email → receive magic link → click → authenticated.
 2. **shadcn over custom components:** AI can edit, accessible by default
 3. **Manual refresh over real-time:** Simpler, less infrastructure
 4. **Feature folders over type folders:** Scales better, easier to navigate
+5. **Presenter ID = Auth ID:** Critical for RLS policies to work
+
+### Critical Invariants (DO NOT VIOLATE)
+
+1. **Presenter ID must equal auth.uid()** - Always set `id: user.id` when inserting presenter
+2. **Dev server port 5173** - Locked via strictPort, required for auth redirects
+3. **Session state machine** - draft → active → completed → archived (no skipping)
+4. **Theme selection model** - more/less/neutral (no both)
 
 ### Things to Remember
 
@@ -211,3 +217,4 @@ Test: Enter email → receive magic link → click → authenticated.
 - Check contract.md before saying "done"
 - Update agents.md when state changes significantly
 - Commit after each successful feature
+- Use Tailwind utilities consistently (not shadcn CSS variables)

@@ -1,4 +1,4 @@
-# Feedbacker-App Progress Tracker
+# Feedbacker App Progress Tracker
 
 **Last Updated:** January 18, 2026
 
@@ -8,31 +8,32 @@
 
 ### Phase 1: Foundation (Days 1-2)
 - [x] Vite + React + TypeScript initialized
-- [x] Tailwind CSS configured
+- [x] Tailwind CSS configured (v3, ESM import for animate plugin)
 - [x] shadcn/ui components installed
 - [x] Feature-based folder structure created
 - [x] Supabase client configured
 - [x] TypeScript types defined
 - [x] Config file with environment variables
+- [x] ESLint 9 flat config created
 - [x] Build passing
 
 ### Phase 2: Database & Auth (Days 3-4)
-- [x] Database schema SQL file created (`supabase/schema.sql`)
+- [x] **Database schema SQL file created** (`supabase/schema.sql`)
   - [x] Fixed UUID extension (pgcrypto instead of uuid-ossp)
   - [x] Presenter ID has no default (must be set to auth.uid())
   - [x] Added NOT NULL constraints on foreign keys
   - [x] Added UNIQUE constraint on theme sort_order per session
   - [x] Renamed email fields for clarity (participant_email, followup_email)
   - [x] Added participant_token for update verification
-- [x] RLS policies SQL file created (`supabase/rls-policies.sql`)
+- [x] **RLS policies SQL file created** (`supabase/rls-policies.sql`)
   - [x] Fixed auth.uid() comparisons (removed ::text casts)
   - [x] Documented MVP security limitations
   - [x] Disabled participant updates (security)
   - [x] Added production roadmap comments
-- [x] Setup documentation created (`supabase/README.md`)
+- [x] **Setup documentation created** (`supabase/README.md`)
   - [x] Added critical implementation notes
   - [x] Documented presenter ID requirement
-- [x] Security documentation created (`docs/SECURITY.md`)
+- [x] **Security documentation created** (`docs/SECURITY.md`)
   - [x] Explained authentication model
   - [x] Documented known limitations
   - [x] Provided production roadmap
@@ -45,50 +46,33 @@
 - [x] App.tsx updated with routing and AuthProvider
 - [x] TypeScript types updated (participantEmail, followupEmail, participantToken)
 - [x] TypeScript errors fixed (type-only imports)
-- [x] Build passing ✅
+- [x] Build passing
+
+### Setup & Configuration
+- [x] GitHub repo created (private): https://github.com/ALehav1/feedbacker-app
+- [x] Dev server port locked to 5173 (strictPort: true)
+- [x] Supabase project created and configured
+- [x] Database schema deployed to Supabase
+- [x] RLS policies deployed to Supabase
+- [x] Magic link auth configured (redirect URL set)
+- [x] Environment variables configured in .env
+- [x] Naming consistency: "Feedbacker App" across all docs and services
 
 ---
 
-## 🔄 Next Steps
+## 🔄 In Progress
 
-### Immediate: Database Setup (You need to do this)
+### Database Already Set Up ✅
 
-1. **Create Supabase Project**
-   - Go to https://supabase.com
-   - Create new project
-   - Save project URL and anon key
+The following steps have been completed:
 
-2. **Run Database Schema**
-   - Open Supabase SQL Editor
-   - Copy contents of `supabase/schema.sql`
-   - Run the SQL
-   - Verify tables created
-
-3. **Run RLS Policies**
-   - In SQL Editor, create new query
-   - Copy contents of `supabase/rls-policies.sql`
-   - Run the SQL
-   - Verify policies applied
-
-4. **Configure Magic Link**
-   - Go to Authentication → URL Configuration
-   - Set Site URL: `http://localhost:5173`
-   - Add Redirect URL: `http://localhost:5173/auth/callback`
-
-5. **Update .env File**
-   ```env
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key-here
-   ```
-
-6. **Test Authentication**
-   ```bash
-   npm run dev
-   ```
-   - Open http://localhost:5173
-   - Enter your email
-   - Check email for magic link
-   - Click link → should redirect to /dashboard
+1. ✅ **Supabase Project Created**
+2. ✅ **Database Schema Deployed** (`supabase/schema.sql`)
+3. ✅ **RLS Policies Deployed** (`supabase/rls-policies.sql`)
+4. ✅ **Magic Link Configured**
+   - Site URL: `http://localhost:5173`
+   - Redirect URL: `http://localhost:5173/auth/callback`
+5. ✅ **Environment Variables Set** in `.env`
 
 ---
 
@@ -96,7 +80,7 @@
 
 ### Phase 3: Presenter Features (Days 5-8)
 - [ ] Dashboard shell with session list
-- [ ] Profile setup page (first-time users)
+- [ ] Profile edit page (for returning users)
 - [ ] Session creation wizard (4 steps)
 - [ ] Results view with aggregated feedback
 
@@ -119,7 +103,7 @@
 
 ---
 
-## 📁 Files Created This Session
+## 📁 Files Created/Modified
 
 ### Database
 - `supabase/schema.sql` - Complete database schema
@@ -131,31 +115,44 @@
 - `src/features/auth/ProtectedRoute.tsx` - Route protection
 - `src/features/auth/LoginPage.tsx` - Magic link login UI
 - `src/features/auth/AuthCallback.tsx` - OAuth callback handler
+- `src/features/presenter/ProfileSetup.tsx` - First-time profile setup
 
-### App Structure
-- `src/App.tsx` - Updated with routing and AuthProvider
+### Documentation
+- `docs/SECURITY.md` - Security architecture and notes
+- `docs/ARCHITECTURE.md` - Technical architecture
+- `docs/SPEC.md` - Product requirements
+- `docs/contract.md` - Universal rules
+- `.windsurfrules` - Cascade agent rules (with invariants)
+- `README.md` - Project overview
+- `PROJECT_SETUP_GUIDE.md` - Setup instructions
+- `SUPABASE_SETUP_GUIDE.md` - Supabase setup guide
+- `SCHEMA_FIXES.md` - Schema security fixes documentation
+
+### Configuration
+- `eslint.config.js` - ESLint 9 flat config
+- `tailwind.config.js` - Tailwind with ESM import
+- `vite.config.ts` - Vite with strictPort: true
 
 ---
 
 ## 🎯 Current State
 
-**Status:** Authentication system complete, ready for database setup
+**Status:** Foundation complete, database set up, ready for feature development
 
 **What's Working:**
-- ✅ Project builds successfully
+- ✅ Project builds successfully (`npm run build`)
+- ✅ Lint passes (`npm run lint`)
 - ✅ TypeScript types properly defined
 - ✅ Auth components created and integrated
 - ✅ Routing structure in place
+- ✅ Database schema deployed to Supabase
+- ✅ RLS policies active
+- ✅ Magic link auth configured
 
-**What Needs Your Action:**
-- ⚠️ Supabase database setup (follow steps above)
-- ⚠️ Environment variables configuration
-- ⚠️ Test magic link authentication
-
-**What's Next After Database Setup:**
-- Build profile setup page
-- Create dashboard with session list
+**What's Next:**
+- Build dashboard with session list
 - Implement session creation wizard
+- Create participant feedback form
 
 ---
 
@@ -170,6 +167,17 @@
    - If yes → redirect to /dashboard
    - If no → redirect to /dashboard/profile (first-time setup)
 5. AuthContext maintains session via onAuthStateChange
+```
+
+### Critical Invariant: Presenter ID = Auth ID
+```typescript
+// CORRECT - must set id to user.id
+await supabase.from('presenters').insert({
+  id: user.id,  // MUST match auth.uid()
+  email: user.email,
+  name: formData.name,
+  organization: formData.organization,
+});
 ```
 
 ### Session State Machine
@@ -188,20 +196,15 @@ draft → active → completed → archived
 
 ## 🐛 Known Issues
 
-**Markdown Linting (Non-Critical):**
-- `supabase/README.md` has formatting warnings
-- These are cosmetic and don't affect functionality
-- Can be fixed later if needed
-
-**No Critical Issues:** Build passes, TypeScript clean
+**None Currently:** Build passes, TypeScript clean, database deployed.
 
 ---
 
-## 📝 Testing Checklist (After Database Setup)
+## 📝 Testing Checklist
 
-- [ ] Magic link email received
-- [ ] Click link redirects to /auth/callback
-- [ ] New user redirects to /dashboard/profile
+- [x] Magic link email received
+- [x] Click link redirects to /auth/callback
+- [x] New user redirects to /dashboard/profile
 - [ ] Returning user redirects to /dashboard
 - [ ] Protected routes block unauthenticated access
 - [ ] Sign out works correctly
@@ -211,11 +214,12 @@ draft → active → completed → archived
 
 ## 💡 Tips
 
-1. **Check Supabase Logs:** If magic link doesn't work, check Supabase logs for errors
-2. **Email Spam Folder:** Magic links sometimes go to spam
-3. **Browser Console:** Keep it open to catch any errors
-4. **Database Verification:** Use Supabase Table Editor to verify data
+1. **Dev Server Port:** Always use port 5173 (locked via strictPort)
+2. **Check Supabase Logs:** If magic link doesn't work, check Supabase logs
+3. **Email Spam Folder:** Magic links sometimes go to spam
+4. **Browser Console:** Keep it open to catch any errors
+5. **Database Verification:** Use Supabase Table Editor to verify data
 
 ---
 
-**Ready to proceed once you've set up the database!**
+**Ready for Phase 3: Presenter Features!**
