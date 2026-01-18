@@ -18,15 +18,34 @@
 
 ### Phase 2: Database & Auth (Days 3-4)
 - [x] Database schema SQL file created (`supabase/schema.sql`)
+  - [x] Fixed UUID extension (pgcrypto instead of uuid-ossp)
+  - [x] Presenter ID has no default (must be set to auth.uid())
+  - [x] Added NOT NULL constraints on foreign keys
+  - [x] Added UNIQUE constraint on theme sort_order per session
+  - [x] Renamed email fields for clarity (participant_email, followup_email)
+  - [x] Added participant_token for update verification
 - [x] RLS policies SQL file created (`supabase/rls-policies.sql`)
+  - [x] Fixed auth.uid() comparisons (removed ::text casts)
+  - [x] Documented MVP security limitations
+  - [x] Disabled participant updates (security)
+  - [x] Added production roadmap comments
 - [x] Setup documentation created (`supabase/README.md`)
+  - [x] Added critical implementation notes
+  - [x] Documented presenter ID requirement
+- [x] Security documentation created (`docs/SECURITY.md`)
+  - [x] Explained authentication model
+  - [x] Documented known limitations
+  - [x] Provided production roadmap
+  - [x] Included Edge Function examples
 - [x] AuthContext with `onAuthStateChange` listener
 - [x] ProtectedRoute component
 - [x] LoginPage component with magic link flow
 - [x] AuthCallback handler
+- [x] ProfileSetup page with correct presenter insertion (id = auth.uid())
 - [x] App.tsx updated with routing and AuthProvider
+- [x] TypeScript types updated (participantEmail, followupEmail, participantToken)
 - [x] TypeScript errors fixed (type-only imports)
-- [x] Build passing
+- [x] Build passing ✅
 
 ---
 

@@ -1,5 +1,26 @@
 # Supabase Database Setup
 
+## ⚠️ Critical Implementation Notes
+
+**Before you begin, understand these requirements:**
+
+1. **Presenter ID = Auth User ID**
+   - When creating a presenter profile, you MUST set `id = auth.uid()`
+   - The ProfileSetup component handles this correctly
+   - Never let the database auto-generate presenter IDs
+
+2. **Security Model**
+   - RLS policies enforce presenter data isolation
+   - Participants have limited access (no auth required)
+   - See `docs/SECURITY.md` for full details
+
+3. **MVP Limitations**
+   - Session enumeration possible (acceptable for MVP)
+   - Participant updates disabled (prevents tampering)
+   - Production requires Edge Functions (see security docs)
+
+---
+
 ## Instructions
 
 ### 1. Create Supabase Project
