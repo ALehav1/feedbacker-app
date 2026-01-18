@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { User } from '@supabase/supabase-js';
+import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Presenter } from '@/types';
 
@@ -31,7 +31,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .from('presenters')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching presenter:', error);
@@ -53,6 +53,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       return null;
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return null;
+      }
       console.error('Unexpected error fetching presenter:', err);
       return null;
     }
@@ -66,42 +69,64 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   useEffect(() => {
-    const initAuth = async () => {
+    let isMounted = true;
+    let lastUserId: string | null = null;
+
+    const handleSession = async (session: Session | null) => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          setUser(session.user);
-          const presenterData = await fetchPresenter(session.user.id);
-          setPresenter(presenterData);
+        const nextUserId = session?.user?.id ?? null;
+
+        if (nextUserId === lastUserId) {
+          setUser(session?.user ?? null);
+          return;
         }
+
+        lastUserId = nextUserId;
+
+        if (!nextUserId) {
+          setUser(null);
+          setPresenter(null);
+          return;
+        }
+
+        setUser(session!.user);
+        const presenterData = await fetchPresenter(nextUserId);
+        if (!isMounted) return;
+        setPresenter(presenterData);
       } catch (err) {
-        console.error('Error initializing auth:', err);
-      } finally {
-        setIsLoading(false);
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        console.error('Error handling session:', err);
       }
     };
 
-    initAuth();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
-        
-        if (session?.user) {
-          setUser(session.user);
-          const presenterData = await fetchPresenter(session.user.id);
-          setPresenter(presenterData);
-        } else {
-          setUser(null);
-          setPresenter(null);
+        try {
+          console.log('Auth state changed:', event);
+          await handleSession(session);
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') return;
+          console.error('Auth state change handler error:', err);
+        } finally {
+          if (isMounted) setIsLoading(false);
         }
-        
-        setIsLoading(false);
       }
     );
 
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!isMounted) return;
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        console.error('Error initializing auth:', err);
+        if (isMounted) setIsLoading(false);
+      });
+
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);

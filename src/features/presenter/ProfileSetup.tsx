@@ -46,12 +46,15 @@ export function ProfileSetup() {
     try {
       const { error } = await supabase
         .from('presenters')
-        .insert({
-          id: user.id,
-          email: user.email!,
-          name: formData.name.trim(),
-          organization: formData.organization.trim(),
-        });
+        .upsert(
+          {
+            id: user.id,
+            email: user.email!,
+            name: formData.name.trim(),
+            organization: formData.organization.trim(),
+          },
+          { onConflict: 'id' }
+        );
 
       if (error) {
         console.error('Profile creation error:', error);

@@ -1,7 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
-import { config } from '@/config';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { config } from '@/config'
 
-export const supabase = createClient(
-  config.supabaseUrl,
-  config.supabaseAnonKey
-);
+declare global {
+  // eslint-disable-next-line no-var
+  var __feedbackerSupabase: SupabaseClient | undefined
+}
+
+export const supabase: SupabaseClient =
+  globalThis.__feedbackerSupabase ??
+  (globalThis.__feedbackerSupabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: 'feedbacker-auth',
+    },
+  }))
