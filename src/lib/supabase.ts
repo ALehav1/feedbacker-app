@@ -6,6 +6,22 @@ declare global {
   var __feedbackerSupabase: SupabaseClient | undefined
 }
 
+// Custom storage that doesn't use Navigator Lock
+const customStorage = {
+  getItem: (key: string) => {
+    if (typeof window === 'undefined') return null
+    return window.localStorage.getItem(key)
+  },
+  setItem: (key: string, value: string) => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(key, value)
+  },
+  removeItem: (key: string) => {
+    if (typeof window === 'undefined') return
+    window.localStorage.removeItem(key)
+  },
+}
+
 export const supabase: SupabaseClient =
   globalThis.__feedbackerSupabase ??
   (globalThis.__feedbackerSupabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
@@ -14,8 +30,6 @@ export const supabase: SupabaseClient =
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: 'feedbacker-auth',
-      // Disable Navigator Lock to prevent AbortError during Vite HMR
-      // @ts-expect-error - lock option exists but not in TS types
-      lock: false,
+      storage: customStorage,
     },
   }))
