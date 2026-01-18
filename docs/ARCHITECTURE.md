@@ -577,10 +577,13 @@ No Redux. Use React's built-in state + custom hooks.
 
 ## Database Schema
 
+**IMPORTANT:** See `supabase/schema.sql` for the authoritative schema.
+
 ```sql
 -- Presenters (users who create sessions)
+-- NOTE: id must be supplied by client as auth.uid() - no default
 CREATE TABLE presenters (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY,  -- Must match auth.users.id
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   organization TEXT NOT NULL,
@@ -593,13 +596,13 @@ CREATE TABLE presenters (
 -- Sessions
 CREATE TABLE sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  presenter_id UUID REFERENCES presenters(id) ON DELETE CASCADE,
+  presenter_id UUID NOT NULL REFERENCES presenters(id) ON DELETE CASCADE,
   state TEXT NOT NULL DEFAULT 'draft' CHECK (state IN ('draft', 'active', 'completed', 'archived')),
   length_minutes INTEGER NOT NULL,
-  title TEXT NOT NULL,
-  welcome_message TEXT NOT NULL,
-  summary_full TEXT NOT NULL,
-  summary_condensed TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT '',
+  welcome_message TEXT NOT NULL DEFAULT '',
+  summary_full TEXT NOT NULL DEFAULT '',
+  summary_condensed TEXT NOT NULL DEFAULT '',
   slug TEXT UNIQUE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -608,44 +611,42 @@ CREATE TABLE sessions (
 -- Themes (generated from summary)
 CREATE TABLE themes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   text TEXT NOT NULL,
   sort_order INTEGER NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(session_id, sort_order)
 );
 
 -- Responses (participant feedback)
 CREATE TABLE responses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
+  session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  participant_email TEXT NOT NULL,
   name TEXT,
-  contact_email TEXT,
+  followup_email TEXT,
   free_form_text TEXT,
+  participant_token TEXT NOT NULL DEFAULT gen_random_uuid()::text,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(session_id, email)
+  UNIQUE(session_id, participant_email)
 );
 
 -- Theme Selections (interest signals)
 CREATE TABLE theme_selections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  response_id UUID REFERENCES responses(id) ON DELETE CASCADE,
-  theme_id UUID REFERENCES themes(id) ON DELETE CASCADE,
+  response_id UUID NOT NULL REFERENCES responses(id) ON DELETE CASCADE,
+  theme_id UUID NOT NULL REFERENCES themes(id) ON DELETE CASCADE,
   selection TEXT NOT NULL CHECK (selection IN ('more', 'less')),
   UNIQUE(response_id, theme_id)
 );
-
--- Indexes
-CREATE INDEX idx_sessions_presenter ON sessions(presenter_id);
-CREATE INDEX idx_sessions_slug ON sessions(slug);
-CREATE INDEX idx_sessions_state ON sessions(state);
-CREATE INDEX idx_themes_session ON themes(session_id);
-CREATE INDEX idx_responses_session ON responses(session_id);
-CREATE INDEX idx_responses_email ON responses(session_id, email);
-CREATE INDEX idx_selections_response ON theme_selections(response_id);
-CREATE INDEX idx_selections_theme ON theme_selections(theme_id);
 ```
+
+### Security Notes
+
+- **Presenter ID = Auth ID:** The `presenters.id` must equal `auth.uid()`. Profile setup must insert with `id: user.id`.
+- **Participant Token:** Each response has a `participant_token` for update verification. Store it client-side (localStorage) after initial submit.
+- **MVP Limitations:** See `supabase/rls-policies.sql` for security notes about production improvements.
 
 ---
 

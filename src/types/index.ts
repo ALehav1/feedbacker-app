@@ -43,10 +43,11 @@ export interface Theme {
 export interface Response {
   id: string;
   sessionId: string;
-  email: string;
+  participantEmail: string;  // Used for uniqueness
   name?: string;
-  contactEmail?: string;
+  followupEmail?: string;    // Optional different email for follow-up
   freeFormText?: string;
+  participantToken?: string; // For update verification (not exposed to other participants)
   selections: ThemeSelectionRecord[];
   createdAt: Date;
   updatedAt: Date;
