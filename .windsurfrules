@@ -122,6 +122,8 @@ Use Tailwind classes directly:
 - Accent: `bg-violet-600`, `hover:bg-violet-700`
 - Avoid pure black (`#000`) - use `text-gray-900` instead
 
+**Consistency Rule:** Don't mix shadcn CSS variables (`bg-background`, `text-foreground`) with Tailwind color utilities (`text-gray-600`) in the same component. For v1, prefer Tailwind utilities throughout. The shadcn variables remain available for dark mode support later.
+
 ---
 
 ## TypeScript Rules (No Exceptions)

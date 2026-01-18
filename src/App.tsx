@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster'
 function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-white text-gray-900">
         <Routes>
           <Route path="/" element={<HomePage />} />
           {/* Add routes as you build features */}
