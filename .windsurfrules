@@ -260,6 +260,29 @@ AI generates in this exact order during session creation:
 - Participant email NOT verified (low stakes)
 - Returning participant: same email → same response (edit mode)
 
+### 6. Presenter ID = Auth ID (LOCKED)
+**CRITICAL:** The `presenters.id` column has NO DEFAULT. It MUST be set to `auth.uid()` when inserting.
+
+**Profile Setup Insert Pattern:**
+```typescript
+await supabase.from('presenters').insert({
+  id: user.id,  // MUST match auth.uid()
+  email: user.email,
+  name: formData.name,
+  organization: formData.organization,
+});
+```
+
+**Why this matters:**
+- RLS policies use `auth.uid() = id` for presenter access
+- RLS policies use `auth.uid() = presenter_id` for session access
+- If id doesn't match auth.uid(), ALL presenter queries will fail
+
+**Invariants:**
+- NEVER use `gen_random_uuid()` for presenter id
+- ALWAYS pass `id: user.id` in profile setup insert
+- Fetch presenter by `id = user.id`, never by email alone
+
 ---
 
 ## Feature-Specific Rules
