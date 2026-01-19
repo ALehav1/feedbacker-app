@@ -207,6 +207,59 @@ Manual smoke test must be run by user. Cascade cannot interact with browser UI.
 
 ---
 
+### Bug 4: Auth Callback Race Condition (Magic Link → Profile Instead of Dashboard)
+
+**Symptom:** Returning presenter clicks magic link but lands on profile setup page instead of dashboard
+
+**Reproduction:**
+1. Have an existing presenter profile in database
+2. Click magic link from email
+3. Land on `/dashboard/profile` instead of `/dashboard`
+
+**Root Cause:** Race condition between `getSessionWithRetry()` and Supabase magic link token processing:
+1. `getSessionWithRetry()` runs, gets no session (old session expired or none)
+2. `getSessionWithRetry()` sets `isLoading = false`
+3. `AuthCallback` sees `isLoading=false, presenter=null` → navigates to `/dashboard/profile`
+4. THEN Supabase processes the magic link token from URL hash
+5. `onAuthStateChange` fires with valid session (too late - already navigated)
+
+**Fix:** In AuthCallback, detect auth tokens in URL and wait for user to be set before navigating.
+
+**Files Changed:**
+- `src/features/auth/AuthCallback.tsx` - baseline exception
+
+**Verification:**
+1. As existing presenter, click magic link
+2. Should land on `/dashboard` (not `/dashboard/profile`)
+3. Dashboard shows your sessions
+
+---
+
+### Bug 5: LoginPage Doesn't Redirect Authenticated Users
+
+**Symptom:** Users with valid sessions have to re-enter email and request new magic link
+
+**Reproduction:**
+1. Login successfully
+2. Close tab (but don't sign out)
+3. Open new tab to `/`
+4. Login form shows instead of auto-redirecting to dashboard
+
+**Root Cause:** LoginPage didn't check auth state or redirect authenticated users.
+
+**Fix:** Added useEffect to redirect authenticated users to dashboard (or profile if no presenter record).
+
+**Files Changed:**
+- `src/features/auth/LoginPage.tsx`
+
+**Verification:**
+1. Login and go to dashboard
+2. Open new tab to `/`
+3. Should auto-redirect to `/dashboard`
+4. No need to enter email again
+
+---
+
 ## Supabase Dashboard Verification Checklist
 
 After running smoke tests, verify in Supabase dashboard:

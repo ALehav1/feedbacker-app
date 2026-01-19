@@ -10,9 +10,16 @@ import { useAuth } from '@/features/auth/AuthContext'
 
 export function AuthCallback() {
   const navigate = useNavigate()
-  const { presenter, isLoading } = useAuth()
+  const { user, presenter, isLoading } = useAuth()
   const didNavigate = useRef(false)
   const timeoutRef = useRef<number | null>(null)
+
+  // Check if URL has auth tokens (magic link)
+  const hasAuthToken = useMemo(() => {
+    const hash = window.location.hash
+    const search = window.location.search
+    return hash.includes('access_token') || search.includes('code=')
+  }, [])
 
   // Parse error from URL params once (memoized to prevent re-computation)
   const error = useMemo(() => {
@@ -36,13 +43,16 @@ export function AuthCallback() {
     if (isLoading) return
     if (didNavigate.current) return
 
+    // If we have auth tokens in URL but no user yet, wait for Supabase to process them
+    if (hasAuthToken && !user) return
+
     didNavigate.current = true
     navigate(presenter ? '/dashboard' : '/dashboard/profile', { replace: true })
 
     return () => {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
     }
-  }, [navigate, presenter, isLoading, error])
+  }, [navigate, user, presenter, isLoading, error, hasAuthToken])
 
   if (error) {
     return (

@@ -132,6 +132,26 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Bug:** Supabase fires TOKEN_REFRESHED events periodically, causing repeated auth state logs
 **Commit:** `0ce21d0`
 
+### Auth Callback Race Condition Fix (January 19, 2026)
+
+**File:** `src/features/auth/AuthCallback.tsx`
+**Change:** Wait for user to be set when URL contains auth tokens before navigating
+**Justification:** Bug fix - returning presenters redirected to profile page instead of dashboard
+**Scope:** Added `hasAuthToken` check and `user` dependency to wait for magic link processing
+**Bug:** `getSessionWithRetry()` sets `isLoading=false` before Supabase processes magic link token in URL. AuthCallback then navigates with `presenter=null` because the session hasn't been established yet.
+**Reproduction:** Click magic link → lands on profile page instead of dashboard
+**Commit:** `4ca1039`
+
+### LoginPage Auth Redirect (January 19, 2026)
+
+**File:** `src/features/auth/LoginPage.tsx`
+**Change:** Redirect authenticated users to dashboard instead of showing login form
+**Justification:** Bug fix - users with valid sessions had to re-enter email and request new magic link
+**Scope:** Added useEffect to redirect authenticated users, added loading state
+**Bug:** LoginPage showed login form even when user had valid session in localStorage
+**Reproduction:** Have valid session → visit `/` → had to re-enter email instead of auto-redirect
+**Commit:** `4ca1039`
+
 ---
 
 ## Baseline Lock History
@@ -179,7 +199,8 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 | Date | File | Reason | Commit |
 |------|------|--------|--------|
-| (none yet) | — | — | — |
+| Jan 19, 2026 | AuthCallback.tsx | Race condition fix - wait for magic link processing | `4ca1039` |
+| Jan 19, 2026 | LoginPage.tsx | Redirect authenticated users to dashboard | `4ca1039` |
 
 ---
 
