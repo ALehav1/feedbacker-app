@@ -201,6 +201,8 @@ export function SessionCreateWizard() {
     try {
       const slug = generateSlug()
 
+      // Note: welcome_message, summary_full, summary_condensed are NOT NULL DEFAULT ''
+      // in schema.sql, so we must pass empty string (not null) for empty values
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -208,9 +210,9 @@ export function SessionCreateWizard() {
           state: 'draft',
           length_minutes: parseInt(wizardData.lengthMinutes, 10),
           title: wizardData.title.trim(),
-          welcome_message: wizardData.welcomeMessage.trim() || null,
-          summary_full: wizardData.summaryFull.trim() || null,
-          summary_condensed: wizardData.summaryCondensed.trim() || null,
+          welcome_message: wizardData.welcomeMessage.trim(),
+          summary_full: wizardData.summaryFull.trim(),
+          summary_condensed: wizardData.summaryCondensed.trim(),
           slug,
         })
         .select()

@@ -117,11 +117,20 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ### Routing Wiring (January 18, 2026)
 
-**File:** `src/App.tsx`  
-**Change:** Updated `/dashboard/sessions/new` route to use `SessionCreateWizard` instead of `SessionCreate`  
-**Justification:** Feature wiring for session creation wizard. Routing changes must occur in App.tsx by architectural necessity.  
-**Scope:** Import statement changed (line 15), component reference changed (line 48). No other logic modified.  
+**File:** `src/App.tsx`
+**Change:** Updated `/dashboard/sessions/new` route to use `SessionCreateWizard` instead of `SessionCreate`
+**Justification:** Feature wiring for session creation wizard. Routing changes must occur in App.tsx by architectural necessity.
+**Scope:** Import statement changed (line 15), component reference changed (line 48). No other logic modified.
 **Commit:** `2fb95b2521d8de1e32883a2397bd843598a31c61`
+
+### Auth Log Spam Fix (January 19, 2026)
+
+**File:** `src/features/auth/AuthContext.tsx`
+**Change:** Filter onAuthStateChange log messages to only show significant events (SIGNED_IN, SIGNED_OUT)
+**Justification:** Bug fix - excessive console logging from TOKEN_REFRESHED events causing log spam
+**Scope:** Added conditional check before console.log (line 111-114). No logic change to auth flow.
+**Bug:** Supabase fires TOKEN_REFRESHED events periodically, causing repeated auth state logs
+**Commit:** (pending)
 
 ---
 

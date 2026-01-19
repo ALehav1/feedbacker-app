@@ -3,16 +3,16 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth/AuthContext';
 import type { Session, SessionState } from '@/types';
 
-// Supabase row type
+// Supabase row type (matches schema.sql: NOT NULL DEFAULT '' for text fields)
 interface SessionRow {
   id: string
   presenter_id: string
   state: string
   length_minutes: number
   title: string
-  welcome_message: string | null
-  summary_full: string | null
-  summary_condensed: string | null
+  welcome_message: string
+  summary_full: string
+  summary_condensed: string
   slug: string
   created_at: string
   updated_at: string

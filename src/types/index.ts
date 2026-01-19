@@ -17,15 +17,16 @@ export interface Presenter {
 }
 
 // Session
+// Note: welcomeMessage, summaryFull, summaryCondensed are NOT NULL DEFAULT '' in schema
 export interface Session {
   id: string;
   presenterId: string;
   state: SessionState;
   lengthMinutes: number;
   title: string;
-  welcomeMessage: string | null;
-  summaryFull: string | null;
-  summaryCondensed: string | null;
+  welcomeMessage: string;
+  summaryFull: string;
+  summaryCondensed: string;
   slug: string;
   createdAt: Date;
   updatedAt: Date;

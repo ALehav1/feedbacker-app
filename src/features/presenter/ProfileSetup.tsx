@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -10,13 +10,24 @@ import { useToast } from '@/hooks/use-toast';
 
 export function ProfileSetup() {
   const navigate = useNavigate();
-  const { user, refetchPresenter } = useAuth();
+  const { user, presenter, refetchPresenter } = useAuth();
   const { toast } = useToast();
-  
+
+  // Pre-populate form if editing existing profile
   const [formData, setFormData] = useState({
     name: '',
     organization: '',
   });
+
+  // Initialize form with presenter data if editing
+  useEffect(() => {
+    if (presenter) {
+      setFormData({
+        name: presenter.name,
+        organization: presenter.organization,
+      });
+    }
+  }, [presenter]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,8 +80,8 @@ export function ProfileSetup() {
       await refetchPresenter();
 
       toast({
-        title: 'Profile created',
-        description: 'Welcome to Feedbacker App!',
+        title: presenter ? 'Profile updated' : 'Profile created',
+        description: presenter ? 'Your changes have been saved.' : 'Welcome to Feedbacker App!',
       });
 
       navigate('/dashboard');
@@ -90,9 +101,9 @@ export function ProfileSetup() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Complete Your Profile</CardTitle>
+          <CardTitle>{presenter ? 'Edit Profile' : 'Complete Your Profile'}</CardTitle>
           <CardDescription>
-            Tell us a bit about yourself to get started
+            {presenter ? 'Update your profile information' : 'Tell us a bit about yourself to get started'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -148,7 +159,9 @@ export function ProfileSetup() {
               className="w-full min-h-[56px]"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Creating profile...' : 'Complete setup'}
+              {isSubmitting
+                ? (presenter ? 'Saving...' : 'Creating profile...')
+                : (presenter ? 'Save Changes' : 'Complete setup')}
             </Button>
           </form>
         </CardContent>

@@ -107,7 +107,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[Auth] onAuthStateChange:', event, session ? 'has session' : 'no session');
+        // Only log significant auth events to reduce console noise
+        // (TOKEN_REFRESHED fires frequently and causes log spam)
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          console.log('[Auth] onAuthStateChange:', event, session ? 'has session' : 'no session');
+        }
         try {
           await handleSession(session);
         } catch (err) {

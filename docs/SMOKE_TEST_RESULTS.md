@@ -131,3 +131,89 @@ Manual smoke test must be run by user. Cascade cannot interact with browser UI.
 4. Mark ✅ PASS or ❌ FAIL for each test
 5. Record any notes about failures
 6. Update Summary section with final counts
+
+---
+
+## Bug Fixes — January 19, 2026
+
+### Bug 1: SIGNED_IN Log Spam
+
+**Symptom:** Console shows repeated "[Auth] onAuthStateChange: SIGNED_IN has session" logs
+
+**Reproduction:**
+1. Login with magic link
+2. Wait on any authenticated page
+3. Observe console - logs appear on every TOKEN_REFRESHED event
+
+**Root Cause:** Supabase fires multiple auth events (SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED, etc.). The console.log in AuthContext.tsx logged all events indiscriminately.
+
+**Fix:** Filter log messages to only show significant events (SIGNED_IN, SIGNED_OUT). TOKEN_REFRESHED and other internal events are no longer logged.
+
+**Files Changed:**
+- `src/features/auth/AuthContext.tsx` (lines 111-114) - baseline exception
+
+**Verification:**
+1. Login with magic link
+2. Wait 30+ seconds on authenticated page
+3. Observe console - only see SIGNED_IN once, no TOKEN_REFRESHED spam
+
+---
+
+### Bug 2: Session Creation 400 Error
+
+**Symptom:** Creating a session via wizard returns HTTP 400 from Supabase
+
+**Reproduction:**
+1. Login and navigate to /dashboard/sessions/new
+2. Fill out Step 1 (length + title)
+3. Leave Step 2 fields empty (welcome message, summaries)
+4. Complete wizard and click Create Session
+5. Error: "Creation failed"
+
+**Root Cause:** Schema defines `welcome_message`, `summary_full`, `summary_condensed` as `NOT NULL DEFAULT ''`. The wizard code passed `null` for empty fields (`|| null`), which violates the NOT NULL constraint.
+
+**Fix:** Pass empty string instead of null for NOT NULL fields.
+
+**Files Changed:**
+- `src/features/sessions/SessionCreateWizard.tsx` (lines 211-215)
+- `src/types/index.ts` (Session interface - removed nullable types)
+- `src/hooks/useSessions.ts` (SessionRow type alignment)
+
+**Verification:**
+1. Create session with only required fields (length + title)
+2. Session creates successfully
+3. Check Supabase: empty string fields (not NULL)
+
+---
+
+### Bug 3: Returning Presenter Flow
+
+**Symptom:** Edit Profile page shows blank form for existing users instead of pre-populating
+
+**Root Cause:** ProfileSetup component didn't pre-populate form fields when editing existing presenter profile.
+
+**Fix:** Added useEffect to initialize form with existing presenter data when available. Also updated UI text to show "Edit Profile" vs "Complete Your Profile" based on context.
+
+**Files Changed:**
+- `src/features/presenter/ProfileSetup.tsx`
+
+**Verification:**
+1. Create presenter profile
+2. Go to Dashboard → Click "Edit Profile"
+3. Form shows existing name and organization
+4. Title shows "Edit Profile"
+5. Button shows "Save Changes"
+
+---
+
+## Supabase Dashboard Verification Checklist
+
+After running smoke tests, verify in Supabase dashboard:
+
+| Check | Expected | Actual |
+|-------|----------|--------|
+| Auth Users | Only one user for test email | ⬜ |
+| presenters table | One row with id = auth.uid() | ⬜ |
+| sessions table | Created sessions visible | ⬜ |
+| themes table | Themes with correct sort_order (1-indexed) | ⬜ |
+| No partial data | No orphaned rows from failed inserts | ⬜ |
