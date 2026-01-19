@@ -2,24 +2,30 @@
 
 ## What Was Created
 
-This package contains the documentation foundation for Feedbacker App, designed to keep Cascade on track.
+This package contains the documentation foundation for Feedbacker App.
 
 ### File Structure
 
 ```
 feedbacker-app/
-├── .windsurfrules          # Cascade agent rules (MOST IMPORTANT)
 ├── .gitignore              # Security - prevents committing secrets
 ├── .env.example            # Environment variable template
 ├── README.md               # Project overview for developers
-├── agents.md               # Project-specific agent instructions
 ├── SCRAP.md                # Code graveyard for safe deletion
-├── PLAN.md                 # Day-by-day implementation plan
 │
-└── docs/
-    ├── contract.md         # Universal rules (highest priority)
-    ├── ARCHITECTURE.md     # Technical architecture
-    └── SPEC.md             # Product requirements
+├── docs/
+│   ├── ARCHITECTURE.md     # Technical architecture
+│   ├── BASELINE_LOCK.md    # Frozen baseline documentation
+│   ├── SECURITY.md         # Security documentation
+│   ├── SMOKE_TEST_RESULTS.md # Test results
+│   └── SPEC.md             # Product requirements
+│
+├── supabase/
+│   ├── README.md           # Supabase setup instructions
+│   ├── schema.sql          # Database schema
+│   └── rls-policies.sql    # Row Level Security policies
+│
+└── archive/                # Archived/outdated files
 ```
 
 ---
@@ -133,71 +139,7 @@ mkdir -p src/styles
 
 ---
 
-## When Starting a Cascade Chat
-
-### First Message Template
-
-```
-PROJECT: Feedbacker App
-GOAL: [Specific feature/task]
-
-Before proceeding:
-1. Read .windsurfrules
-2. Read docs/contract.md
-3. Read agents.md
-
-Acknowledge you've read these, then provide a plan for:
-[What you want to build]
-
-No code yet - just the plan.
-```
-
-### For Feature Implementation
-
-```
-PROJECT: Feedbacker App
-FEATURE: [Feature name]
-
-Context from docs:
-- See docs/ARCHITECTURE.md for data flow
-- See docs/SPEC.md for requirements
-
-Task:
-[Specific implementation task]
-
-Requirements from .windsurfrules:
-- Mobile-first (test 375px first)
-- TypeScript (no 'any' types)
-- Loading states for all async
-- Error states for all async
-```
-
----
-
-## Key Documents Explained
-
-### .windsurfrules
-**Purpose:** Controls Cascade behavior. This is what keeps the agent on track.
-
-**Key sections:**
-- Gated Execution Model (phases with gates)
-- Definition of Done (checklist)
-- Architectural Invariants (things that can't change)
-- Hooks Contract (what each hook must do)
-
-### agents.md
-**Purpose:** Project-specific instructions, user flows, and common mistakes.
-
-**When to use:** Reference when Cascade needs to understand the "why" behind decisions.
-
-### docs/contract.md
-**Purpose:** Universal rules that apply to all projects. Highest priority.
-
-**Key content:**
-- Decision-making protocol
-- Code quality standards
-- Testing requirements
-- Documentation requirements
+## Key Documents
 
 ### docs/ARCHITECTURE.md
 **Purpose:** Technical reference for data flow, components, and APIs.
@@ -211,11 +153,11 @@ Requirements from .windsurfrules:
 ### docs/SPEC.md
 **Purpose:** Product requirements - what the app should do.
 
-**Key content:**
-- Feature specifications
-- User flows
-- Business rules
-- Rationale for decisions
+### docs/BASELINE_LOCK.md
+**Purpose:** Documents frozen baseline files and change exceptions.
+
+### docs/SECURITY.md
+**Purpose:** Security model, known limitations, and production roadmap.
 
 ---
 
@@ -238,68 +180,6 @@ Before deleting significant code:
 1. Copy to SCRAP.md
 2. Note why it didn't work
 3. Then delete from source
-
----
-
-## Symlink Strategy (For Multi-Project Consistency)
-
-If you're building multiple projects, keep one master contract.md to ensure consistent rules everywhere:
-
-### First Time Setup (Once)
-
-```bash
-# Create master contract location
-mkdir -p ~/repos/docs
-
-# Copy the contract to master location
-cp docs/contract.md ~/repos/docs/contract.md
-```
-
-### In Each Project
-
-```bash
-# Remove the local copy
-rm docs/contract.md
-
-# Create symlink to master
-ln -s ~/repos/docs/contract.md docs/contract.md
-
-# Verify it works
-cat docs/contract.md | head -10  # Should show master content
-ls -la docs/contract.md          # Should show -> ~/repos/docs/contract.md
-```
-
-### Benefits
-
-- **Single source of truth:** Update contract.md once, all projects see changes
-- **Consistency:** Same rules across UpdateGenie, PresentationStudio, Language App, etc.
-- **Learning:** New patterns learned in one project benefit all projects
-
-### What Stays Local
-
-- `agents.md` — Different for each project (project-specific context)
-- `.windsurfrules` — Different for each project (project-specific rules)
-- `docs/ARCHITECTURE.md` — Different for each project
-- `docs/SPEC.md` — Different for each project
-
----
-
-## Common Cascade Problems & Solutions
-
-### Problem: Agent ignores mobile-first
-**Solution:** Add to every prompt: "Test at 375px FIRST before any other breakpoint."
-
-### Problem: Agent adds features not requested
-**Solution:** Reference contract.md: "No features unless explicitly requested."
-
-### Problem: Agent skips loading states
-**Solution:** Add to prompt: "Must include loading AND error states for all async operations."
-
-### Problem: Agent uses `any` types
-**Solution:** Add to prompt: "No `any` types. Define interfaces for all data shapes."
-
-### Problem: Agent claims "done" prematurely
-**Solution:** Say: "Please go through the Definition of Done checklist from .windsurfrules and confirm each item."
 
 ---
 
@@ -332,43 +212,14 @@ rm -rf node_modules/.vite
 npm run dev
 ```
 
-**See:** `PROGRESS.md` Troubleshooting section for full technical details.
+**See:** `docs/SMOKE_TEST_RESULTS.md` for technical troubleshooting details.
 
 ---
 
-## When Cascade Goes Off Track
+## Development Workflow
 
-### Reset Prompt
-
-```
-STOP.
-
-Please re-read:
-1. .windsurfrules (especially Definition of Done)
-2. docs/contract.md
-3. agents.md
-
-Then tell me:
-1. What phase are we in?
-2. What gate have we passed?
-3. What's blocking the next gate?
-
-Do not proceed until we align on these.
-```
-
----
-
-## Next Steps
-
-1. **Create the actual project** with Vite/React/TypeScript
-2. **Set up Supabase** with the schema from ARCHITECTURE.md
-3. **Start with auth flow** (magic link → dashboard)
-4. **Build presenter features** (dashboard → create → view)
-5. **Build participant features** (access → feedback → submit)
-6. **Add AI generation** (themes → outline)
-
-Each feature should be a separate Cascade chat to avoid context confusion.
-
----
-
-**Remember:** The goal of this documentation is to help Cascade stay focused. When in doubt, reference the docs. When stuck, ask for clarification.
+1. Run `npm run dev` to start the development server
+2. Test at mobile viewport (375px) first
+3. Run `npm run build` and `npm run lint` before committing
+4. Update documentation when making significant changes
+5. Follow the BASELINE_LOCK protocol for frozen files

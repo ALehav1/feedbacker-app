@@ -26,6 +26,51 @@
 
 ---
 
+## Code Verification — January 19, 2026
+
+**Verification Date:** January 19, 2026
+**Verifier:** Claude Code
+**Commits Verified:** `c5384bb`, `e6b0a6c`
+
+### A) Returning-User Experience
+
+| Check | Status | Evidence |
+|-------|--------|----------|
+| Landing behavior: authenticated redirect | ✅ VERIFIED | `LoginPage.tsx:18-23` - useEffect redirects to dashboard when `isAuthenticated && !isLoading` |
+| Magic link: wait for token processing | ✅ VERIFIED | `AuthCallback.tsx:47` - waits for user when `hasAuthToken && !user` |
+| Presenter profile uniqueness | ✅ VERIFIED | `ProfileSetup.tsx:65-75` - uses `upsert` with `onConflict: 'id'` |
+| Presenter ID = auth.uid() invariant | ✅ VERIFIED | `ProfileSetup.tsx:69` - explicitly sets `id: user.id` |
+| Session persistence config | ✅ VERIFIED | `supabase.ts:44` - `persistSession: true`, `storageKey: 'feedbacker-auth'` |
+
+**Expected Behavior by User Type:**
+
+| User Type | Flow |
+|-----------|------|
+| Existing user (profile exists) | `/` → (auth check) → `/dashboard` |
+| New user (no profile) | `/` → magic link → `/auth/callback` → `/dashboard/profile` → fill form → `/dashboard` |
+| Edge case (session exists, no presenter) | `/` → (auth check) → `/dashboard/profile` |
+
+### B) Session Creation Wizard
+
+| Check | Status | Evidence |
+|-------|--------|----------|
+| 400 fix: empty strings not null | ✅ VERIFIED | `SessionCreateWizard.tsx:213-215` - `.trim()` returns `''` for empty input |
+| Theme sort_order 1-indexed | ✅ VERIFIED | `SessionCreateWizard.tsx:119` - `sortOrder: wizardData.themes.length + 1` |
+| DB transaction order | ✅ VERIFIED | `SessionCreateWizard.tsx:206-256` - session INSERT, then themes INSERT |
+| Slug uniqueness | ✅ VERIFIED | `schema.sql:34` - `slug TEXT UNIQUE NOT NULL` + random generation |
+
+### C) RLS Alignment
+
+| Check | Status | Evidence |
+|-------|--------|----------|
+| RLS allows INSERT for active/completed | ✅ VERIFIED | `rls-policies.sql:136-144` - `state IN ('active', 'completed')` |
+| App enforces active-only | ✅ VERIFIED | `FeedbackForm.tsx:198` - `session.state !== 'active'` check |
+| Defense-in-depth documented | ✅ VERIFIED | `SECURITY.md:137-149`, `BASELINE_LOCK.md:58-61` |
+
+**Conclusion:** All code paths verified. No changes required.
+
+---
+
 ## Manual UI Smoke Tests (Presenter/Participant)
 
 **Status:** ⬜ PENDING USER ACTION

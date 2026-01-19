@@ -646,6 +646,44 @@ CREATE TABLE theme_selections (
 - **Participant Token:** Each response has a `participant_token` for update verification. Store it client-side (localStorage) after initial submit.
 - **MVP Limitations:** See `supabase/rls-policies.sql` for security notes about production improvements.
 
+### Wizard Write Contract
+
+The session creation wizard (`SessionCreateWizard.tsx`) follows these write rules:
+
+**Required Fields:**
+- `length_minutes` (integer, must be > 0)
+- `title` (string, must be non-empty after trim)
+- `slug` (auto-generated 16-char hex string)
+
+**Optional Fields (coerced to empty string):**
+- `welcome_message` → `.trim()` (empty string if blank)
+- `summary_full` → `.trim()` (empty string if blank)
+- `summary_condensed` → `.trim()` (empty string if blank)
+
+**Theme Ordering Rules:**
+- `sort_order` is 1-indexed (starts at 1, not 0)
+- Reordering updates all affected themes' `sort_order`
+- Deleting a theme renumbers remaining themes to maintain contiguous sequence
+- Unique constraint: `(session_id, sort_order)` prevents collisions
+
+**Transaction Order:**
+1. Insert session (returns `session.id`)
+2. Insert themes with `session_id` reference and 1-indexed `sort_order`
+
+**Slug Generation:**
+- Format: 16-character random hex (`Math.random().toString(36).slice(2,10)` × 2)
+- Unique constraint in schema; client handles collision with retry
+
+### RLS Defense-in-Depth Note
+
+**Observed:** RLS policies allow participant INSERTs for `state IN ('active', 'completed')`, but the application (`FeedbackForm.tsx`) enforces `state === 'active'` only.
+
+**Why This Is Intentional:**
+- Application layer is the primary enforcement mechanism
+- RLS provides secondary guardrail (never less restrictive than intended)
+- Preserves operational flexibility during MVP iteration
+- Documented in `docs/SECURITY.md` and `supabase/rls-policies.sql`
+
 ---
 
 ## API Design
