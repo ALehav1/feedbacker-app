@@ -274,7 +274,7 @@ export function SessionCreateWizard() {
   }
 
   const renderStepIndicator = () => {
-    const steps = ['Basics', 'Messages', 'Themes', 'Review']
+    const steps = ['Basics', 'Outline', 'Topics', 'Review']
     return (
       <div className="mb-8">
         <div className="flex items-center justify-center gap-2">
@@ -352,57 +352,68 @@ export function SessionCreateWizard() {
   const renderStep2 = () => (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="welcomeMessage">Welcome Message</Label>
-        <Textarea
-          id="welcomeMessage"
-          placeholder="A message to greet your participants..."
-          value={wizardData.welcomeMessage}
-          onChange={(e) => setWizardData({ ...wizardData, welcomeMessage: e.target.value })}
-          rows={3}
-          className="resize-none"
-        />
-        <p className="text-xs text-gray-500">Optional: Greet participants when they open the feedback form</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="summaryFull">Full Summary</Label>
+        <Label htmlFor="summaryFull">
+          Outline or notes <span className="text-red-500">*</span>
+        </Label>
         <Textarea
           id="summaryFull"
-          placeholder="Detailed description of what you'll be presenting..."
+          placeholder="Paste your outline, talk track, or bullet notes here..."
           value={wizardData.summaryFull}
           onChange={(e) => setWizardData({ ...wizardData, summaryFull: e.target.value })}
-          rows={6}
+          rows={8}
           className="resize-none"
         />
-        <p className="text-xs text-gray-500">Optional: Provide context for participants</p>
+        <p className="text-xs text-gray-500">
+          Paste your outline, talk track, or bullet notes. Participants will tell you what to cover more and what to cover less.
+        </p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="summaryCondensed">Condensed Summary</Label>
-        <Textarea
-          id="summaryCondensed"
-          placeholder="Brief overview (1-2 sentences)..."
-          value={wizardData.summaryCondensed}
-          onChange={(e) => setWizardData({ ...wizardData, summaryCondensed: e.target.value })}
-          rows={3}
-          className="resize-none"
-        />
-        <p className="text-xs text-gray-500">Optional: Short version shown by default</p>
-      </div>
+      <details className="rounded-lg border border-gray-200 bg-gray-50">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100">
+          Optional: welcome message & extra context
+        </summary>
+        <div className="space-y-4 px-4 pb-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="welcomeMessage">Welcome Message</Label>
+            <Textarea
+              id="welcomeMessage"
+              placeholder="A message to greet your participants..."
+              value={wizardData.welcomeMessage}
+              onChange={(e) => setWizardData({ ...wizardData, welcomeMessage: e.target.value })}
+              rows={3}
+              className="resize-none"
+            />
+            <p className="text-xs text-gray-500">Greet participants when they open the feedback form</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="summaryCondensed">Condensed Summary</Label>
+            <Textarea
+              id="summaryCondensed"
+              placeholder="Brief overview (1-2 sentences)..."
+              value={wizardData.summaryCondensed}
+              onChange={(e) => setWizardData({ ...wizardData, summaryCondensed: e.target.value })}
+              rows={3}
+              className="resize-none"
+            />
+            <p className="text-xs text-gray-500">Short version shown by default to participants</p>
+          </div>
+        </div>
+      </details>
     </div>
   )
 
   const renderStep3 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-gray-900 mb-2">Add Themes</h3>
+        <h3 className="text-sm font-medium text-gray-900 mb-2">Add Topics</h3>
         <p className="text-sm text-gray-600 mb-4">
-          What topics or areas do you want feedback on? Add themes for participants to rate.
+          Add the topics you're planning to cover. Participants will tell you what to spend more or less time on.
         </p>
 
         <div className="flex gap-2">
           <Input
-            placeholder="Enter a theme (e.g., 'Product Vision')"
+            placeholder="Enter a topic (e.g., 'Product Vision')"
             value={themeInputText}
             onChange={(e) => setThemeInputText(e.target.value)}
             onKeyDown={(e) => {
@@ -447,7 +458,7 @@ export function SessionCreateWizard() {
 
       {wizardData.themes.length > 0 ? (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Themes ({wizardData.themes.length})</h4>
+          <h4 className="text-sm font-medium text-gray-700">Topics ({wizardData.themes.length})</h4>
           <div className="space-y-2">
             {wizardData.themes.map((theme, index) => (
               <div
@@ -502,7 +513,7 @@ export function SessionCreateWizard() {
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <p className="text-sm text-gray-600">No themes added yet. Add at least one theme above.</p>
+          <p className="text-sm text-gray-600">No topics added yet. Add at least one topic above.</p>
         </div>
       )}
     </div>
@@ -533,18 +544,18 @@ export function SessionCreateWizard() {
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Messages & Summaries</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Outline & Context</h4>
           <dl className="space-y-2">
+            <div>
+              <dt className="text-xs text-gray-500">Outline or notes</dt>
+              <dd className="text-sm text-gray-900">
+                {wizardData.summaryFull || <span className="text-gray-400">Not provided</span>}
+              </dd>
+            </div>
             <div>
               <dt className="text-xs text-gray-500">Welcome Message</dt>
               <dd className="text-sm text-gray-900">
                 {wizardData.welcomeMessage || <span className="text-gray-400">Not provided</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-gray-500">Full Summary</dt>
-              <dd className="text-sm text-gray-900">
-                {wizardData.summaryFull || <span className="text-gray-400">Not provided</span>}
               </dd>
             </div>
             <div>
@@ -558,7 +569,7 @@ export function SessionCreateWizard() {
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Themes ({wizardData.themes.length})
+            Topics ({wizardData.themes.length})
           </h4>
           {wizardData.themes.length > 0 ? (
             <ol className="space-y-1">
@@ -569,7 +580,7 @@ export function SessionCreateWizard() {
               ))}
             </ol>
           ) : (
-            <p className="text-sm text-gray-400">No themes added</p>
+            <p className="text-sm text-gray-400">No topics added</p>
           )}
         </div>
       </div>
