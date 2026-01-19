@@ -90,10 +90,17 @@ This document defines the **frozen baseline** for the Feedbacker app. These modu
 
 ## Change Policy
 
-**Rule:** Any change to frozen files must be justified with:
-1. **Specific bug reference** (error message, reproduction steps)
+**Frozen Code Set:** All files marked with `BASELINE_LOCK` header comment
+
+**Allowed Changes:**
+1. **Documentation (anytime):** Changes to `docs/` do not require exception logging
+2. **Route wiring (src/App.tsx only):** Route additions/changes must be logged under "Exceptions" section
+3. **Frozen file logic changes:** Require dedicated "Baseline Exception" entry + commit prefix `chore(baseline-exception): ...`
+
+**Exception Requirements:**
+1. **Specific bug reference** (error message, reproduction steps) OR feature justification
 2. **Minimal diff** (smallest possible change)
-3. **Documentation update** in this file under "Exceptions" or "Change Log"
+3. **Documentation update** in this file under "Exceptions" section
 
 **No refactors allowed:**
 - No file moves
@@ -115,9 +122,9 @@ This document defines the **frozen baseline** for the Feedbacker app. These modu
 
 ---
 
-## Baseline Verification
+## Baseline Lock History
 
-### Initial Lock (January 18, 2026)
+### Pre-Freeze State (January 18, 2026)
 
 **Commit Hash:** `0613cd18f5ddc1aadaf4aebf7a707819bf2f0ad6`
 
@@ -136,14 +143,23 @@ This document defines the **frozen baseline** for the Feedbacker app. These modu
 
 **Test Date:** January 18, 2026 10:12 PM UTC-5
 
+---
+
 ### Baseline Lock Implementation (January 18, 2026)
 
-**Commit 1 (Baseline Lock):** `cd173b7`  
-**Commit 2 (Wizard Feature):** `2fb95b2`
+**Commit 1:** `cd173b7` — `chore: baseline lock + regression checklist`
+- Documentation: BASELINE_LOCK.md, REGRESSION_CHECKLIST.md, SMOKE_TEST_RESULTS.md
+- BASELINE_LOCK headers: 8 frozen files (no logic changes)
 
-**Files Changed:**
-- Commit 1: Documentation + BASELINE_LOCK headers only (no logic changes)
-- Commit 2: SessionCreateWizard.tsx (new), App.tsx (routing), TESTING.md (test cases)
+**Commit 2:** `2fb95b2` — `feat: session creation wizard`
+- New file: SessionCreateWizard.tsx (657 lines)
+- Routing: App.tsx (import + route updated)
+- Documentation: TESTING.md (wizard test cases)
+
+**Commit 3:** `727d51f` — `docs: add commit hashes to BASELINE_LOCK.md`
+- Documentation: BASELINE_LOCK.md (commit hashes added)
+
+**Frozen Code Set Established:** All files with BASELINE_LOCK header comment as of commit `727d51f`
 
 ---
 

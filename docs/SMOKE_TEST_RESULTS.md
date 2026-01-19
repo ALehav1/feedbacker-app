@@ -5,9 +5,30 @@
 **Tester:** (Your name)  
 **Environment:** Local dev (http://localhost:5173)  
 **Baseline Commit:** `0613cd18f5ddc1aadaf4aebf7a707819bf2f0ad6`  
-**Wizard Commit:** (pending)
+**Wizard Commit:** `2fb95b2521d8de1e32883a2397bd843598a31c61`
 
 ---
+
+## Automated/Local Verification
+
+**Run Date:** January 18, 2026 10:26 PM UTC-5  
+**Commits Verified:** `cd173b7`, `2fb95b2`, `727d51f`
+
+| Test | Result | Details |
+|------|--------|---------|
+| `npm run build` | ✅ PASS | 0 errors, bundle size warning (expected) |
+| `npm run lint` | ✅ PASS | 0 errors, 3 warnings (Fast Refresh - pre-existing) |
+| `npm run preview` | ✅ PASS | Server started on http://localhost:4173/ |
+| `curl /` (root) | ✅ PASS | HTTP 200, HTML served |
+| `curl /s/test-slug` | ✅ PASS | HTTP 200, SPA routing works |
+
+**Conclusion:** All automated checks passing. App builds, lints clean, and preview server responds correctly.
+
+---
+
+## Manual UI Smoke Tests (Presenter/Participant)
+
+**Status:** ⬜ PENDING USER ACTION
 
 ### Auth Flow
 
