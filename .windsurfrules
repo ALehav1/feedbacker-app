@@ -1,0 +1,507 @@
+# 🌊 Windsurf Rules — Feedbacker App
+
+This file defines how coding agents must operate on this project.
+
+**Rules are split into:**
+- PART A — Universal Rules (apply to all projects)
+- PART B — Project-Specific Rules (apply ONLY to this app)
+
+## Conflict Resolution Order
+1. `docs/contract.md` wins
+2. Universal rules override project-specific rules
+3. Project-specific rules override agent suggestions
+
+**Failure to follow these rules invalidates a claim of "done".**
+
+---
+
+# PART A — UNIVERSAL RULES
+(Apply to ALL projects)
+
+## Read These First (Every Chat)
+Agents must acknowledge they have read:
+1. `docs/contract.md`
+2. `.windsurfrules` (this file)
+3. `agents.md`
+
+Acknowledgment must happen before proposing changes.
+
+---
+
+## Work Process (MANDATORY)
+
+Follow these phases in order for each task:
+
+### Phase 1: Plan
+- Understand what we're building
+- Identify files to create/modify
+- Note any dependencies or blockers
+- Ask clarifying questions if needed
+
+### Phase 2: Build
+- Implement the feature or fix
+- Keep changes focused (one concern per task)
+- Update docs if behavior changes
+
+**Gate:** `npm run build` + `npm run lint` pass
+
+### Phase 3: Test
+- Test at 375px first (mobile)
+- Test at 768px (tablet)
+- Test at 1024px (desktop)
+- Check console for errors
+
+**Gate:** Zero console errors, all breakpoints work
+
+### Phase 4: Report
+- List files changed
+- Note any deferred work
+- Confirm checklist complete
+
+**Forbidden:**
+- Skipping phases
+- Bundling unrelated changes
+- Opportunistic refactoring
+
+---
+
+## Definition of Done
+
+**See `docs/contract.md` for the authoritative checklist.**
+
+Quick summary (contract.md has full details):
+- Build and lint pass
+- Tested at 375px, 768px, 1024px
+- Zero console errors
+- Loading and error states present
+- Touch targets ≥ 48px
+- No `any` types
+
+**If contract.md checklist isn't complete → NOT DONE.**
+
+---
+
+## Mobile-First Development (CRITICAL)
+Test every change at these breakpoints in order:
+1. **375px** — phone baseline (must work FIRST)
+2. **768px** — tablet
+3. **1024px** — desktop
+
+**Rules:**
+- Touch targets ≥ 48×48px
+- Primary actions ≥ 56×56px
+- No hover-only interactions
+- No horizontal scroll
+
+---
+
+## UI Component Rules (shadcn/ui)
+
+### Use shadcn Components
+- Prefer shadcn/ui components over custom implementations
+- Components are in `src/components/ui/` - you CAN modify them
+- Built on Radix UI primitives (accessibility included)
+
+### Adding New shadcn Components
+```bash
+npx shadcn@latest add [component-name]
+```
+
+### Visual Polish Checklist
+- [ ] Soft shadows instead of borders (`shadow-sm` not `border`)
+- [ ] Consistent border radius (`rounded-lg` for cards, `rounded-md` for inputs)
+- [ ] Hover states: `hover:scale-[1.02]` or `hover:bg-violet-50`
+- [ ] Focus states: visible ring (`ring-2 ring-violet-500`)
+- [ ] Loading: use shadcn Skeleton component
+- [ ] Empty states: message + helpful CTA
+
+### Color Guidance
+Use Tailwind classes directly:
+- Backgrounds: `bg-white`, `bg-gray-50`
+- Text: `text-gray-900`, `text-gray-600`, `text-gray-400`
+- Accent: `bg-violet-600`, `hover:bg-violet-700`
+- Avoid pure black (`#000`) - use `text-gray-900` instead
+
+**Consistency Rule:** Don't mix shadcn CSS variables (`bg-background`, `text-foreground`) with Tailwind color utilities (`text-gray-600`) in the same component. For v1, prefer Tailwind utilities throughout. The shadcn variables remain available for dark mode support later.
+
+---
+
+## TypeScript Rules (No Exceptions)
+- No `any`
+- `unknown` only with explicit narrowing
+- Define interfaces/types for:
+  - all database rows
+  - all API responses
+  - all component props
+  - all hook return values
+- Props interfaces go above components
+- Domain types live in `/src/types/`
+
+---
+
+## React Patterns (Mandatory)
+
+### Navigation
+✅ `useNavigate()` from react-router-dom  
+❌ Never `window.location.href`
+
+### Authentication
+✅ `onAuthStateChange` listener for session state  
+❌ Never one-time `getUser()` only
+
+### Async Operations
+✅ Must expose: `loading` state, `error` state  
+✅ Loading: Show spinner or skeleton  
+✅ Error: User-friendly message + console detail
+
+### Forms
+✅ Controlled components
+✅ Disable submit during loading
+✅ Clear feedback on success/error
+
+### Dev Server Port (LOCKED)
+- Port **5173** is locked via `strictPort: true` in vite.config.ts
+- Supabase auth redirects to `http://localhost:5173/auth/callback`
+- If port 5173 is busy, dev server will **fail** (not try 5174, etc.)
+- **Never change the port** without updating Supabase redirect URLs
+
+---
+
+## Refactor Safety (Universal)
+- Never refactor behavior without locking it first (tests or explicit guarantees)
+- One refactor goal per branch
+- Preserve public APIs until all consumers migrate
+- Prefer adapters over rewrites
+
+**Forbidden:**
+- Opportunistic cleanup
+- Multi-concern PRs
+- Silent behavior changes
+
+---
+
+---
+
+# PART B — PROJECT-SPECIFIC RULES
+(Feedbacker App ONLY)
+
+## Additional Reading (After Universal Rules)
+
+After reading the universal rules, also read:
+- `docs/ARCHITECTURE.md` — technical architecture
+- `docs/SPEC.md` — product requirements
+
+If behavior contradicts documentation:
+- Update the docs, OR
+- Explicitly mark deprecated / planned
+
+**Silent drift is forbidden.**
+
+---
+
+## Architectural Invariants (DO NOT VIOLATE)
+
+### 1. Session State Machine (LOCKED)
+Sessions have exactly four states in this order:
+1. `draft` — setting up, not shared
+2. `active` — link shared, collecting responses
+3. `completed` — done collecting, still accepting
+4. `archived` — closed, read-only
+
+**State Transitions (ONLY these are valid):**
+```
+draft → active (link shared)
+active → completed (presenter clicks button)
+completed → archived (presenter clicks button)
+archived → [creates new draft] (use as template)
+```
+
+**Invariants:**
+- NEVER skip states
+- NEVER transition backward (except template creates NEW session)
+- Participant link works in `active` AND `completed`
+- Participant link shows "closed" in `archived` only
+
+### 2. Theme Selection Model (LOCKED)
+Each theme can have exactly three states per participant:
+- `more` — more interested
+- `less` — less interested
+- (no row) — neutral
+
+**Invariants:**
+- A participant CANNOT select both `more` AND `less` for same theme
+- Neutral = no database row (not a third selection value)
+- Aggregation: `net_interest = more_count - less_count`
+
+### 3. Single Source of Truth (LOCKED)
+- **Presenter profile:** `presenters` table only
+- **Session data:** `sessions` table only
+- **Themes:** `themes` table only
+- **Responses:** `responses` + `theme_selections` tables
+
+**Invariants:**
+- NO localStorage for persistent data (session recovery only)
+- NO duplicate data across tables
+- All counts derived from queries, not stored
+
+### 4. AI Generation Pipeline (LOCKED)
+AI generates in this exact order during session creation:
+1. Themes (from summary)
+2. Title (from summary)
+3. Welcome message (from summary)
+4. Slug (from title)
+5. Condensed summary (from full summary)
+
+**Invariants:**
+- All AI-generated fields are EDITABLE by presenter
+- Retry on failure, then manual fallback
+- Never auto-save without presenter confirmation
+
+### 5. Authentication Model (LOCKED)
+- **Presenter:** Magic link via email (Supabase Auth)
+- **Participant:** Email entry only (no verification, no account)
+
+**Invariants:**
+- Presenter MUST have verified email (magic link confirms)
+- Participant email NOT verified (low stakes)
+- Returning participant: same email → same response (edit mode)
+
+### 6. Presenter ID = Auth ID (LOCKED)
+**CRITICAL:** The `presenters.id` column has NO DEFAULT. It MUST be set to `auth.uid()` when inserting.
+
+**Profile Setup Insert Pattern:**
+```typescript
+await supabase.from('presenters').insert({
+  id: user.id,  // MUST match auth.uid()
+  email: user.email,
+  name: formData.name,
+  organization: formData.organization,
+});
+```
+
+**Why this matters:**
+- RLS policies use `auth.uid() = id` for presenter access
+- RLS policies use `auth.uid() = presenter_id` for session access
+- If id doesn't match auth.uid(), ALL presenter queries will fail
+
+**Invariants:**
+- NEVER use `gen_random_uuid()` for presenter id
+- ALWAYS pass `id: user.id` in profile setup insert
+- Fetch presenter by `id = user.id`, never by email alone
+
+---
+
+## Feature-Specific Rules
+
+### Session Creation Wizard
+- MUST follow steps in order: Length → Summary → Review → Complete
+- CANNOT skip steps
+- CANNOT submit without all required fields
+- File upload: partial extraction + manual fallback on error
+
+### Participant Feedback Form
+- All fields OPTIONAL except access email
+- Theme selections default to neutral (no pre-selection)
+- Free-form has guidance text
+- Submit NEVER blocked by missing optional fields
+
+### Results View
+- REQUIRES 2+ responses for AI-generated outline
+- 1 response: show raw data only, no aggregation
+- Spotlights and write-in summary generated on demand
+- Manual refresh (no real-time updates)
+
+### Export
+- Formats: Copy (text/markdown), Download (PDF, Word, text)
+- Export ONLY available when outline exists
+- Include outline + aggregated themes
+
+---
+
+## Data Model Constraints
+
+### Presenter
+```typescript
+// REQUIRED fields (cannot be null)
+- email: string
+- name: string
+- organization: string
+
+// OPTIONAL fields
+- logoUrl: string | null
+- brandGuidelinesUrl: string | null
+```
+
+### Session
+```typescript
+// REQUIRED fields
+- presenterId: string
+- state: 'draft' | 'active' | 'completed' | 'archived'
+- lengthMinutes: number (positive integer)
+- title: string (non-empty)
+- welcomeMessage: string (non-empty)
+- summaryFull: string (non-empty)
+- summaryCondensed: string (non-empty)
+- slug: string (unique, URL-safe)
+```
+
+### Response
+```typescript
+// REQUIRED fields
+- sessionId: string
+- email: string
+
+// OPTIONAL fields
+- name: string | null
+- contactEmail: string | null
+- freeFormText: string | null
+
+// CONSTRAINT: (sessionId, email) must be unique
+```
+
+---
+
+## Route Structure (LOCKED)
+
+```
+/                           → Login/landing
+/auth/callback              → Magic link handler
+/dashboard                  → Presenter dashboard
+/dashboard/profile          → Profile setup/edit
+/dashboard/create           → Session creation
+/dashboard/session/:id      → Session detail
+/dashboard/session/:id/results → Results view
+/dashboard/archived         → Archived list
+/s/:slug                    → Participant access
+```
+
+**Route Invariants:**
+- `/dashboard/*` requires authenticated presenter
+- `/s/:slug` is public (no auth required)
+- Invalid slug → 404 page
+- Archived session slug → "Session closed" page
+
+---
+
+## UI/UX Constraints
+
+### Theme Selector Component
+- 👍 and 👎 buttons per theme
+- Minimum touch target: 48×48px
+- Visual feedback: filled when selected, outline when not
+- Tap selected → deselects (returns to neutral)
+
+### Summary Display
+- Default: condensed (AI-generated short version)
+- Expandable: "Read more" → full summary
+- Animation: smooth expand/collapse
+
+### Results View Tabs
+Order: Individual → Aggregated → Spotlights → Write-ins → Outline
+
+### Loading States
+- Skeleton for lists
+- Spinner for buttons
+- Never show empty state while loading
+
+### Error States
+- User-friendly message
+- Retry button for recoverable errors
+- Technical details in console only
+
+---
+
+## Hooks Contract
+
+### useSessions
+```typescript
+// MUST return
+{
+  sessions: Session[];           // ALL presenter's sessions
+  activeSessions: Session[];     // state !== 'archived'
+  archivedSessions: Session[];   // state === 'archived'
+  loading: boolean;
+  error: string | null;
+}
+
+// MUST provide
+createSession(data): Promise<Session>
+updateSession(id, data): Promise<void>
+transitionState(id, newState): Promise<void>  // Validates transitions
+deleteSession(id): Promise<void>
+useAsTemplate(id): Promise<Session>            // Creates new draft
+refetch(): Promise<void>
+```
+
+### useResponses
+```typescript
+// MUST return
+{
+  responses: Response[];
+  responseCount: number;
+  aggregatedThemes: AggregatedTheme[];  // Calculated
+  loading: boolean;
+  error: string | null;
+}
+
+// MUST provide
+submitResponse(data): Promise<void>
+updateResponse(id, data): Promise<void>
+refetch(): Promise<void>
+```
+
+### useAIGeneration
+```typescript
+// MUST return
+{
+  isGenerating: boolean;
+  error: string | null;
+}
+
+// MUST provide
+generateThemes(summary, lengthMinutes): Promise<Theme[]>
+generateTitle(summary): Promise<string>
+generateWelcome(summary): Promise<string>
+generateSlug(title): Promise<string>
+generateCondensedSummary(full): Promise<string>
+generateSpotlights(responses): Promise<Spotlight[]>
+generateWriteInSummary(responses): Promise<string>
+generateOutline(responses, themes): Promise<Outline>
+```
+
+---
+
+## Documentation Discipline
+
+Any change affecting:
+- session states
+- authentication
+- data model
+- AI generation
+- routing
+- hooks
+
+**MUST update:**
+- `docs/ARCHITECTURE.md`
+- `agents.md` (if behavior changes)
+- This file (if invariants change)
+
+**Docs are versioned system components.**
+
+---
+
+## Project-Specific Checklist
+
+In addition to `docs/contract.md` requirements, verify:
+
+- [ ] Session state machine transitions work correctly
+- [ ] Theme selection (more/less/neutral) works correctly
+- [ ] Presenter auth works (magic link → dashboard)
+- [ ] Participant access works (email → form → submit)
+- [ ] Results aggregation is accurate
+- [ ] Routes protected correctly (dashboard requires auth)
+
+---
+
+**This file is authoritative.**
+If an agent is unsure, it must stop and ask — not guess.
