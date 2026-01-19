@@ -220,8 +220,8 @@ export function FeedbackForm() {
     if (selectedThemes.length === 0) {
       toast({
         variant: 'destructive',
-        title: 'No themes selected',
-        description: 'Please select at least one theme.',
+        title: 'No topics selected',
+        description: 'Please select at least one topic.',
       })
       return
     }
@@ -329,10 +329,10 @@ export function FeedbackForm() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <h3 className="text-sm font-medium text-gray-700 mb-4">
-                    What would you like to hear more about?
+                    Topics in this talk
                   </h3>
                   <p className="text-sm text-gray-600 mb-4">
-                    Select themes you're interested in to help shape the presentation.
+                    Tell the presenter what to spend more time on, and what to spend less time on.
                   </p>
                   <div className="space-y-3">
                     {themes.map((theme) => (

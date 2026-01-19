@@ -152,6 +152,24 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Reproduction:** Have valid session → visit `/` → had to re-enter email instead of auto-redirect
 **Commit:** `c5384bb`
 
+### UI Copy Clarity (January 19, 2026 10:32 AM)
+
+**Files:**
+- `src/features/participant/FeedbackForm.tsx`
+- `src/features/sessions/SessionDetail.tsx`
+- `src/components/ThemeSelector.tsx`
+
+**Change:** Update copy and labels to clarify participant semantics (cover more vs cover less)
+
+**Justification:** UX improvement - eliminate ambiguity in participant intent. Replace "themes" with "topics", replace 👍/👎 with explicit "Cover more"/"Cover less" labels, clarify tab names.
+
+**Scope:** Copy + labels only; no logic changes
+- FeedbackForm: Card title, description, theme→topic labels, validation message (4 strings)
+- SessionDetail: Tab names "Details"→"Session details", "Results"→"Audience feedback", header "Theme Results"→"Topic Results" (3 strings)
+- ThemeSelector: Button labels 👍/👎 → "Cover more"/"Cover less" (2 strings)
+
+**Commit:** `10e757b`
+
 ---
 
 ## Baseline Lock History

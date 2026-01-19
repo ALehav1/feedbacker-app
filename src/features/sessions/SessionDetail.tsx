@@ -377,8 +377,8 @@ export function SessionDetail() {
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <Tabs defaultValue="details" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="results" onClick={fetchResults}>Results</TabsTrigger>
+            <TabsTrigger value="details">Session details</TabsTrigger>
+            <TabsTrigger value="results" onClick={fetchResults}>Audience feedback</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-6">
@@ -512,9 +512,9 @@ export function SessionDetail() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Theme Interest</CardTitle>
+                    <CardTitle>Topic Interest</CardTitle>
                     <CardDescription>
-                      Themes ranked by participant interest
+                      Topics ranked by participant interest
                     </CardDescription>
                   </CardHeader>
                   <CardContent>

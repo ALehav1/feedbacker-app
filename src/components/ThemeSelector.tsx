@@ -43,7 +43,7 @@ export function ThemeSelector({ text, selection, onSelect, disabled }: ThemeSele
           className="min-h-[48px] flex-1"
         >
           <span className="text-lg mr-1">👍</span>
-          More interested
+          Cover more
         </Button>
         <Button
           type="button"
@@ -54,7 +54,7 @@ export function ThemeSelector({ text, selection, onSelect, disabled }: ThemeSele
           className="min-h-[48px] flex-1"
         >
           <span className="text-lg mr-1">👎</span>
-          Less interested
+          Cover less
         </Button>
       </div>
     </div>
