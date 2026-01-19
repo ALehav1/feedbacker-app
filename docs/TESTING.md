@@ -31,6 +31,31 @@
 | Archive session | In completed, click "Archive Session" → Confirm | State changes to `archived` |
 | Results tab | Click "Results" tab | Shows aggregated theme data + responses |
 
+### Session Creation Wizard
+
+| Test | Steps | Expected |
+|------|-------|----------|
+| Wizard load | Navigate to `/dashboard/sessions/new` | Shows Step 1 (Basics) with progress indicator |
+| Step indicator | View progress bar | Shows 4 steps: Basics, Messages, Themes, Review |
+| Step 1 validation | Click "Next" without filling required fields | Shows validation errors |
+| Step 1 complete | Enter length + title → Click "Next" | Advances to Step 2 |
+| Step 2 (optional fields) | Leave all fields blank → Click "Next" | Advances to Step 3 (all fields optional) |
+| Step 2 with data | Fill welcome/summaries → Click "Next" | Data persists, advances to Step 3 |
+| Step 3 add theme | Enter theme text → Click "Add" | Theme added to list with sort_order 1 |
+| Step 3 multiple themes | Add 3 themes | Themes appear with sort_order 1, 2, 3 |
+| Step 3 edit theme | Click "Edit" on theme → Modify text → Click "Save" | Theme text updated |
+| Step 3 delete theme | Click "Delete" on theme | Theme removed, remaining themes reordered |
+| Step 3 reorder up | Click ↑ on theme 2 | Theme moves to position 1, sort_order updated |
+| Step 3 reorder down | Click ↓ on theme 1 | Theme moves to position 2, sort_order updated |
+| Step 3 skip themes | Click "Next" without adding themes | Advances to Step 4 (themes optional) |
+| Step 4 review | View Review step | Shows all entered data (basics, messages, themes) |
+| Step 4 back navigation | Click "Back" from Step 4 | Returns to Step 3 with data intact |
+| Step navigation | Navigate Back through all steps | All form data persists |
+| localStorage persistence | Fill Step 1-2 → Refresh page | Data restored from localStorage |
+| Exit wizard | Click "Exit" → Confirm | Returns to dashboard, localStorage cleared on next visit |
+| Create from wizard | Complete all steps → Click "Create Session" | Session + themes saved to DB, redirects to SessionDetail |
+| Themes persisted | Create session with 3 themes → View SessionDetail | Themes appear in correct sort_order |
+
 ### Participant Workflow
 
 | Test | Steps | Expected |
