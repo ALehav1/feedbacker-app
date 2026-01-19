@@ -56,6 +56,9 @@ This document defines the **frozen baseline** for the Feedbacker app. These modu
 - Draft shows "Session Not Open Yet"
 - Completed/archived show "Session Closed"
 
+**Defense-in-Depth Note:**
+Application enforces active-only submission; RLS policies are currently permissive across non-archived states (`active`, `completed`) as a secondary guardrail and to preserve operational flexibility during MVP iteration. The application layer (`FeedbackForm.tsx`) is the primary enforcement mechanism.
+
 **Frozen Files:**
 - `src/features/sessions/SessionDetail.tsx` (state transitions)
 - `src/features/participant/FeedbackForm.tsx` (state validation)

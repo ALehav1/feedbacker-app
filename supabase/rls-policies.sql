@@ -1,3 +1,7 @@
+-- BASELINE_LOCK: Frozen baseline file.
+-- Changes require baseline exception process.
+-- Allowed: comment/documentation updates that do not alter SQL statements.
+
 -- Row Level Security (RLS) Policies
 -- Run this AFTER schema.sql in your Supabase SQL Editor
 

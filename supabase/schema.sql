@@ -1,3 +1,7 @@
+-- BASELINE_LOCK: Frozen baseline file.
+-- Changes require baseline exception process.
+-- Allowed: comment/documentation updates that do not alter SQL statements.
+
 -- Feedbacker App Database Schema
 -- Run this in your Supabase SQL Editor
 

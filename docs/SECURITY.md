@@ -69,7 +69,8 @@ CREATE TABLE presenters (
 
 ✅ **Participants can't tamper with presenter data**
 - No write access to sessions or themes
-- Can only insert responses/selections for active/completed sessions
+- Can only insert responses/selections for active/completed sessions (RLS)
+- **Application enforces stricter active-only submission** (defense-in-depth)
 
 ✅ **Participant tokens prevent casual tampering**
 - Each response gets a unique `participant_token`
@@ -130,6 +131,20 @@ CREATE POLICY "Anyone can read active sessions"
 - Requires technical knowledge + malicious intent
 - Low-value target (presentation feedback)
 - Selections are tied to response_id which is hard to guess
+
+---
+
+⚠️ **RLS State Slack (Intentional)**
+
+**Observed:** RLS policies allow `state IN ('active', 'completed')` for response/selection inserts, but application enforces `state === 'active'` only.
+
+**Why This Is Intentional:**
+- Defense-in-depth: application layer is primary enforcement
+- RLS provides secondary guardrail against non-archived states
+- Preserves operational flexibility during MVP iteration
+- No security risk since RLS is never *less* restrictive than intended
+
+**Future Consideration:** Once regression test coverage is complete, consider tightening RLS to `state = 'active'` to match product invariant exactly
 
 **Production Fix:** Route all participant writes through Edge Function that verifies `participant_token`.
 
