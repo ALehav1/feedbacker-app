@@ -30,6 +30,7 @@ export interface Session {
   slug: string;
   createdAt: Date;
   updatedAt: Date;
+  responseCount?: number;
 }
 
 // Theme

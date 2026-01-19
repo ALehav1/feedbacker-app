@@ -3,7 +3,9 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { useSessions } from '@/hooks/useSessions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, LogOut } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, LogOut, Copy, ExternalLink, BarChart3 } from 'lucide-react';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -150,51 +152,111 @@ interface SessionCardProps {
 
 function SessionCard({ session }: SessionCardProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const stateColors = {
-    draft: 'bg-gray-100 text-gray-800',
-    active: 'bg-green-100 text-green-800',
-    completed: 'bg-blue-100 text-blue-800',
-    archived: 'bg-gray-100 text-gray-600',
+  const stateVariants: Record<SessionState, 'default' | 'secondary' | 'outline'> = {
+    draft: 'secondary',
+    active: 'default',
+    completed: 'outline',
+    archived: 'secondary',
   };
 
-  const stateLabels = {
+  const stateLabels: Record<SessionState, string> = {
     draft: 'Draft',
     active: 'Active',
     completed: 'Completed',
     archived: 'Archived',
   };
 
+  const shareableLink = `${window.location.origin}/s/${session.slug}`;
+
+  const handleCopyLink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(shareableLink);
+      toast({
+        title: 'Link copied',
+        description: 'Shareable link copied to clipboard.',
+      });
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Copy failed',
+        description: 'Unable to copy link.',
+      });
+    }
+  };
+
+  const handleViewFeedback = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/dashboard/sessions/${session.id}`);
+  };
+
   return (
-    <Card
-      className="cursor-pointer transition-shadow hover:shadow-md"
-      onClick={() => navigate(`/dashboard/sessions/${session.id}`)}
-    >
+    <Card className="transition-shadow hover:shadow-md">
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="line-clamp-2 text-base">
             {session.title || 'Untitled Session'}
           </CardTitle>
-          <span
-            className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${
-              stateColors[session.state]
-            }`}
-          >
+          <Badge variant={stateVariants[session.state]} className="shrink-0">
             {stateLabels[session.state]}
-          </span>
+          </Badge>
         </div>
         <CardDescription className="line-clamp-2">
           {session.summaryCondensed || session.summaryFull || 'No summary'}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         <div className="flex items-center justify-between text-sm text-gray-600">
           <span>{session.lengthMinutes} min</span>
-          <span>{session.updatedAt.toLocaleDateString()}</span>
+          <span>{(session.responseCount || 0) === 1 ? '1 response' : `${session.responseCount || 0} responses`}</span>
+        </div>
+
+        <div className="rounded-md bg-gray-50 px-3 py-2">
+          <p className="text-xs text-gray-500 mb-1">Shareable link</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 truncate text-xs text-gray-900">/s/{session.slug}</code>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyLink}
+              className="h-8 w-8 p-0 shrink-0"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleViewFeedback}
+            className="flex-1 min-h-[40px]"
+          >
+            <ExternalLink className="mr-1 h-4 w-4" />
+            Open
+          </Button>
+          {(session.responseCount || 0) > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/dashboard/sessions/${session.id}`);
+              }}
+              className="flex-1 min-h-[40px]"
+            >
+              <BarChart3 className="mr-1 h-4 w-4" />
+              Results
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-import type { Session } from '@/types';
+import type { Session, SessionState } from '@/types';

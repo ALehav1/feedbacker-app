@@ -56,7 +56,26 @@ export function useSessions(): UseSessionsReturn {
         return;
       }
 
-      const mappedSessions: Session[] = ((data as SessionRow[] | null) || []).map((row) => ({
+      const sessionRows = (data as SessionRow[] | null) || [];
+      const sessionIds = sessionRows.map((row) => row.id);
+
+      const responseCounts = new Map<string, number>();
+      if (sessionIds.length > 0) {
+        const { data: countsData, error: countsError } = await supabase
+          .from('responses')
+          .select('session_id')
+          .in('session_id', sessionIds);
+
+        if (countsError) {
+          console.error('Error fetching response counts:', countsError);
+        } else if (countsData) {
+          countsData.forEach((row: { session_id: string }) => {
+            responseCounts.set(row.session_id, (responseCounts.get(row.session_id) || 0) + 1);
+          });
+        }
+      }
+
+      const mappedSessions: Session[] = sessionRows.map((row) => ({
         id: row.id,
         presenterId: row.presenter_id,
         state: row.state as SessionState,
@@ -68,6 +87,7 @@ export function useSessions(): UseSessionsReturn {
         slug: row.slug,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
+        responseCount: responseCounts.get(row.id) || 0,
       }));
 
       setSessions(mappedSessions);
