@@ -23,9 +23,9 @@ export interface Session {
   state: SessionState;
   lengthMinutes: number;
   title: string;
-  welcomeMessage: string;
-  summaryFull: string;
-  summaryCondensed: string;
+  welcomeMessage: string | null;
+  summaryFull: string | null;
+  summaryCondensed: string | null;
   slug: string;
   createdAt: Date;
   updatedAt: Date;

@@ -1,28 +1,30 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 
 export function AuthCallback() {
   const navigate = useNavigate()
   const { presenter, isLoading } = useAuth()
-  const [error, setError] = useState<string | null>(null)
   const didNavigate = useRef(false)
   const timeoutRef = useRef<number | null>(null)
 
-  useEffect(() => {
+  // Parse error from URL params once (memoized to prevent re-computation)
+  const error = useMemo(() => {
     const params = new URLSearchParams(window.location.search)
     const hashParams = new URLSearchParams(window.location.hash.substring(1))
-
     const errorParam = params.get('error') || hashParams.get('error')
-    const errorDescription =
-      params.get('error_description') || hashParams.get('error_description')
+    if (!errorParam) return null
+    return params.get('error_description') || hashParams.get('error_description') || 'Authentication failed'
+  }, [])
 
-    if (errorParam) {
-      setError(errorDescription || 'Authentication failed')
+  useEffect(() => {
+    if (error) {
       timeoutRef.current = window.setTimeout(() => {
         navigate('/', { replace: true })
       }, 1500)
-      return
+      return () => {
+        if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+      }
     }
 
     if (isLoading) return
@@ -34,7 +36,7 @@ export function AuthCallback() {
     return () => {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
     }
-  }, [navigate, presenter, isLoading])
+  }, [navigate, presenter, isLoading, error])
 
   if (error) {
     return (

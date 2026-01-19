@@ -1,0 +1,401 @@
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/hooks/use-toast'
+import { ThemeSelector } from '@/components/ThemeSelector'
+import { supabase } from '@/lib/supabase'
+import type { Session, Theme } from '@/types'
+
+type ThemeSelection = 'more' | 'less' | null
+
+// Supabase row types
+interface ThemeRow {
+  id: string
+  session_id: string
+  text: string
+  sort_order: number
+  created_at: string
+}
+
+export function FeedbackForm() {
+  const { slug } = useParams<{ slug: string }>()
+  const { toast } = useToast()
+  const [session, setSession] = useState<Session | null>(null)
+  const [themes, setThemes] = useState<Theme[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [selections, setSelections] = useState<Record<string, ThemeSelection>>({})
+  const [participantName, setParticipantName] = useState('')
+  const [participantEmail, setParticipantEmail] = useState('')
+  const [freeform, setFreeform] = useState('')
+
+  useEffect(() => {
+    const fetchSessionAndThemes = async () => {
+      if (!slug) {
+        setError('No session slug provided')
+        setLoading(false)
+        return
+      }
+
+      try {
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('slug', slug)
+          .single()
+
+        if (sessionError) {
+          console.error('Error fetching session:', sessionError)
+          setError('Session not found')
+          setLoading(false)
+          return
+        }
+
+        if (sessionData) {
+          const mappedSession: Session = {
+            id: sessionData.id,
+            presenterId: sessionData.presenter_id,
+            state: sessionData.state,
+            lengthMinutes: sessionData.length_minutes,
+            title: sessionData.title,
+            welcomeMessage: sessionData.welcome_message,
+            summaryFull: sessionData.summary_full,
+            summaryCondensed: sessionData.summary_condensed,
+            slug: sessionData.slug,
+            createdAt: new Date(sessionData.created_at),
+            updatedAt: new Date(sessionData.updated_at),
+          }
+
+          setSession(mappedSession)
+
+          const { data: themesData, error: themesError } = await supabase
+            .from('themes')
+            .select('*')
+            .eq('session_id', sessionData.id)
+            .order('sort_order', { ascending: true })
+
+          if (themesError) {
+            console.error('Error fetching themes:', themesError)
+          } else if (themesData) {
+            const mappedThemes: Theme[] = (themesData as ThemeRow[]).map((t) => ({
+              id: t.id,
+              sessionId: t.session_id,
+              text: t.text,
+              sortOrder: t.sort_order,
+              createdAt: new Date(t.created_at),
+            }))
+            setThemes(mappedThemes)
+          }
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err)
+        setError('Something went wrong')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSessionAndThemes()
+  }, [slug])
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
+          <p className="text-gray-600">Loading session...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Session Not Found</CardTitle>
+            <CardDescription>{error || 'This session does not exist'}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  if (session.state === 'draft') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Session Not Open Yet</CardTitle>
+            <CardDescription>
+              This session is still being set up. Please check back later!
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  if (session.state === 'completed' || session.state === 'archived') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Session Closed</CardTitle>
+            <CardDescription>
+              This session is no longer accepting feedback. Thank you for your interest!
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  if (submitted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Thank You!</CardTitle>
+            <CardDescription>
+              Your feedback has been submitted successfully.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              Your input will help shape this presentation. You can close this tab now.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const handleSelectionChange = (themeId: string, selection: ThemeSelection) => {
+    setSelections((prev) => ({
+      ...prev,
+      [themeId]: selection,
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (session.state !== 'active') {
+      toast({
+        variant: 'destructive',
+        title: 'Session not active',
+        description: 'This session is not currently accepting feedback.',
+      })
+      return
+    }
+
+    if (participantEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(participantEmail)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid email',
+        description: 'Please enter a valid email address.',
+      })
+      return
+    }
+
+    const selectedThemes = Object.entries(selections)
+      .filter(([_, selection]) => selection !== null)
+      .map(([themeId, selection]) => ({ themeId, selection: selection! }))
+
+    if (selectedThemes.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No themes selected',
+        description: 'Please select at least one theme.',
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const participantToken = crypto.randomUUID()
+
+      const { data: responseData, error: responseError } = await supabase
+        .from('responses')
+        .insert({
+          session_id: session.id,
+          participant_email: participantEmail || `anon-${participantToken}@feedbacker.app`,
+          name: participantName || null,
+          followup_email: participantEmail || null,
+          free_form_text: freeform || null,
+          participant_token: participantToken,
+        })
+        .select()
+        .single()
+
+      if (responseError) {
+        console.error('Error creating response:', responseError)
+        toast({
+          variant: 'destructive',
+          title: 'Submission failed',
+          description: 'Unable to submit your feedback. Please try again.',
+        })
+        return
+      }
+
+      const themeSelectionsData = selectedThemes.map((st) => ({
+        response_id: responseData.id,
+        theme_id: st.themeId,
+        selection: st.selection,
+      }))
+
+      const { error: selectionsError } = await supabase
+        .from('theme_selections')
+        .insert(themeSelectionsData)
+
+      if (selectionsError) {
+        console.error('Error creating theme selections:', selectionsError)
+        await supabase.from('responses').delete().eq('id', responseData.id)
+        toast({
+          variant: 'destructive',
+          title: 'Submission failed',
+          description: 'Unable to save your theme selections. Please try again.',
+        })
+        return
+      }
+
+      if (slug) {
+        localStorage.setItem(`feedbacker-submitted-${slug}`, participantToken)
+      }
+
+      setSubmitted(true)
+      toast({
+        title: 'Feedback submitted',
+        description: 'Thank you for your input!',
+      })
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      toast({
+        variant: 'destructive',
+        title: 'Unexpected error',
+        description: 'Something went wrong. Please try again.',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const hasSelections = Object.values(selections).some((s) => s !== null)
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">{session.title}</CardTitle>
+            {session.welcomeMessage && (
+              <CardDescription className="text-base">{session.welcomeMessage}</CardDescription>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">About this session</h3>
+              <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                {session.summaryCondensed || session.summaryFull}
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Session length: {session.lengthMinutes} minutes
+              </p>
+            </div>
+
+            {themes.length === 0 ? (
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+                <p className="text-sm text-gray-600">
+                  No themes available yet. The presenter is still setting up this session.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-4">
+                    What would you like to hear more about?
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Select themes you're interested in to help shape the presentation.
+                  </p>
+                  <div className="space-y-3">
+                    {themes.map((theme) => (
+                      <ThemeSelector
+                        key={theme.id}
+                        text={theme.text}
+                        selection={selections[theme.id] || null}
+                        onSelect={(selection) => handleSelectionChange(theme.id, selection)}
+                        disabled={isSubmitting}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t pt-6 space-y-4">
+                  <h3 className="text-sm font-medium text-gray-700">Optional: Tell us more</h3>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="participantName">Your Name</Label>
+                    <Input
+                      id="participantName"
+                      type="text"
+                      placeholder="e.g., Alex Smith"
+                      value={participantName}
+                      onChange={(e) => setParticipantName(e.target.value)}
+                      disabled={isSubmitting}
+                      className="min-h-[48px]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="participantEmail">Your Email</Label>
+                    <Input
+                      id="participantEmail"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={participantEmail}
+                      onChange={(e) => setParticipantEmail(e.target.value)}
+                      disabled={isSubmitting}
+                      className="min-h-[48px]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="freeform">Additional Thoughts</Label>
+                    <Textarea
+                      id="freeform"
+                      placeholder="Any specific questions or topics you'd like covered..."
+                      value={freeform}
+                      onChange={(e) => setFreeform(e.target.value)}
+                      disabled={isSubmitting}
+                      rows={4}
+                      className="resize-none"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={!hasSelections || isSubmitting}
+                  className="w-full min-h-[56px]"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

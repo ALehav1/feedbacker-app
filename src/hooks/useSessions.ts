@@ -3,6 +3,21 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth/AuthContext';
 import type { Session, SessionState } from '@/types';
 
+// Supabase row type
+interface SessionRow {
+  id: string
+  presenter_id: string
+  state: string
+  length_minutes: number
+  title: string
+  welcome_message: string | null
+  summary_full: string | null
+  summary_condensed: string | null
+  slug: string
+  created_at: string
+  updated_at: string
+}
+
 interface UseSessionsReturn {
   sessions: Session[];
   activeSessions: Session[];
@@ -41,7 +56,7 @@ export function useSessions(): UseSessionsReturn {
         return;
       }
 
-      const mappedSessions: Session[] = (data || []).map((row) => ({
+      const mappedSessions: Session[] = ((data as SessionRow[] | null) || []).map((row) => ({
         id: row.id,
         presenterId: row.presenter_id,
         state: row.state as SessionState,

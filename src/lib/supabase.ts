@@ -5,11 +5,8 @@ import { config } from '@/config'
 const CLIENT_VERSION = 4
 
 declare global {
-  // eslint-disable-next-line no-var
   var __feedbackerSupabase: SupabaseClient | undefined
-  // eslint-disable-next-line no-var
   var __feedbackerSupabaseVersion: number | undefined
-  // eslint-disable-next-line no-var
   var __navigatorLocksDisabled: boolean | undefined
 }
 
