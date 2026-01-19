@@ -160,19 +160,15 @@ In your project, open the `.env` file (it should already exist from `.env.exampl
 Replace the placeholder values with your actual credentials from Step 2:
 
 ```env
-# Supabase Configuration
+# Supabase Configuration (Required)
 VITE_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-# OpenAI Configuration (you'll add this later)
-VITE_OPENAI_API_KEY=sk-your-openai-key-here
-
-# Resend Configuration (you'll add this later)
-VITE_RESEND_API_KEY=re_your-resend-key-here
 
 # App Configuration
 VITE_APP_URL=http://localhost:5173
 ```
+
+> **Note:** OpenAI and Resend integrations are planned for future versions and will use server-side/Edge Functions (not client-side env vars).
 
 ### 7.3 Save the File
 Make sure to save `.env` after updating.
@@ -261,18 +257,18 @@ Before proceeding, verify:
 
 Once authentication is working:
 
-1. **Add OpenAI API Key** (for AI generation features)
-   - Get key from https://platform.openai.com/api-keys
-   - Add to `.env` as `VITE_OPENAI_API_KEY`
-
-2. **Add Resend API Key** (for email notifications - optional for now)
-   - Get key from https://resend.com
-   - Add to `.env` as `VITE_RESEND_API_KEY`
-
-3. **Start Building Features**
+1. **Start Using the App**
    - Dashboard with session list
-   - Session creation wizard
+   - Session creation
    - Results view
+
+2. **Future: AI Features** (not yet implemented)
+   - Will use Supabase Edge Functions
+   - OpenAI key will be stored securely server-side
+
+3. **Future: Custom Email** (not yet implemented)
+   - Will use Supabase Edge Functions with Resend
+   - API key will be stored securely server-side
 
 ---
 

@@ -611,8 +611,8 @@ export function SessionDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Close this session?</AlertDialogTitle>
             <AlertDialogDescription>
-              Closing the session will stop accepting new feedback. Participants who already
-              started can still complete their submissions. You can still view all results.
+              Closing the session will immediately stop accepting new feedback. You can still
+              view all collected results.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

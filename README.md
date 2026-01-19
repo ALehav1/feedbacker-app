@@ -10,7 +10,7 @@ Instead of guessing what your audience wants:
 
 1. **Share** what you're working on
 2. **Collect** structured feedback on what interests them
-3. **Receive** an AI-generated, prioritized presentation outline
+3. **View** aggregated results to prioritize your presentation
 
 ---
 
@@ -23,7 +23,7 @@ These rules prevent regressions. Follow them strictly:
 | **Session States** | Only 4 states: `draft` → `active` → `completed` → `archived`. No skipping. |
 | **Theme Selection** | Per participant, per theme: `more`, `less`, or neutral (no row). Never both. |
 | **Presenter Auth** | Magic link via email only. No passwords. |
-| **Participant Auth** | Email entry only. No verification. No account. |
+| **Participant Access** | Public link, optional email. No verification. No account. |
 | **Data Source** | Supabase is single source of truth. localStorage for recovery only. |
 
 **⚠️ Changes to these invariants require explicit justification.**
@@ -37,8 +37,6 @@ These rules prevent regressions. Follow them strictly:
 - Node.js 18+
 - npm or yarn
 - Supabase account
-- OpenAI API key
-- Resend account
 
 ### Setup
 
@@ -56,8 +54,6 @@ cp .env.example .env
 # Fill in your keys in .env:
 # - VITE_SUPABASE_URL
 # - VITE_SUPABASE_ANON_KEY
-# - VITE_OPENAI_API_KEY
-# - VITE_RESEND_API_KEY
 
 # Run database migrations (see docs/ARCHITECTURE.md for schema)
 
@@ -124,8 +120,8 @@ DRAFT ──────▶ ACTIVE ──────▶ COMPLETED ────�
   │              │               │                │
   ▼              ▼               ▼                ▼
 Setup         Collecting      Reviewing        Closed
-Edit all      Can still edit  Export outline   Read-only
-              Responses come  Still accepts    Use as template
+Edit all      Can still edit  View results     Read-only
+              Accepting       No new feedback  Use as template
 ```
 
 ---
@@ -185,10 +181,12 @@ npm run preview      # Preview production build
 | Frontend | React 18 + TypeScript + Vite |
 | Styling | Tailwind CSS + shadcn/ui |
 | Database | Supabase (PostgreSQL) |
-| Storage | Supabase Storage |
-| AI | OpenAI GPT-4o |
-| Email | Resend |
+| Auth | Supabase Auth (magic links) |
 | Hosting | Vercel |
+
+**Future Integrations (not yet implemented):**
+- AI: OpenAI GPT-4o (theme generation, outline export)
+- Email: Resend (custom email domain)
 
 ---
 
@@ -198,37 +196,35 @@ npm run preview      # Preview production build
 
 1. Enter email → Receive magic link
 2. Click link → Dashboard
-3. Create session → Enter summary → AI generates themes
+3. Create session → Enter title, summary, themes
 4. Share link with participants
-5. View aggregated feedback
-6. Export prioritized outline
+5. View aggregated feedback results
 
 ### Participant
 
 1. Open shared link
-2. Enter email
-3. Read summary, select theme interests (👍/👎)
-4. Optionally add free-form thoughts
-5. Submit → Done
+2. Read summary, select theme interests (👍/👎)
+3. Optionally enter name, email, and free-form thoughts
+4. Submit → Done
 
 ---
 
 ## 🐛 Known Limitations
 
-- No real-time updates (manual refresh)
-- Email sender uses Resend default domain
+- No real-time updates (manual refresh required)
 - No admin dashboard for usage monitoring
-- Single active session per presenter (for now)
+- AI features (theme generation, outline export) not yet implemented
 
 ---
 
 ## 🔮 Future Enhancements
 
-- [ ] Custom email domain
-- [ ] Multiple active sessions
+- [ ] AI-generated themes from summary (OpenAI integration)
+- [ ] AI-generated prioritized outline export
+- [ ] Custom email domain (Resend integration)
+- [ ] Real-time updates
 - [ ] Participant visibility into others' responses
 - [ ] Usage analytics dashboard
-- [ ] In-app link sharing
 
 ---
 

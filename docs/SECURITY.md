@@ -317,14 +317,16 @@ session_id UUID NOT NULL    -- Themes/responses must belong to session
 ```env
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJxxx  # Safe to expose (RLS enforced)
-VITE_OPENAI_API_KEY=sk-xxx     # ⚠️ Exposed in browser (MVP only)
+VITE_APP_URL=http://localhost:5173
 ```
+
+> **Note:** OpenAI and Resend integrations are not yet implemented. When added, they will use Supabase Edge Functions with server-side secrets.
 
 ### Production Recommendations
 
-1. **Move OpenAI to Edge Function**
-   - Don't expose API key in frontend
-   - Call Edge Function that uses secret key
+1. **Future AI Integration (Edge Function)**
+   - Never expose API keys in frontend
+   - Use Supabase Edge Function with secret key
    - Add rate limiting
 
 2. **Use Environment-Specific Keys**
