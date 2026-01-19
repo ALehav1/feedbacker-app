@@ -28,7 +28,14 @@ export function ProfileSetup() {
       });
     }
   }, [presenter]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check if form has changes from original presenter data
+  const hasChanges = !presenter || (
+    formData.name.trim() !== presenter.name ||
+    formData.organization.trim() !== presenter.organization
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,11 +164,11 @@ export function ProfileSetup() {
             <Button
               type="submit"
               className="w-full min-h-[56px]"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !hasChanges}
             >
               {isSubmitting
                 ? (presenter ? 'Saving...' : 'Creating profile...')
-                : (presenter ? 'Save Changes' : 'Complete setup')}
+                : (presenter ? (hasChanges ? 'Save Changes' : 'No Changes') : 'Complete setup')}
             </Button>
           </form>
         </CardContent>

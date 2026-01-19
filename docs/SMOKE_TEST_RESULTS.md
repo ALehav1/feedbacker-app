@@ -192,7 +192,7 @@ Manual smoke test must be run by user. Cascade cannot interact with browser UI.
 
 **Root Cause:** ProfileSetup component didn't pre-populate form fields when editing existing presenter profile.
 
-**Fix:** Added useEffect to initialize form with existing presenter data when available. Also updated UI text to show "Edit Profile" vs "Complete Your Profile" based on context.
+**Fix:** Added useEffect to initialize form with existing presenter data when available. Also updated UI text to show "Edit Profile" vs "Complete Your Profile" based on context. Added change detection so "Save Changes" button is disabled when no changes have been made.
 
 **Files Changed:**
 - `src/features/presenter/ProfileSetup.tsx`
@@ -202,7 +202,8 @@ Manual smoke test must be run by user. Cascade cannot interact with browser UI.
 2. Go to Dashboard → Click "Edit Profile"
 3. Form shows existing name and organization
 4. Title shows "Edit Profile"
-5. Button shows "Save Changes"
+5. Button shows "No Changes" (disabled) when form unchanged
+6. Make a change → Button shows "Save Changes" (enabled)
 
 ---
 
