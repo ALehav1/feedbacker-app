@@ -222,7 +222,7 @@ function SessionCard({ session }: SessionCardProps) {
               variant="ghost"
               size="sm"
               onClick={handleCopyLink}
-              className="h-8 w-8 p-0 shrink-0"
+              className="h-12 w-12 p-0 shrink-0"
             >
               <Copy className="h-4 w-4" />
             </Button>
@@ -234,7 +234,7 @@ function SessionCard({ session }: SessionCardProps) {
             variant="outline"
             size="sm"
             onClick={handleViewFeedback}
-            className="flex-1 min-h-[40px]"
+            className="flex-1 min-h-[48px]"
           >
             <ExternalLink className="mr-1 h-4 w-4" />
             Open
@@ -247,7 +247,7 @@ function SessionCard({ session }: SessionCardProps) {
                 e.stopPropagation();
                 navigate(`/dashboard/sessions/${session.id}`);
               }}
-              className="flex-1 min-h-[40px]"
+              className="flex-1 min-h-[48px]"
             >
               <BarChart3 className="mr-1 h-4 w-4" />
               Results

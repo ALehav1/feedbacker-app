@@ -471,7 +471,7 @@ export function SessionCreateWizard() {
                     size="sm"
                     onClick={() => handleMoveTheme(theme.id, 'up')}
                     disabled={index === 0}
-                    className="h-6 w-6 p-0"
+                    className="h-10 w-10 p-0"
                   >
                     ↑
                   </Button>
@@ -480,7 +480,7 @@ export function SessionCreateWizard() {
                     size="sm"
                     onClick={() => handleMoveTheme(theme.id, 'down')}
                     disabled={index === wizardData.themes.length - 1}
-                    className="h-6 w-6 p-0"
+                    className="h-10 w-10 p-0"
                   >
                     ↓
                   </Button>
@@ -494,7 +494,7 @@ export function SessionCreateWizard() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleEditTheme(theme.id)}
-                    className="min-h-[40px]"
+                    className="min-h-[48px]"
                   >
                     Edit
                   </Button>
@@ -502,7 +502,7 @@ export function SessionCreateWizard() {
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDeleteTheme(theme.id)}
-                    className="min-h-[40px]"
+                    className="min-h-[48px]"
                   >
                     Delete
                   </Button>
