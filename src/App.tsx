@@ -8,6 +8,7 @@ import { ProfileSetup } from '@/features/presenter/ProfileSetup'
 import { Dashboard } from '@/features/presenter/Dashboard'
 import { SessionCreate } from '@/features/sessions/SessionCreate'
 import { SessionDetail } from '@/features/sessions/SessionDetail'
+import { FeedbackForm } from '@/features/participant/FeedbackForm'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/s/:slug" element={<FeedbackForm />} />
             <Route
               path="/dashboard"
               element={
