@@ -1,0 +1,217 @@
+# Testing Guide
+
+**Last Updated:** January 18, 2026
+
+---
+
+## Manual Test Checklist
+
+### Auth Flow
+
+| Test | Steps | Expected |
+|------|-------|----------|
+| Magic link login | Enter email on `/` → Check email → Click link | Redirects to `/auth/callback` → Dashboard or Profile Setup |
+| New user flow | First-time login | Redirects to `/dashboard/profile` |
+| Returning user flow | User with existing profile | Redirects to `/dashboard` |
+| Session persistence | Login → Close tab → Reopen | Session persists, user still logged in |
+| Hard refresh | Login → Cmd+Shift+R | Session persists |
+| Sign out | Click "Sign Out" | Redirects to `/`, session cleared |
+
+### Presenter Workflow
+
+| Test | Steps | Expected |
+|------|-------|----------|
+| Dashboard load | Navigate to `/dashboard` | Shows session list (or empty state) |
+| Empty state | No sessions exist | Shows "Create Your First Session" CTA |
+| Create session | Click "New Session" → Fill form → Submit | Session created in `draft` state |
+| Session detail | Click on session card | Shows session details with tabs |
+| Copy link | Click "Copy Link" | Shareable link copied to clipboard |
+| Open session | In draft, click "Open Session" | State changes to `active` |
+| Close session | In active, click "Close Session" → Confirm | State changes to `completed` |
+| Archive session | In completed, click "Archive Session" → Confirm | State changes to `archived` |
+| Results tab | Click "Results" tab | Shows aggregated theme data + responses |
+
+### Participant Workflow
+
+| Test | Steps | Expected |
+|------|-------|----------|
+| Access draft session | Visit `/s/{slug}` for draft session | Shows "Session Not Open Yet" |
+| Access active session | Visit `/s/{slug}` for active session | Shows feedback form |
+| Access completed session | Visit `/s/{slug}` for completed/archived | Shows "Session Closed" |
+| Submit feedback | Select themes → Submit | Response saved, shows "Thank You" |
+| Dedupe check | Submit twice (same browser) | localStorage token prevents re-display of form (honor system) |
+| Required selection | Try to submit with no themes selected | Shows validation error |
+| Email validation | Enter invalid email | Shows validation error |
+
+### Results Correctness
+
+| Test | Steps | Expected |
+|------|-------|----------|
+| Theme aggregation | Multiple participants submit → Check Results | Counts match actual submissions |
+| Sorting | Themes with different votes | Sorted by net desc, total desc, sort_order asc |
+| Response display | Submit with free-form text | Text appears in Participant Responses section |
+
+---
+
+## SQL Seed Data
+
+Use these queries in Supabase SQL Editor to create test data:
+
+### Create Test Session with Themes
+
+```sql
+-- NOTE: Replace YOUR_PRESENTER_ID with actual auth.uid() from presenters table
+
+-- Create a test session
+INSERT INTO sessions (presenter_id, state, length_minutes, title, welcome_message, summary_full, slug)
+VALUES (
+  'YOUR_PRESENTER_ID',
+  'active',
+  30,
+  'Test Session',
+  'Welcome to this test session!',
+  'This is a test session to verify the feedback system works correctly.',
+  'test-session-' || gen_random_uuid()::text
+)
+RETURNING id, slug;
+
+-- Copy the session_id from above, then create themes
+INSERT INTO themes (session_id, text, sort_order) VALUES
+  ('SESSION_ID', 'Theme 1: Introduction to the topic', 1),
+  ('SESSION_ID', 'Theme 2: Deep dive into details', 2),
+  ('SESSION_ID', 'Theme 3: Practical examples', 3),
+  ('SESSION_ID', 'Theme 4: Q&A and discussion', 4);
+```
+
+### Seed Test Responses
+
+```sql
+-- Create test responses for a session
+-- Replace SESSION_ID with actual session ID
+
+INSERT INTO responses (session_id, participant_email, name, free_form_text)
+VALUES
+  ('SESSION_ID', 'test1@example.com', 'Alice', 'Great session idea!'),
+  ('SESSION_ID', 'test2@example.com', 'Bob', 'Looking forward to this'),
+  ('SESSION_ID', 'test3@example.com', 'Charlie', NULL)
+RETURNING id, participant_email;
+
+-- Create theme selections (use response_id and theme_id from above)
+INSERT INTO theme_selections (response_id, theme_id, selection) VALUES
+  -- Alice: more on theme 1, less on theme 3
+  ('RESPONSE_1_ID', 'THEME_1_ID', 'more'),
+  ('RESPONSE_1_ID', 'THEME_3_ID', 'less'),
+  -- Bob: more on themes 1 and 2
+  ('RESPONSE_2_ID', 'THEME_1_ID', 'more'),
+  ('RESPONSE_2_ID', 'THEME_2_ID', 'more'),
+  -- Charlie: less on theme 4
+  ('RESPONSE_3_ID', 'THEME_4_ID', 'less');
+```
+
+---
+
+## Verification Queries
+
+### Count Responses per Session
+
+```sql
+SELECT
+  s.title,
+  s.slug,
+  COUNT(r.id) as response_count
+FROM sessions s
+LEFT JOIN responses r ON r.session_id = s.id
+GROUP BY s.id
+ORDER BY s.created_at DESC;
+```
+
+### Theme Interest Summary
+
+```sql
+SELECT
+  t.text,
+  t.sort_order,
+  COUNT(CASE WHEN ts.selection = 'more' THEN 1 END) as more_count,
+  COUNT(CASE WHEN ts.selection = 'less' THEN 1 END) as less_count,
+  COUNT(CASE WHEN ts.selection = 'more' THEN 1 END) -
+    COUNT(CASE WHEN ts.selection = 'less' THEN 1 END) as net
+FROM themes t
+LEFT JOIN theme_selections ts ON ts.theme_id = t.id
+WHERE t.session_id = 'SESSION_ID'
+GROUP BY t.id
+ORDER BY net DESC, (COUNT(CASE WHEN ts.selection = 'more' THEN 1 END) + COUNT(CASE WHEN ts.selection = 'less' THEN 1 END)) DESC, t.sort_order;
+```
+
+### Verify RLS is Working
+
+```sql
+-- This should only return presenter's own sessions when authenticated
+SELECT * FROM sessions;
+
+-- This should return active sessions for anonymous users
+SELECT * FROM sessions WHERE state = 'active';
+```
+
+---
+
+## Known Dataset Test
+
+**Setup:**
+1. Create session with 4 themes
+2. Add 5 responses with these selections:
+
+| Participant | Theme 1 | Theme 2 | Theme 3 | Theme 4 |
+|-------------|---------|---------|---------|---------|
+| P1 | more | more | - | less |
+| P2 | more | - | less | less |
+| P3 | more | more | more | - |
+| P4 | - | more | - | less |
+| P5 | less | more | - | - |
+
+**Expected Results (sorted):**
+
+| Theme | More | Less | Total | Net |
+|-------|------|------|-------|-----|
+| Theme 2 | 4 | 0 | 4 | +4 |
+| Theme 1 | 3 | 1 | 4 | +2 |
+| Theme 3 | 1 | 1 | 2 | 0 |
+| Theme 4 | 0 | 3 | 3 | -3 |
+
+---
+
+## Troubleshooting
+
+### Auth Issues
+
+**Symptom:** Spinner never stops on auth callback
+**Solution:** Check PROGRESS.md Troubleshooting section for Navigator Lock fix
+
+**Symptom:** Magic link not received
+**Solution:** Check spam folder; verify Supabase email settings
+
+### RLS Issues
+
+**Symptom:** "permission denied for table X"
+**Solution:** Verify RLS policies applied; check auth.uid() matches presenter_id
+
+### Session State Issues
+
+**Symptom:** Participant can't submit to active session
+**Solution:** Verify session state is 'active'; check RLS policy on responses table
+
+---
+
+## Browser Compatibility
+
+Tested on:
+- Chrome 120+
+- Safari 17+
+- Firefox 120+
+
+Mobile:
+- iOS Safari
+- Chrome for Android
+
+---
+
+**Note:** AI features (theme generation, outline generation) are not yet implemented.

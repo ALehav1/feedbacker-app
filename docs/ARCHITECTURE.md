@@ -778,6 +778,61 @@ export const translateDBError = (error: unknown): string => {
 
 ---
 
+## Auth Model + RLS Summary
+
+### Authentication Flow
+
+```
+User enters email → Supabase sends magic link → User clicks link
+                            ↓
+              /auth/callback processes token
+                            ↓
+        New user? → /dashboard/profile (create presenter record)
+        Returning? → /dashboard (load sessions)
+```
+
+### Row-Level Security (RLS) Overview
+
+| Table | Presenter Access | Participant Access |
+|-------|-----------------|-------------------|
+| `presenters` | Own profile only (by `id = auth.uid()`) | None |
+| `sessions` | Own sessions (by `presenter_id`) | Active/completed sessions (public read) |
+| `themes` | Own session themes (via session join) | Active session themes (public read) |
+| `responses` | Own session responses (via session join) | Can insert for active sessions |
+| `theme_selections` | Own session selections (via response join) | Can insert/delete for active sessions |
+
+### Critical Invariant
+
+**Presenter ID must equal auth.uid()**
+
+When creating a presenter record, always set `id: user.id`:
+
+```typescript
+await supabase.from('presenters').insert({
+  id: user.id,  // MUST match auth.uid()
+  email: user.email,
+  name: formData.name,
+  organization: formData.organization,
+});
+```
+
+This ensures RLS policies work correctly.
+
+### Supabase Client Configuration
+
+The Supabase client uses a singleton pattern with Navigator Lock disabled for Vite HMR compatibility:
+
+```typescript
+// src/lib/supabase.ts
+// - Navigator Lock API disabled to prevent AbortError during HMR
+// - Singleton with version control for config changes
+// - Session persisted to localStorage
+```
+
+See `PROGRESS.md` Troubleshooting section for details on the Navigator Lock fix.
+
+---
+
 ## Appendix: Type Definitions
 
 See `/src/types/` for complete definitions.

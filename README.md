@@ -70,6 +70,17 @@ npm run dev
 - **Local dev:** http://localhost:5173
 - **Production:** [deployment URL]
 
+### End-to-End Demo
+
+1. **Login:** Enter your email at `/` → Check for magic link → Click to authenticate
+2. **Profile:** First-time users complete profile at `/dashboard/profile`
+3. **Create Session:** Click "New Session" → Enter title, length, summary → Submit
+4. **Open Session:** View session detail → Click "Open Session" to make it active
+5. **Share Link:** Copy shareable link → Send to participants
+6. **Collect Feedback:** Participants visit `/s/{slug}` → Select themes → Submit
+7. **View Results:** Open Results tab → See aggregated theme interest + individual responses
+8. **Close Session:** Click "Close Session" when done collecting feedback
+
 ---
 
 ## 📱 Mobile-First Development
@@ -139,6 +150,20 @@ npm run preview      # Preview production build
 
 ---
 
+## 🗺️ Routes
+
+| Route | Component | Access |
+|-------|-----------|--------|
+| `/` | LoginPage | Public |
+| `/auth/callback` | AuthCallback | Public |
+| `/dashboard` | Dashboard | Protected |
+| `/dashboard/profile` | ProfileSetup | Protected |
+| `/dashboard/sessions/new` | SessionCreate | Protected |
+| `/dashboard/sessions/:sessionId` | SessionDetail | Protected |
+| `/s/:slug` | FeedbackForm | Public |
+
+---
+
 ## 📖 Documentation
 
 | Document | Purpose |
@@ -148,6 +173,8 @@ npm run preview      # Preview production build
 | `docs/contract.md` | Universal + project rules |
 | `docs/ARCHITECTURE.md` | Technical architecture |
 | `docs/SPEC.md` | Product requirements |
+| `docs/TESTING.md` | Manual test checklist + SQL seeds |
+| `docs/SECURITY.md` | Security model + RLS policies |
 
 ---
 
