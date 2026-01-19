@@ -261,13 +261,12 @@ if (config.env === 'development') {
 
 **Rule:** Never hardcode URLs, keys, or environment-specific values. Always read from `config`.
 
-### Security Note: OpenAI API Key
+### Security Note: Future API Keys
 
-For v1, the OpenAI key is in frontend environment variables. This is a known compromise.
-
-**Why:** Adding a serverless proxy adds complexity we don't need yet.  
-**Risk:** Key could be extracted from browser. Mitigated by OpenAI rate limits and usage caps.  
-**Future:** Move to Vercel Edge Function before production launch with real users.
+OpenAI and Resend integrations are planned for future versions. When implemented:
+- API keys will be stored in Supabase Edge Functions (server-side)
+- Never expose API keys in frontend environment variables
+- Use Vercel/Supabase serverless functions for AI calls
 
 ---
 
@@ -884,10 +883,11 @@ interface Theme {
 interface Response {
   id: string;
   sessionId: string;
-  email: string;
+  participantEmail: string;
   name?: string;
-  contactEmail?: string;
+  followupEmail?: string;
   freeFormText?: string;
+  participantToken: string;
   selections: ThemeSelectionRecord[];
   createdAt: Date;
   updatedAt: Date;

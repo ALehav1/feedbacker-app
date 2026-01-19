@@ -616,10 +616,11 @@ See thank you message
 **Response**
 - id
 - session_id
-- email
+- participant_email
 - name (optional)
-- contact_email (optional)
+- followup_email (optional)
 - free_form_text (optional)
+- participant_token
 - created_at
 - updated_at
 

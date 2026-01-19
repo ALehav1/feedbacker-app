@@ -105,8 +105,7 @@ cp .env.example .env
 
 # Edit .env with your actual keys:
 # - Supabase URL and anon key
-# - OpenAI API key
-# - Resend API key
+# Note: OpenAI and Resend integrations are planned for future versions
 ```
 
 ### 4. Set Up Database

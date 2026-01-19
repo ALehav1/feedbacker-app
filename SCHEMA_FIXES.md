@@ -121,6 +121,11 @@ summary_condensed TEXT NOT NULL DEFAULT '',
 
 **Impact:** Can now create draft sessions and fill in fields later during wizard flow.
 
+**Client-side alignment (January 19, 2026):**
+- `src/types/index.ts`: Session interface updated to use `string` (not `string | null`) for these fields
+- `src/hooks/useSessions.ts`: SessionRow type aligned with schema
+- `src/features/sessions/SessionCreateWizard.tsx`: Pass empty string (not null) for empty optional fields
+
 ---
 
 ### 6. Schema Improvements ✅ FIXED
