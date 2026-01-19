@@ -140,7 +140,7 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Scope:** Added `hasAuthToken` check and `user` dependency to wait for magic link processing
 **Bug:** `getSessionWithRetry()` sets `isLoading=false` before Supabase processes magic link token in URL. AuthCallback then navigates with `presenter=null` because the session hasn't been established yet.
 **Reproduction:** Click magic link → lands on profile page instead of dashboard
-**Commit:** `4ca1039`
+**Commit:** `c5384bb`
 
 ### LoginPage Auth Redirect (January 19, 2026)
 
@@ -150,7 +150,7 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Scope:** Added useEffect to redirect authenticated users, added loading state
 **Bug:** LoginPage showed login form even when user had valid session in localStorage
 **Reproduction:** Have valid session → visit `/` → had to re-enter email instead of auto-redirect
-**Commit:** `4ca1039`
+**Commit:** `c5384bb`
 
 ---
 
@@ -199,8 +199,8 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 | Date | File | Reason | Commit |
 |------|------|--------|--------|
-| Jan 19, 2026 | AuthCallback.tsx | Race condition fix - wait for magic link processing | `4ca1039` |
-| Jan 19, 2026 | LoginPage.tsx | Redirect authenticated users to dashboard | `4ca1039` |
+| Jan 19, 2026 | AuthCallback.tsx | Race condition fix - wait for magic link processing | `c5384bb` |
+| Jan 19, 2026 | LoginPage.tsx | Redirect authenticated users to dashboard | `c5384bb` |
 
 ---
 
