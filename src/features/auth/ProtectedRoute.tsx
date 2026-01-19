@@ -1,3 +1,9 @@
+/**
+ * BASELINE_LOCK (Jan 18, 2026)
+ * This module is part of the frozen baseline. Avoid edits unless fixing a confirmed bug.
+ * If edits are required: keep diff minimal and document reason in docs/BASELINE_LOCK.md.
+ */
+
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';

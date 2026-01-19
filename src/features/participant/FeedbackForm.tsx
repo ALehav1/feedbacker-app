@@ -1,12 +1,18 @@
+/**
+ * BASELINE_LOCK (Jan 18, 2026)
+ * This module is part of the frozen baseline. Avoid edits unless fixing a confirmed bug.
+ * If edits are required: keep diff minimal and document reason in docs/BASELINE_LOCK.md.
+ */
+
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/hooks/use-toast'
 import { ThemeSelector } from '@/components/ThemeSelector'
+import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import type { Session, Theme } from '@/types'
 

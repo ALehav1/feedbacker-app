@@ -1,3 +1,9 @@
+/**
+ * BASELINE_LOCK (Jan 18, 2026)
+ * This module is part of the frozen baseline. Avoid edits unless fixing a confirmed bug.
+ * If edits are required: keep diff minimal and document reason in docs/BASELINE_LOCK.md.
+ */
+
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
