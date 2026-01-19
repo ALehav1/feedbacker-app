@@ -111,7 +111,7 @@ This document defines the **frozen baseline** for the Feedbacker app. These modu
 **Change:** Updated `/dashboard/sessions/new` route to use `SessionCreateWizard` instead of `SessionCreate`  
 **Justification:** Feature wiring for session creation wizard. Routing changes must occur in App.tsx by architectural necessity.  
 **Scope:** Import statement changed (line 15), component reference changed (line 48). No other logic modified.  
-**Commit:** (see below)
+**Commit:** `2fb95b2521d8de1e32883a2397bd843598a31c61`
 
 ---
 
@@ -135,6 +135,15 @@ This document defines the **frozen baseline** for the Feedbacker app. These modu
 4. ✅ Console: Zero runtime errors
 
 **Test Date:** January 18, 2026 10:12 PM UTC-5
+
+### Baseline Lock Implementation (January 18, 2026)
+
+**Commit 1 (Baseline Lock):** `cd173b7`  
+**Commit 2 (Wizard Feature):** `2fb95b2`
+
+**Files Changed:**
+- Commit 1: Documentation + BASELINE_LOCK headers only (no logic changes)
+- Commit 2: SessionCreateWizard.tsx (new), App.tsx (routing), TESTING.md (test cases)
 
 ---
 
