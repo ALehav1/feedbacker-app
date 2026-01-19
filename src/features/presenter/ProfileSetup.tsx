@@ -37,6 +37,14 @@ export function ProfileSetup() {
     formData.organization.trim() !== presenter.organization
   );
 
+  const getInitials = (name: string): string => {
+    const trimmed = name.trim();
+    if (!trimmed) return '?';
+    const parts = trimmed.split(' ').filter(p => p.length > 0);
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -108,10 +116,17 @@ export function ProfileSetup() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>{presenter ? 'Edit Profile' : 'Complete Your Profile'}</CardTitle>
-          <CardDescription>
-            {presenter ? 'Update your profile information' : 'Tell us a bit about yourself to get started'}
-          </CardDescription>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+              <span className="text-2xl font-semibold">{getInitials(formData.name)}</span>
+            </div>
+            <div className="flex-1">
+              <CardTitle>{presenter ? 'Edit Profile' : 'Complete Your Profile'}</CardTitle>
+              <CardDescription>
+                {presenter ? 'Update your profile information' : 'Tell us a bit about yourself to get started'}
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,13 +151,16 @@ export function ProfileSetup() {
               <Input
                 id="name"
                 type="text"
-                placeholder="Jane Smith"
+                placeholder="Ari Lehavi"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 disabled={isSubmitting}
                 required
                 className="min-h-[48px]"
               />
+              <p className="text-xs text-gray-500">
+                Your full name as you'd like it to appear
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -152,13 +170,16 @@ export function ProfileSetup() {
               <Input
                 id="organization"
                 type="text"
-                placeholder="Acme Corp"
+                placeholder="Moody's Analytics"
                 value={formData.organization}
                 onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
                 disabled={isSubmitting}
                 required
                 className="min-h-[48px]"
               />
+              <p className="text-xs text-gray-500">
+                Your company or organization name
+              </p>
             </div>
 
             <Button
