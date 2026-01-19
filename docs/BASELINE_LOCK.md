@@ -130,7 +130,7 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Justification:** Bug fix - excessive console logging from TOKEN_REFRESHED events causing log spam
 **Scope:** Added conditional check before console.log (line 111-114). No logic change to auth flow.
 **Bug:** Supabase fires TOKEN_REFRESHED events periodically, causing repeated auth state logs
-**Commit:** (pending)
+**Commit:** `0ce21d0`
 
 ---
 
