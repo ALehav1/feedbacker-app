@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
+import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
 import type { Session, SessionState } from '@/types'
 
 interface ThemeResult {
@@ -80,6 +81,7 @@ export function SessionDetail() {
   const [showCloseDialog, setShowCloseDialog] = useState(false)
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -113,6 +115,11 @@ export function SessionDetail() {
             summaryFull: data.summary_full,
             summaryCondensed: data.summary_condensed,
             slug: data.slug,
+            publishedWelcomeMessage: data.published_welcome_message,
+            publishedSummaryCondensed: data.published_summary_condensed,
+            publishedTopics: data.published_topics || [],
+            publishedAt: data.published_at ? new Date(data.published_at) : undefined,
+            hasUnpublishedChanges: data.has_unpublished_changes || false,
             createdAt: new Date(data.created_at),
             updatedAt: new Date(data.updated_at),
           })
@@ -197,6 +204,169 @@ export function SessionDetail() {
         title: 'Copy failed',
         description: 'Unable to copy link. Please copy manually.',
       })
+    }
+  }
+
+  const handlePublishUpdates = async () => {
+    if (!sessionId || !session) return
+
+    setIsPublishing(true)
+
+    try {
+      // Fetch current working themes
+      const { data: themesData, error: themesError } = await supabase
+        .from('themes')
+        .select('id, text, sort_order')
+        .eq('session_id', sessionId)
+        .order('sort_order', { ascending: true })
+
+      if (themesError) {
+        console.error('Error fetching themes:', themesError)
+        toast({
+          variant: 'destructive',
+          title: 'Publish failed',
+          description: 'Unable to fetch themes.',
+        })
+        return
+      }
+
+      // Map themes to published_topics format
+      const publishedTopics = (themesData || []).map((theme: { id: string; text: string; sort_order: number }) => ({
+        themeId: theme.id,
+        text: theme.text,
+        sortOrder: theme.sort_order,
+      }))
+
+      // Update session with published snapshot
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({
+          published_welcome_message: session.welcomeMessage,
+          published_summary_condensed: session.summaryCondensed,
+          published_topics: publishedTopics,
+          published_at: new Date().toISOString(),
+          has_unpublished_changes: false,
+        })
+        .eq('id', sessionId)
+
+      if (updateError) {
+        console.error('Error publishing updates:', updateError)
+        toast({
+          variant: 'destructive',
+          title: 'Publish failed',
+          description: 'Unable to publish updates.',
+        })
+        return
+      }
+
+      // Update local session state
+      setSession({
+        ...session,
+        publishedWelcomeMessage: session.welcomeMessage,
+        publishedSummaryCondensed: session.summaryCondensed,
+        publishedTopics,
+        publishedAt: new Date(),
+        hasUnpublishedChanges: false,
+      })
+
+      toast({
+        title: 'Updates published',
+        description: 'Participants now see the latest version.',
+      })
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      toast({
+        variant: 'destructive',
+        title: 'Unexpected error',
+        description: 'Something went wrong.',
+      })
+    } finally {
+      setIsPublishing(false)
+    }
+  }
+
+  const handleDiscardChanges = async () => {
+    if (!sessionId || !session) return
+
+    setIsPublishing(true)
+
+    try {
+      // Revert working fields to published snapshot
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({
+          welcome_message: session.publishedWelcomeMessage || '',
+          summary_condensed: session.publishedSummaryCondensed || '',
+          has_unpublished_changes: false,
+        })
+        .eq('id', sessionId)
+
+      if (updateError) {
+        console.error('Error discarding changes:', updateError)
+        toast({
+          variant: 'destructive',
+          title: 'Discard failed',
+          description: 'Unable to discard changes.',
+        })
+        return
+      }
+
+      // Reconcile themes table to match published_topics
+      const publishedIds = new Set(session.publishedTopics.map(t => t.themeId))
+
+      // Fetch current working themes
+      const { data: currentThemes } = await supabase
+        .from('themes')
+        .select('id')
+        .eq('session_id', sessionId)
+
+      // Delete themes not in published snapshot
+      const themesToDelete = (currentThemes || []).filter(
+        (t: { id: string }) => !publishedIds.has(t.id)
+      )
+      if (themesToDelete.length > 0) {
+        await supabase
+          .from('themes')
+          .delete()
+          .in('id', themesToDelete.map((t: { id: string }) => t.id))
+      }
+
+      // Upsert published topics back to themes table
+      for (const topic of session.publishedTopics) {
+        await supabase
+          .from('themes')
+          .upsert({
+            id: topic.themeId,
+            session_id: sessionId,
+            text: topic.text,
+            sort_order: topic.sortOrder,
+          })
+      }
+
+      // Update local session state
+      setSession({
+        ...session,
+        welcomeMessage: session.publishedWelcomeMessage || '',
+        summaryCondensed: session.publishedSummaryCondensed || '',
+        hasUnpublishedChanges: false,
+      })
+
+      toast({
+        title: 'Changes discarded',
+        description: 'Working state restored to published version.',
+      })
+
+      // Reload page to refresh themes
+      window.location.reload()
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      toast({
+        variant: 'destructive',
+        title: 'Unexpected error',
+        description: 'Something went wrong.',
+      })
+    } finally {
+      setIsPublishing(false)
     }
   }
 
@@ -347,7 +517,14 @@ export function SessionDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="border-b bg-white">
+      {session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active') && (
+        <UnpublishedChangesBar
+          onPublish={handlePublishUpdates}
+          onDiscard={handleDiscardChanges}
+          isPublishing={isPublishing}
+        />
+      )}
+      <header className="border-b bg-white" style={{ marginTop: session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active') ? '64px' : '0' }}>
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>

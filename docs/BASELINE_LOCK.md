@@ -228,6 +228,34 @@ Application enforces active-only submission; RLS policies are currently permissi
 - RLS policies unchanged (participants read published fields via client logic)
 - Added MIGRATION.sql with ALTER TABLE statements + backfill for existing sessions
 **Architecture:** In-place published snapshot (Option 1: JSONB topics, minimal schema change)
+**Commit:** `0c1e2eb`
+
+### Publish/Discard + Participant Reads Published Topics (January 20, 2026)
+
+**Files:** `src/features/sessions/SessionDetail.tsx`, `src/features/participant/FeedbackForm.tsx`
+**Change:** Implement publish/discard workflow and participant published snapshot reads
+**Justification:** Feature requirement - presenter edits while Active, explicit publish action, participants always see published version
+**Scope:** Publish/discard logic + participant reads published fields only
+
+**SessionDetail.tsx changes:**
+- Added `handlePublishUpdates()`: copies working state → published snapshot, sets `has_unpublished_changes = false`
+- Added `handleDiscardChanges()`: reverts working state to published snapshot, reconciles themes table
+- Added UnpublishedChangesBar component wiring (shows when `hasUnpublishedChanges && (draft || active)`)
+- Publish flow: fetches working themes, maps to `published_topics` JSONB format `{themeId, text, sortOrder}`
+- Discard flow: restores working fields from published snapshot, deletes unpublished themes, upserts published topics back to themes table
+- Lines modified: 24-25 (imports), 84 (state), 210-371 (publish/discard functions), 520-526 (bar wiring)
+
+**FeedbackForm.tsx changes:**
+- Removed themes table fetch, now reads `session.publishedTopics` directly
+- Maps `publishedTopics` to Theme[] format using `themeId` field for selections continuity
+- Updated display: shows `publishedWelcomeMessage` and `publishedSummaryCondensed`
+- Empty state: "Topics aren't published yet. Check back soon!"
+- Removed unused ThemeRow interface
+- Lines modified: 22 (removed interface), 89-97 (published topics read), 303-322 (display published fields), 337 (empty state)
+
+**Published topic shape:** `{themeId: string, text: string, sortOrder: number}` - uses `themeId` to preserve continuity with `theme_selections` table
+
+**Diff size:** ~180 lines added (SessionDetail), ~30 lines modified (FeedbackForm)
 **Commit:** Pending
 
 ---

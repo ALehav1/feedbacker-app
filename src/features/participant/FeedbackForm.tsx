@@ -19,13 +19,6 @@ import type { Session, Theme } from '@/types'
 type ThemeSelection = 'more' | 'less' | null
 
 // Supabase row types
-interface ThemeRow {
-  id: string
-  session_id: string
-  text: string
-  sort_order: number
-  created_at: string
-}
 
 export function FeedbackForm() {
   const { slug } = useParams<{ slug: string }>()
@@ -75,30 +68,26 @@ export function FeedbackForm() {
             summaryFull: sessionData.summary_full,
             summaryCondensed: sessionData.summary_condensed,
             slug: sessionData.slug,
+            publishedWelcomeMessage: sessionData.published_welcome_message,
+            publishedSummaryCondensed: sessionData.published_summary_condensed,
+            publishedTopics: sessionData.published_topics || [],
+            publishedAt: sessionData.published_at ? new Date(sessionData.published_at) : undefined,
+            hasUnpublishedChanges: sessionData.has_unpublished_changes || false,
             createdAt: new Date(sessionData.created_at),
             updatedAt: new Date(sessionData.updated_at),
           }
 
           setSession(mappedSession)
 
-          const { data: themesData, error: themesError } = await supabase
-            .from('themes')
-            .select('*')
-            .eq('session_id', sessionData.id)
-            .order('sort_order', { ascending: true })
-
-          if (themesError) {
-            console.error('Error fetching themes:', themesError)
-          } else if (themesData) {
-            const mappedThemes: Theme[] = (themesData as ThemeRow[]).map((t) => ({
-              id: t.id,
-              sessionId: t.session_id,
-              text: t.text,
-              sortOrder: t.sort_order,
-              createdAt: new Date(t.created_at),
-            }))
-            setThemes(mappedThemes)
-          }
+          // Read published topics instead of working themes table
+          const publishedThemes: Theme[] = (mappedSession.publishedTopics || []).map((t) => ({
+            id: t.themeId,
+            sessionId: mappedSession.id,
+            text: t.text,
+            sortOrder: t.sortOrder,
+            createdAt: new Date(), // Not stored in published snapshot
+          }))
+          setThemes(publishedThemes)
         }
       } catch (err) {
         console.error('Unexpected error:', err)
@@ -304,15 +293,15 @@ export function FeedbackForm() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">{session.title}</CardTitle>
-            {session.welcomeMessage && (
-              <CardDescription className="text-base">{session.welcomeMessage}</CardDescription>
+            {session.publishedWelcomeMessage && (
+              <CardDescription className="text-base">{session.publishedWelcomeMessage}</CardDescription>
             )}
           </CardHeader>
           <CardContent className="space-y-6">
-            {session.summaryCondensed && (
+            {session.publishedSummaryCondensed && (
               <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {session.summaryCondensed}
+                  {session.publishedSummaryCondensed}
                 </p>
               </div>
             )}
@@ -330,7 +319,7 @@ export function FeedbackForm() {
             {themes.length === 0 ? (
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
                 <p className="text-sm text-gray-600">
-                  No topics available yet. The presenter is still setting up this session.
+                  Topics aren't published yet. Check back soon!
                 </p>
               </div>
             ) : (

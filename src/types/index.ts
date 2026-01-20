@@ -28,9 +28,23 @@ export interface Session {
   summaryFull: string;
   summaryCondensed: string;
   slug: string;
+  // Published snapshot fields (what participants see)
+  publishedWelcomeMessage?: string;
+  publishedSummaryCondensed?: string;
+  publishedTopics: PublishedTopic[];
+  publishedAt?: Date;
+  hasUnpublishedChanges: boolean;
   createdAt: Date;
   updatedAt: Date;
   responseCount?: number;
+}
+
+// Published topic (stored in JSONB, read by participants)
+// Uses theme_id to preserve continuity with theme_selections table
+export interface PublishedTopic {
+  themeId: string;  // Matches themes.id for selections
+  text: string;
+  sortOrder: number;
 }
 
 // Theme

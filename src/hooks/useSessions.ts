@@ -14,6 +14,11 @@ interface SessionRow {
   summary_full: string
   summary_condensed: string
   slug: string
+  published_welcome_message?: string
+  published_summary_condensed?: string
+  published_topics: { themeId: string; text: string; sortOrder: number }[] // JSONB array from database
+  published_at?: string
+  has_unpublished_changes: boolean
   created_at: string
   updated_at: string
 }
@@ -85,6 +90,11 @@ export function useSessions(): UseSessionsReturn {
         summaryFull: row.summary_full,
         summaryCondensed: row.summary_condensed,
         slug: row.slug,
+        publishedWelcomeMessage: row.published_welcome_message,
+        publishedSummaryCondensed: row.published_summary_condensed,
+        publishedTopics: row.published_topics || [],
+        publishedAt: row.published_at ? new Date(row.published_at) : undefined,
+        hasUnpublishedChanges: row.has_unpublished_changes || false,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
         responseCount: responseCounts.get(row.id) || 0,
