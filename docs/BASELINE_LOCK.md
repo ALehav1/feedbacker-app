@@ -210,6 +210,24 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Updated shareable link display to show `baseUrl` instead of `window.location.origin`
 **Lines modified:** 73, 186, 417 (URL construction + display)
 **Diff size:** 3 lines
+**Commit:** `3b3be3c`
+
+### Published vs Unpublished Changes Schema (January 20, 2026)
+
+**Files:** `supabase/schema.sql`, `supabase/rls-policies.sql`, `supabase/MIGRATION.sql`
+**Change:** Add published snapshot columns to sessions table for versioning
+**Justification:** Feature requirement - allow presenter edits while Active without disrupting participant experience
+**Scope:** Schema extension only, zero logic changes
+- Added to sessions table:
+  - `published_welcome_message TEXT` (what participants see)
+  - `published_summary_condensed TEXT` (what participants see)
+  - `published_topics JSONB NOT NULL DEFAULT '[]'::jsonb` (what participants see)
+  - `published_at TIMESTAMPTZ` (when last published)
+  - `has_unpublished_changes BOOLEAN NOT NULL DEFAULT false` (dirty flag)
+- Working fields remain: `welcome_message`, `summary_condensed`, `themes` table
+- RLS policies unchanged (participants read published fields via client logic)
+- Added MIGRATION.sql with ALTER TABLE statements + backfill for existing sessions
+**Architecture:** In-place published snapshot (Option 1: JSONB topics, minimal schema change)
 **Commit:** Pending
 
 ---

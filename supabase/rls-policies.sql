@@ -56,6 +56,8 @@ CREATE POLICY "Presenters can delete own sessions"
 -- Participants can read active/completed sessions (by slug lookup)
 -- NOTE: This exposes session metadata to anyone with anon key.
 -- For MVP this is acceptable. For production, use Edge Function.
+-- IMPORTANT: Participants should read published_* fields, not working fields
+-- (published_welcome_message, published_summary_condensed, published_topics)
 CREATE POLICY "Anyone can read active sessions"
   ON sessions FOR SELECT
   USING (state IN ('active', 'completed'));
@@ -106,6 +108,9 @@ CREATE POLICY "Presenters can delete own session themes"
   );
 
 -- Participants can read themes for active/completed sessions
+-- NOTE: With published_topics in sessions table, participants should read
+-- from published_topics JSONB instead of themes table (themes = working state)
+-- This policy remains for backward compatibility and presenter access
 CREATE POLICY "Anyone can read themes for active sessions"
   ON themes FOR SELECT
   USING (
