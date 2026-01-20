@@ -13,19 +13,27 @@ export function ProfileSetup() {
   const { user, presenter, refetchPresenter } = useAuth();
   const { toast } = useToast();
 
+  // Mode: 'confirm' for returning users, 'edit' for new/editing
+  const [mode, setMode] = useState<'confirm' | 'edit'>('edit');
+
   // Pre-populate form if editing existing profile
   const [formData, setFormData] = useState({
     name: '',
     organization: '',
   });
 
-  // Initialize form with presenter data if editing
+  // Initialize form with presenter data and set mode
   useEffect(() => {
     if (presenter) {
       setFormData({
         name: presenter.name,
         organization: presenter.organization,
       });
+      // Returning user: start in confirm mode
+      setMode('confirm');
+    } else {
+      // New user: start in edit mode
+      setMode('edit');
     }
   }, [presenter]);
 
@@ -112,6 +120,59 @@ export function ProfileSetup() {
     }
   };
 
+  // Confirm mode: show profile summary with Continue/Edit buttons
+  if (mode === 'confirm' && presenter) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+                <span className="text-2xl font-semibold">{getInitials(presenter.name)}</span>
+              </div>
+              <div className="flex-1">
+                <CardTitle>Welcome back!</CardTitle>
+                <CardDescription>Your profile is ready</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs text-gray-500">Email</Label>
+                <p className="text-sm font-medium text-gray-900">{user?.email}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-gray-500">Name</Label>
+                <p className="text-sm font-medium text-gray-900">{presenter.name}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-gray-500">Organization</Label>
+                <p className="text-sm font-medium text-gray-900">{presenter.organization}</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => navigate('/dashboard', { replace: true })}
+                className="w-full min-h-[56px]"
+              >
+                Continue to dashboard
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setMode('edit')}
+                className="w-full min-h-[48px]"
+              >
+                Edit profile
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Edit mode: show form
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
