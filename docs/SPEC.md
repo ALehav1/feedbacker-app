@@ -597,9 +597,13 @@ None remaining - all decisions documented above.
 ```
 Homepage → Enter email → Magic link → 
 [First time: Profile setup] → Dashboard →
-Create session → Enter length → Add summary → 
-Review AI generation → Edit as needed → 
+Create session → Enter title + length → 
+Add outline (bullet format recommended) → 
+Extract topics from outline → Review/edit topics → 
+Create session (draft) → 
+Start collecting feedback (draft → active) → 
 Copy link → Share externally →
+[Optional: Edit working version → Publish updates] →
 Check results → Mark completed →
 Export outline → Archive
 ```

@@ -64,19 +64,29 @@ Presenters shouldn't guess what their audience wants. This tool flips the model:
 ```
 1. From /dashboard, click "Create New Session"
    - OR click "Use as Template" on archived session
-2. Step 1: Enter session length (minutes)
-3. Step 2: Enter/upload summary
-   - Free write, paste, or upload file (PDF/Word/PPT)
-   - Layered guidance available
-4. Click "Generate" → AI creates:
-   - Title
-   - Welcome message
-   - Themes (count based on length)
-   - Slug
-   - Condensed summary
-5. Step 3: Review and edit all generated content
-6. Step 4: Copy shareable link
-7. Session state: draft → active
+2. Step 1: Enter title and session length (minutes)
+3. Step 2: Enter outline or notes
+   - Paste bullet outline or free-form notes
+   - In-wizard guidance shows optimal format:
+     * Collapsible helper with example outline
+     * Top-level bullets for main topics (3–10 words)
+     * Sub-bullets for supporting detail
+     * Optional "Topic:" prefix improves extraction accuracy
+   - Optional: Enter welcome message
+   - Optional: Draft overview summary (can auto-generate from outline)
+4. Step 3: Extract and review topics
+   - Click "Extract topics from outline"
+   - Extraction heuristics:
+     * Prioritizes top-level bullets (minimal indentation)
+     * Strips "Topic:" prefix for display
+     * Filters topics >120 characters
+     * Caps at 12 topics
+     * Fallback to second-level bullets if <4 found
+   - Review banner appears after extraction
+   - Manually add/edit/remove/reorder topics as needed
+5. Step 4: Review all session details
+6. Click "Create Session" → Session state: draft
+7. From session detail, click "Start collecting feedback" → draft → active
 ```
 
 ### Presenter: View Results

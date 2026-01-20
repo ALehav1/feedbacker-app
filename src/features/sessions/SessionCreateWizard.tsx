@@ -47,6 +47,8 @@ export function SessionCreateWizard() {
   // Theme editing state
   const [editingThemeId, setEditingThemeId] = useState<string | null>(null)
   const [themeInputText, setThemeInputText] = useState('')
+  const [topicsWereExtracted, setTopicsWereExtracted] = useState(false)
+  const [reviewBannerDismissed, setReviewBannerDismissed] = useState(false)
 
   // Load wizard state from localStorage on mount
   useEffect(() => {
@@ -208,34 +210,72 @@ export function SessionCreateWizard() {
       return
     }
 
+    const MIN_TOPICS = 4
+    const MAX_TOPICS = 12
+    const MAX_TOPIC_LENGTH = 120
+
     const lines = outline.split('\n')
-    const extractedTopics: string[] = []
+    
+    interface ParsedLine {
+      text: string
+      indent: number
+      isBullet: boolean
+    }
+
+    const parsedLines: ParsedLine[] = []
 
     for (const line of lines) {
-      const trimmed = line.trim()
-      if (!trimmed) continue
+      if (!line.trim()) continue
 
-      if (
-        trimmed.match(/^[-*•]\s/) ||
-        trimmed.match(/^\d+[.)]/)
-      ) {
-        const cleaned = trimmed.replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '').trim()
-        if (cleaned.length > 3 && cleaned.length < 150) {
-          extractedTopics.push(cleaned)
-        }
-      } else if (trimmed.length > 10 && trimmed.length < 150 && !trimmed.endsWith(':')) {
-        extractedTopics.push(trimmed)
+      const leadingSpaces = line.match(/^\s*/)?.[0].length || 0
+      const hasBullet = /^\s*[-*•]\s/.test(line) || /^\s*\d+[.)]\s/.test(line)
+      
+      if (hasBullet) {
+        const cleaned = line.trim().replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '').trim()
+        parsedLines.push({
+          text: cleaned,
+          indent: leadingSpaces,
+          isBullet: true,
+        })
       }
     }
 
-    if (extractedTopics.length === 0) {
-      const sentences = outline.split(/[.!?]\n?/).filter(s => s.trim().length > 20)
-      extractedTopics.push(...sentences.slice(0, 8).map(s => s.trim()))
+    if (parsedLines.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No topics found',
+        description: 'Could not extract topics from the outline. Please add topics manually.',
+      })
+      return
     }
+
+    const minIndent = Math.min(...parsedLines.map(p => p.indent))
+    let topLevelCandidates = parsedLines.filter(p => p.indent === minIndent)
+
+    if (topLevelCandidates.length < MIN_TOPICS && parsedLines.length >= MIN_TOPICS) {
+      const secondLevelIndent = Math.min(
+        ...parsedLines.filter(p => p.indent > minIndent).map(p => p.indent)
+      )
+      if (isFinite(secondLevelIndent)) {
+        topLevelCandidates = parsedLines.filter(
+          p => p.indent === minIndent || p.indent === secondLevelIndent
+        )
+      }
+    }
+
+    const extractedTopics = topLevelCandidates
+      .map(p => p.text)
+      .filter(text => text.length > 3 && text.length <= MAX_TOPIC_LENGTH)
+      .map(text => {
+        let cleaned = text.replace(/^Topic:\s*/i, '').trim()
+        cleaned = cleaned.replace(/[.,;:]$/, '').trim()
+        return cleaned
+      })
+      .filter(text => text.length > 0)
 
     const uniqueTopics = Array.from(
       new Map(extractedTopics.map(t => [t.toLowerCase(), t])).values()
-    ).slice(0, 12)
+    ).slice(0, MAX_TOPICS)
 
     if (uniqueTopics.length === 0) {
       toast({
@@ -257,9 +297,12 @@ export function SessionCreateWizard() {
       themes: newThemes,
     })
 
+    setTopicsWereExtracted(true)
+    setReviewBannerDismissed(false)
+
     toast({
-      title: 'Topics generated',
-      description: `Extracted ${newThemes.length} topics from your outline. You can edit or reorder them.`,
+      title: 'Topics extracted',
+      description: `Extracted ${newThemes.length} topics from your outline. Review and edit below.`,
     })
   }
 
@@ -522,6 +565,33 @@ export function SessionCreateWizard() {
         <p className="text-xs text-gray-500">
           Private working notes. Used to draft the overview and extract topics.
         </p>
+
+        <details className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-gray-700 leading-relaxed">
+            Tip: Put each main topic on its own top-level bullet. Use sub-bullets for supporting detail.
+          </summary>
+          <div className="mt-3 space-y-3">
+            <h4 className="text-sm font-medium text-gray-900">Outline format example</h4>
+            <pre className="overflow-x-auto rounded-md bg-white p-3 text-sm leading-relaxed text-gray-900 font-mono border border-gray-200">
+{`- Topic: Problem framing
+  - Supporting: quick story
+  - Supporting: why it matters now
+- Topic: Current constraints
+  - Supporting: what's hard today
+- Topic: Proposed approach
+  - Supporting: steps and tradeoffs
+- Topic: Case study
+- Topic: Close / ask`}
+            </pre>
+            <ul className="space-y-1 text-sm text-gray-700 leading-relaxed">
+              <li>• One main idea per top-level bullet</li>
+              <li>• Keep top-level bullets short (3–10 words)</li>
+              <li>• Put detail in sub-bullets</li>
+              <li>• Avoid paragraphs; split into bullets</li>
+              <li>• "Topic:" prefix improves accuracy</li>
+            </ul>
+          </div>
+        </details>
       </div>
     </div>
   )
@@ -531,20 +601,39 @@ export function SessionCreateWizard() {
       <div>
         <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm font-medium text-gray-900">Topics</h3>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateTopics}
-            disabled={!wizardData.summaryFull.trim()}
-            className="h-8 text-xs w-full sm:w-auto"
-          >
-            Extract topics from outline
-          </Button>
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Uses top-level bullets as topics. Review and edit before publishing.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateTopics}
+              disabled={!wizardData.summaryFull.trim()}
+              className="min-h-[48px] text-xs w-full sm:w-auto"
+            >
+              Extract topics from outline
+            </Button>
+          </div>
         </div>
-        <p className="text-sm text-gray-600 mb-4">
-          Extract topics from your outline, then review and edit.
-        </p>
+
+        {topicsWereExtracted && !reviewBannerDismissed && wizardData.themes.length > 0 && (
+          <div className="mb-4 flex items-start gap-3 rounded-lg border border-violet-200 bg-violet-50 p-3">
+            <div className="flex-1">
+              <p className="text-sm text-violet-900 leading-relaxed">
+                Review: edit wording, reorder, add/remove topics. Publish updates controls what participants see.
+              </p>
+            </div>
+            <button
+              onClick={() => setReviewBannerDismissed(true)}
+              className="shrink-0 text-violet-700 hover:text-violet-900"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         <div className="flex gap-2">
           <Input

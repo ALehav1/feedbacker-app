@@ -70,13 +70,39 @@ npm run dev
 
 1. **Login:** Enter your email at `/` → Check for magic link → Click to authenticate
 2. **Profile:** First-time users complete profile at `/dashboard/profile`
-3. **Create Session:** Click "New Session" → Enter title, length, summary → Submit
-4. **Start Collecting:** View session detail → Click "Start collecting feedback" to publish initial Live version
-5. **Share Link:** Copy shareable link → Send to participants
-6. **Collect Feedback:** Participants visit `/s/{slug}` → Select topics → Submit
-7. **Edit While Active:** Make changes to working version → Click "Publish updates" when ready (participants continue seeing Live version)
-8. **View Results:** Open Results tab → See aggregated topic interest + individual responses
-9. **Close Session:** Click "Close Session" when done collecting feedback
+3. **Create Session:** Click "New Session" → Enter title, length, outline (use bullet format)
+4. **Extract Topics:** Click "Extract topics from outline" → Review and edit extracted topics
+5. **Start Collecting:** View session detail → Click "Start collecting feedback" to publish initial Live version
+6. **Share Link:** Copy shareable link → Send to participants
+7. **Collect Feedback:** Participants visit `/s/{slug}` → Select topics → Submit
+8. **Edit While Active:** Make changes to working version → Click "Publish updates" when ready (participants continue seeing Live version)
+9. **View Results:** Open Results tab → See aggregated topic interest + individual responses
+10. **Close Session:** Click "Close Session" when done collecting feedback
+
+### Outline Format Best Practices
+
+For best topic extraction results:
+
+- **Use top-level bullets** for each main topic
+- **Keep topics short** (3–10 words)
+- **Add sub-bullets** for supporting detail
+- **Optional: Use "Topic:" prefix** for improved accuracy
+
+**Example:**
+```
+- Topic: Problem framing
+  - Supporting: quick story
+  - Supporting: why it matters now
+- Topic: Current constraints
+- Topic: Proposed approach
+```
+
+**Extraction behavior:**
+- Prioritizes minimal-indent bullets
+- Strips "Topic:" prefix for display
+- Filters topics >120 characters
+- Caps at 12 topics
+- If <4 top-level topics found, includes second-level bullets as fallback
 
 ---
 
