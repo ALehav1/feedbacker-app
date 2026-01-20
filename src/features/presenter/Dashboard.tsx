@@ -3,7 +3,6 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { useSessions } from '@/hooks/useSessions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, LogOut, Copy, ExternalLink, BarChart3 } from 'lucide-react';
 
@@ -154,11 +153,21 @@ function SessionCard({ session }: SessionCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const stateVariants: Record<SessionState, 'default' | 'secondary' | 'outline'> = {
-    draft: 'secondary',
-    active: 'default',
-    completed: 'outline',
-    archived: 'secondary',
+  const getStateBadgeClassName = (state: SessionState): string => {
+    const baseClasses = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold';
+    
+    switch (state) {
+      case 'active':
+        return `${baseClasses} bg-green-100 text-green-800 border border-green-200`;
+      case 'draft':
+        return `${baseClasses} bg-gray-100 text-gray-700 border border-gray-200`;
+      case 'completed':
+        return `${baseClasses} bg-slate-100 text-slate-700 border border-slate-200`;
+      case 'archived':
+        return `${baseClasses} bg-gray-50 text-gray-500 border border-gray-200`;
+      default:
+        return `${baseClasses} bg-gray-100 text-gray-600 border border-gray-200`;
+    }
   };
 
   const stateLabels: Record<SessionState, string> = {
@@ -200,9 +209,9 @@ function SessionCard({ session }: SessionCardProps) {
           <h3 className="line-clamp-2 flex-1 text-base font-semibold text-gray-900">
             {session.title || 'Untitled Session'}
           </h3>
-          <Badge variant={stateVariants[session.state]} className="shrink-0">
+          <span className={getStateBadgeClassName(session.state)}>
             {stateLabels[session.state]}
-          </Badge>
+          </span>
         </div>
 
         <div className="flex items-center gap-3 text-sm text-gray-600">
