@@ -51,26 +51,26 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
+        <div className="mx-auto w-full max-w-screen-sm px-4 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
               <p className="text-sm text-gray-600">
                 Welcome back, {presenter?.name || 'there'}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button
                 onClick={() => navigate('/dashboard/profile')}
                 variant="outline"
-                className="min-h-[48px]"
+                className="h-12 w-full sm:w-auto"
               >
                 Edit Profile
               </Button>
               <Button
                 onClick={handleSignOut}
                 variant="outline"
-                className="min-h-[48px]"
+                className="h-12 w-full sm:w-auto"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
@@ -80,9 +80,9 @@ export function Dashboard() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-screen-sm px-4 pt-6 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         {hasNoSessions ? (
-          <Card className="mx-auto max-w-2xl">
+          <Card>
             <CardHeader className="text-center">
               <CardTitle>No Sessions Yet</CardTitle>
               <CardDescription>
@@ -93,7 +93,7 @@ export function Dashboard() {
               <Button
                 onClick={() => navigate('/dashboard/sessions/new')}
                 size="lg"
-                className="min-h-[56px]"
+                className="h-14 w-full sm:w-auto"
               >
                 <Plus className="mr-2 h-5 w-5" />
                 Create Your First Session
@@ -101,8 +101,8 @@ export function Dashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
+          <div className="space-y-6">
+            <div className="flex flex-col gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Your Sessions</h2>
                 <p className="text-sm text-gray-600">
@@ -111,7 +111,7 @@ export function Dashboard() {
               </div>
               <Button
                 onClick={() => navigate('/dashboard/sessions/new')}
-                className="min-h-[56px]"
+                className="h-12 w-full justify-center sm:w-auto"
               >
                 <Plus className="mr-2 h-5 w-5" />
                 Create New Session
@@ -120,8 +120,8 @@ export function Dashboard() {
 
             {activeSessions.length > 0 && (
               <div>
-                <h3 className="mb-4 text-lg font-medium text-gray-900">Active Sessions</h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Active Sessions</h3>
+                <div className="space-y-3">
                   {activeSessions.map((session) => (
                     <SessionCard key={session.id} session={session} />
                   ))}
@@ -131,8 +131,8 @@ export function Dashboard() {
 
             {archivedSessions.length > 0 && (
               <div>
-                <h3 className="mb-4 text-lg font-medium text-gray-900">Archived Sessions</h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Archived Sessions</h3>
+                <div className="space-y-3">
                   {archivedSessions.map((session) => (
                     <SessionCard key={session.id} session={session} />
                   ))}
@@ -194,67 +194,62 @@ function SessionCard({ session }: SessionCardProps) {
   };
 
   return (
-    <Card className="transition-shadow hover:shadow-md">
-      <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="line-clamp-2 text-base">
+    <Card className="p-4">
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="line-clamp-2 flex-1 text-base font-semibold text-gray-900">
             {session.title || 'Untitled Session'}
-          </CardTitle>
+          </h3>
           <Badge variant={stateVariants[session.state]} className="shrink-0">
             {stateLabels[session.state]}
           </Badge>
         </div>
-        <CardDescription className="line-clamp-2">
-          {session.summaryCondensed || session.summaryFull || 'No summary'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center justify-between text-sm text-gray-600">
+
+        <div className="flex items-center gap-3 text-sm text-gray-600">
           <span>{session.lengthMinutes} min</span>
+          <span>•</span>
           <span>{(session.responseCount || 0) === 1 ? '1 response' : `${session.responseCount || 0} responses`}</span>
         </div>
 
-        <div className="rounded-md bg-gray-50 px-3 py-2">
-          <p className="text-xs text-gray-500 mb-1">Shareable link</p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 truncate text-xs text-gray-900">/s/{session.slug}</code>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyLink}
-              className="h-12 w-12 p-0 shrink-0"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+          <code className="flex-1 truncate text-xs text-gray-700">
+            {window.location.origin}/s/{session.slug}
+          </code>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopyLink}
+            className="h-8 w-8 shrink-0 p-0"
+            title="Copy link"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
         </div>
 
         <div className="flex gap-2">
           <Button
             variant="outline"
-            size="sm"
             onClick={handleViewFeedback}
-            className="flex-1 min-h-[48px]"
+            className="h-12 flex-1"
           >
-            <ExternalLink className="mr-1 h-4 w-4" />
+            <ExternalLink className="mr-2 h-4 w-4" />
             Open
           </Button>
           {(session.responseCount || 0) > 0 && (
             <Button
               variant="outline"
-              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/dashboard/sessions/${session.id}`);
               }}
-              className="flex-1 min-h-[48px]"
+              className="h-12 flex-1"
             >
-              <BarChart3 className="mr-1 h-4 w-4" />
+              <BarChart3 className="mr-2 h-4 w-4" />
               Results
             </Button>
           )}
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }
