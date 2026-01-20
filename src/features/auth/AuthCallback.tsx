@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
+import { Button } from '@/components/ui/button'
 
 export function AuthCallback() {
   const navigate = useNavigate()
@@ -21,17 +22,26 @@ export function AuthCallback() {
     return hash.includes('access_token') || search.includes('code=')
   }, [])
 
-  // Parse error from URL params once (memoized to prevent re-computation)
-  const error = useMemo(() => {
+  // Parse error details from URL params once
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const errorDetails = useMemo(() => {
     const params = new URLSearchParams(window.location.search)
     const hashParams = new URLSearchParams(window.location.hash.substring(1))
     const errorParam = params.get('error') || hashParams.get('error')
     if (!errorParam) return null
-    return params.get('error_description') || hashParams.get('error_description') || 'Authentication failed'
+
+    const errorCode = params.get('error_code') || hashParams.get('error_code')
+    const errorDescription = params.get('error_description') || hashParams.get('error_description') || 'Authentication failed'
+
+    return { errorDescription, isExpired: errorCode === 'otp_expired' }
   }, [])
 
+  const error = errorDetails?.errorDescription ?? null
+  const isExpiredLink = errorDetails?.isExpired ?? false
+
   useEffect(() => {
-    if (error) {
+    // For expired links, don't auto-redirect - let user click the button
+    if (error && !isExpiredLink) {
       timeoutRef.current = window.setTimeout(() => {
         navigate('/', { replace: true })
       }, 1500)
@@ -52,9 +62,30 @@ export function AuthCallback() {
     return () => {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
     }
-  }, [navigate, user, presenter, isLoading, error, hasAuthToken])
+  }, [navigate, user, presenter, isLoading, error, isExpiredLink, hasAuthToken])
 
   if (error) {
+    // Special handling for expired/used magic links
+    if (isExpiredLink) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+          <div className="text-center max-w-md">
+            <h1 className="mb-2 text-2xl font-bold text-gray-900">Sign-in link expired</h1>
+            <p className="mb-6 text-gray-600">
+              This link expired or was already used. Request a new one.
+            </p>
+            <Button
+              onClick={() => navigate('/', { replace: true })}
+              className="min-h-[48px]"
+            >
+              Send me a new link
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
+    // Generic error with auto-redirect
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <div className="text-center">

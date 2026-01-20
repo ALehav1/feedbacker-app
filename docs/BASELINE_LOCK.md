@@ -170,6 +170,19 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 **Commit:** `10e757b`
 
+### Expired Magic Link UX (January 19, 2026)
+
+**File:** `src/features/auth/AuthCallback.tsx`
+**Change:** Detect `error_code=otp_expired` and show user-friendly message with action button
+**Justification:** UX improvement - expired/used magic links showed generic error and auto-redirected without explanation
+**Scope:** Added `isExpiredLink` parsing, conditional rendering for expired links, Button import
+**Behavior:**
+- Title: "Sign-in link expired"
+- Body: "This link expired or was already used. Request a new one."
+- Button: "Send me a new link" → navigates to `/`
+- No auto-redirect for expired links (user must click button)
+**Commit:** `4770217`
+
 ---
 
 ## Baseline Lock History
