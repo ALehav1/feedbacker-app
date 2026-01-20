@@ -96,6 +96,17 @@ export function SessionCreateWizard() {
       }
     }
 
+    if (currentStep === 2) {
+      if (!wizardData.summaryFull.trim()) {
+        toast({
+          variant: 'destructive',
+          title: 'Outline required',
+          description: 'Please enter an outline or notes.',
+        })
+        return
+      }
+    }
+
     setCurrentStep((prev) => Math.min(prev + 1, 4))
   }
 
@@ -186,6 +197,109 @@ export function SessionCreateWizard() {
     })
   }
 
+  const handleGenerateTopics = () => {
+    const outline = wizardData.summaryFull.trim()
+    if (!outline) {
+      toast({
+        variant: 'destructive',
+        title: 'No outline',
+        description: 'Please enter an outline or notes first.',
+      })
+      return
+    }
+
+    const lines = outline.split('\n')
+    const extractedTopics: string[] = []
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed) continue
+
+      if (
+        trimmed.match(/^[-*•]\s/) ||
+        trimmed.match(/^\d+[.)]/)
+      ) {
+        const cleaned = trimmed.replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '').trim()
+        if (cleaned.length > 3 && cleaned.length < 150) {
+          extractedTopics.push(cleaned)
+        }
+      } else if (trimmed.length > 10 && trimmed.length < 150 && !trimmed.endsWith(':')) {
+        extractedTopics.push(trimmed)
+      }
+    }
+
+    if (extractedTopics.length === 0) {
+      const sentences = outline.split(/[.!?]\n?/).filter(s => s.trim().length > 20)
+      extractedTopics.push(...sentences.slice(0, 8).map(s => s.trim()))
+    }
+
+    const uniqueTopics = Array.from(
+      new Map(extractedTopics.map(t => [t.toLowerCase(), t])).values()
+    ).slice(0, 12)
+
+    if (uniqueTopics.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No topics found',
+        description: 'Could not extract topics from the outline. Please add topics manually.',
+      })
+      return
+    }
+
+    const newThemes: Theme[] = uniqueTopics.map((text, index) => ({
+      id: crypto.randomUUID(),
+      text,
+      sortOrder: index + 1,
+    }))
+
+    setWizardData({
+      ...wizardData,
+      themes: newThemes,
+    })
+
+    toast({
+      title: 'Topics generated',
+      description: `Extracted ${newThemes.length} topics from your outline. You can edit or reorder them.`,
+    })
+  }
+
+  const handleGenerateOverview = () => {
+    const outline = wizardData.summaryFull.trim()
+    if (!outline) {
+      toast({
+        variant: 'destructive',
+        title: 'No outline',
+        description: 'Please enter an outline or notes first.',
+      })
+      return
+    }
+
+    const lines = outline.split('\n').filter(line => line.trim().length > 0)
+    const firstFewLines = lines.slice(0, 3).join(' ').trim()
+    
+    let overview = firstFewLines
+    if (overview.length > 300) {
+      overview = overview.slice(0, 297) + '...'
+    }
+
+    if (!overview) {
+      overview = outline.slice(0, 250).trim()
+      if (outline.length > 250) {
+        overview += '...'
+      }
+    }
+
+    setWizardData({
+      ...wizardData,
+      summaryCondensed: overview,
+    })
+
+    toast({
+      title: 'Overview drafted',
+      description: 'You can edit the generated overview below.',
+    })
+  }
+
   const handleSubmit = async () => {
     if (!user) {
       toast({
@@ -246,11 +360,11 @@ export function SessionCreateWizard() {
         const { error: themesError } = await supabase.from('themes').insert(themesInsert)
 
         if (themesError) {
-          console.error('Themes creation error:', themesError)
+          console.error('Topics creation error:', themesError)
           toast({
             variant: 'destructive',
-            title: 'Themes creation failed',
-            description: 'Session created but themes could not be added.',
+            title: 'Topics creation failed',
+            description: 'Session created but topics could not be added.',
           })
         }
       }
@@ -317,6 +431,21 @@ export function SessionCreateWizard() {
   const renderStep1 = () => (
     <div className="space-y-6">
       <div className="space-y-2">
+        <Label htmlFor="title">
+          Session Title <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="title"
+          type="text"
+          placeholder="e.g., Q4 Product Roadmap Review"
+          value={wizardData.title}
+          onChange={(e) => setWizardData({ ...wizardData, title: e.target.value })}
+          className="min-h-[48px]"
+        />
+        <p className="text-xs text-gray-500">Give your session a clear, descriptive title</p>
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="lengthMinutes">
           Session Length (minutes) <span className="text-red-500">*</span>
         </Label>
@@ -330,21 +459,6 @@ export function SessionCreateWizard() {
           className="min-h-[48px]"
         />
         <p className="text-xs text-gray-500">How long will your presentation be?</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="title">
-          Session Title <span className="text-red-500">*</span>
-        </Label>
-        <Input
-          id="title"
-          type="text"
-          placeholder="e.g., Q4 Product Roadmap Review"
-          value={wizardData.title}
-          onChange={(e) => setWizardData({ ...wizardData, title: e.target.value })}
-          className="min-h-[48px]"
-        />
-        <p className="text-xs text-gray-500">Give your session a clear, descriptive title</p>
       </div>
     </div>
   )
@@ -364,40 +478,52 @@ export function SessionCreateWizard() {
           className="resize-none"
         />
         <p className="text-xs text-gray-500">
-          Paste your outline, talk track, or bullet notes. Participants will tell you what to cover more and what to cover less.
+          Your outline or notes. Use this to generate topics and overview below.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="summaryCondensed">Overview summary</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateOverview}
+            disabled={!wizardData.summaryFull.trim()}
+            className="h-8 text-xs"
+          >
+            Draft from outline
+          </Button>
+        </div>
+        <Textarea
+          id="summaryCondensed"
+          placeholder="Short participant-facing description (1-2 sentences)..."
+          value={wizardData.summaryCondensed}
+          onChange={(e) => setWizardData({ ...wizardData, summaryCondensed: e.target.value })}
+          rows={3}
+          className="resize-none"
+        />
+        <p className="text-xs text-gray-500">
+          This overview will be shown to participants. You can generate it from your outline or write it yourself.
         </p>
       </div>
 
       <details className="rounded-lg border border-gray-200 bg-gray-50">
         <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100">
-          Optional: welcome message & extra context
+          Optional: Welcome message
         </summary>
-        <div className="space-y-4 px-4 pb-4 pt-2">
-          <div className="space-y-2">
-            <Label htmlFor="welcomeMessage">Welcome Message</Label>
-            <Textarea
-              id="welcomeMessage"
-              placeholder="A message to greet your participants..."
-              value={wizardData.welcomeMessage}
-              onChange={(e) => setWizardData({ ...wizardData, welcomeMessage: e.target.value })}
-              rows={3}
-              className="resize-none"
-            />
-            <p className="text-xs text-gray-500">Greet participants when they open the feedback form</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="summaryCondensed">Condensed Summary</Label>
-            <Textarea
-              id="summaryCondensed"
-              placeholder="Brief overview (1-2 sentences)..."
-              value={wizardData.summaryCondensed}
-              onChange={(e) => setWizardData({ ...wizardData, summaryCondensed: e.target.value })}
-              rows={3}
-              className="resize-none"
-            />
-            <p className="text-xs text-gray-500">Short version shown by default to participants</p>
-          </div>
+        <div className="space-y-2 px-4 pb-4 pt-2">
+          <Label htmlFor="welcomeMessage">Welcome Message</Label>
+          <Textarea
+            id="welcomeMessage"
+            placeholder="A message to greet your participants..."
+            value={wizardData.welcomeMessage}
+            onChange={(e) => setWizardData({ ...wizardData, welcomeMessage: e.target.value })}
+            rows={3}
+            className="resize-none"
+          />
+          <p className="text-xs text-gray-500">Optional greeting shown at the top of the feedback form</p>
         </div>
       </details>
     </div>
@@ -406,7 +532,19 @@ export function SessionCreateWizard() {
   const renderStep3 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-gray-900 mb-2">Add Topics</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-gray-900">Topics</h3>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateTopics}
+            disabled={!wizardData.summaryFull.trim()}
+            className="h-8 text-xs"
+          >
+            Generate from outline
+          </Button>
+        </div>
         <p className="text-sm text-gray-600 mb-4">
           Add the topics you're planning to cover. Participants will tell you what to spend more or less time on.
         </p>
@@ -544,26 +682,28 @@ export function SessionCreateWizard() {
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Outline & Context</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Outline & Overview</h4>
           <dl className="space-y-2">
             <div>
               <dt className="text-xs text-gray-500">Outline or notes</dt>
-              <dd className="text-sm text-gray-900">
+              <dd className="text-sm text-gray-900 whitespace-pre-wrap">
                 {wizardData.summaryFull || <span className="text-gray-400">Not provided</span>}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">Welcome Message</dt>
-              <dd className="text-sm text-gray-900">
-                {wizardData.welcomeMessage || <span className="text-gray-400">Not provided</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-gray-500">Condensed Summary</dt>
+              <dt className="text-xs text-gray-500">Overview summary (shown to participants)</dt>
               <dd className="text-sm text-gray-900">
                 {wizardData.summaryCondensed || <span className="text-gray-400">Not provided</span>}
               </dd>
             </div>
+            {wizardData.welcomeMessage && (
+              <div>
+                <dt className="text-xs text-gray-500">Welcome Message</dt>
+                <dd className="text-sm text-gray-900">
+                  {wizardData.welcomeMessage}
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
 
@@ -620,14 +760,14 @@ export function SessionCreateWizard() {
           <CardHeader>
             <CardTitle>
               {currentStep === 1 && 'Session Basics'}
-              {currentStep === 2 && 'Messages & Summaries'}
-              {currentStep === 3 && 'Define Themes'}
+              {currentStep === 2 && 'Outline & Overview'}
+              {currentStep === 3 && 'Topics'}
               {currentStep === 4 && 'Review & Create'}
             </CardTitle>
             <CardDescription>
               {currentStep === 1 && 'Enter the basic information for your session'}
-              {currentStep === 2 && 'Add optional messages and context'}
-              {currentStep === 3 && 'Add themes for participants to rate'}
+              {currentStep === 2 && 'Add your outline and generate an overview for participants'}
+              {currentStep === 3 && 'Generate or manually add topics for participants to prioritize'}
               {currentStep === 4 && 'Review your session before creating'}
             </CardDescription>
           </CardHeader>
