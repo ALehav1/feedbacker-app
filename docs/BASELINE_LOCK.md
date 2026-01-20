@@ -181,7 +181,7 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Body: "This link expired or was already used. Request a new one."
 - Button: "Send me a new link" → navigates to `/`
 - No auto-redirect for expired links (user must click button)
-**Commit:** `4770217`
+**Commit:** `a1c2f3c`
 
 ---
 
