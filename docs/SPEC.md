@@ -71,26 +71,60 @@ The person responding to a session with their interests.
 
 | State | Description | Participant Link | Presenter Actions |
 |-------|-------------|------------------|-------------------|
-| **Draft** | Setting up, not shared | Not active | Resume and edit, Clear and restart, Delete |
-| **Active** | Link sent, collecting responses | Works | View, Edit, Mark as Completed, Delete |
-| **Completed** | Done collecting, reviewing results | Still works | View results, Move to Archived, Delete |
+| **Draft** | Setting up, not shared | Not active | Edit, Publish initial version to go Active, Delete |
+| **Active** | Link shared, collecting responses | Works (shows Live version) | Edit Working version, Publish updates, View results, Mark as Completed, Delete |
+| **Completed** | Done collecting, reviewing results | Still works (shows Live version) | View results, Move to Archived, Delete |
 | **Archived** | Closed, read-only | Shows "closed" message | View (read-only), Delete, Use as template |
 
-**Rationale:** Completed keeps the link working because late feedback can still be useful. Only Archived fully closes access.
+**Rationale:** 
+- Completed keeps the link working because late feedback can still be useful. Only Archived fully closes access.
+- Active sessions use Working vs Live model: presenter edits Working version, participants see Live version (last published snapshot).
+- Explicit "Publish updates" action prevents accidental changes to participant experience.
 
 ### 3.2 State Transitions
 
 ```
-Draft → Active (presenter shares link)
-Active → Completed (presenter clicks button)
-Completed → Archived (presenter clicks button)
-Archived → Draft (use as template - removes responses, keeps summary/themes)
+Draft → Active (presenter clicks "Start collecting feedback" - publishes initial Live version)
+Active → Completed (presenter clicks "Close Session")
+Completed → Archived (presenter clicks "Archive Session")
+Archived → Draft (use as template - creates new draft with summary/topics, no responses)
 Any state → Deleted (permanent removal)
 ```
 
-### 3.3 Clear and Restart (Draft only)
+### 3.3 Working vs Live Model (Active State Only)
 
-Wipes any test data, keeps summary/themes structure for fresh start.
+**Purpose:** Allow presenters to edit sessions while Active without disrupting participants.
+
+**Mechanism:**
+- **Working fields:** `welcome_message`, `summary_condensed`, `themes` table (presenter edits)
+- **Live fields:** `published_welcome_message`, `published_summary_condensed`, `published_topics` JSONB (participants read)
+- **Dirty flag:** `has_unpublished_changes` boolean
+
+**Publish workflow:**
+1. Presenter edits Working fields → `has_unpublished_changes` set to `true`
+2. Amber "Updates pending" badge shown on dashboard and session detail
+3. Presenter clicks "Publish updates" → Working fields copied to Live fields, flag set to `false`
+4. Participants immediately see updated Live version on next page load
+
+**Discard workflow:**
+1. Presenter clicks "Discard changes" → Working fields reverted to Live fields
+2. Flag set to `false`, unpublished edits lost
+
+**Guardrails:**
+- Navigate away with unpublished changes → modal confirmation
+- "View live version" link in unpublished changes bar → opens participant URL
+- Active reassurance: "Feedback collection stays on while you edit"
+
+**Participant experience:**
+- Always reads `published_*` fields
+- Unaffected by presenter's working edits
+- No visibility into unpublished changes
+
+### 3.4 Clear and Restart (Draft only - deprecated)
+
+Wipes any test data, keeps summary/topics structure for fresh start.
+
+**Note:** This feature is deprecated in favor of "Use as template" from Archived state.
 
 ---
 

@@ -277,30 +277,103 @@ OpenAI and Resend integrations are planned for future versions. When implemented
 Sessions follow a strict state machine:
 
 ```
-┌───────┐     share link      ┌────────┐    presenter     ┌───────────┐    presenter    ┌──────────┐
+┌───────┐   publish initial   ┌────────┐    presenter     ┌───────────┐    presenter    ┌──────────┐
 │ DRAFT │ ─────────────────▶ │ ACTIVE │ ────clicks────▶ │ COMPLETED │ ───clicks────▶ │ ARCHIVED │
 └───────┘                     └────────┘                  └───────────┘                 └──────────┘
     │                             │                            │                            │
     │                             │                            │                            │
     ▼                             ▼                            ▼                            ▼
 Presenter can:              Presenter can:              Presenter can:               Presenter can:
-- Edit summary              - View responses            - View results               - View (read-only)
-- Edit themes               - Edit summary/themes       - Export outline             - Use as template
-- Delete                    - Mark completed            - Move to archived           - Delete
-                            - Delete                    - Delete
+- Edit all fields           - Edit Working version      - View results               - View (read-only)
+- Delete                    - Publish updates           - Export outline             - Use as template
+                            - Discard changes           - Move to archived           - Delete
+                            - View responses            - Delete
+                            - Mark completed
+                            - Delete
                             
 Participants:               Participants:               Participants:                Participants:
-- Cannot access             - Can respond               - Can still respond          - See "closed" message
+- Cannot access             - See Live version          - See Live version           - See "closed" message
+                            - Can respond               - Can still respond
                             - Can edit response         - Can edit response
 ```
 
 **State Invariants:**
-- Draft → Active: Triggered by presenter copying/sharing link
+- Draft → Active: Triggered by "Start collecting feedback" button (publishes initial Live version)
 - Active → Completed: Explicit presenter action only
 - Completed → Archived: Explicit presenter action only
-- Archived → Draft: "Use as template" creates NEW session (copies summary/themes, removes responses)
+- Archived → Draft: "Use as template" creates NEW session (copies summary/topics, removes responses)
 
-### 2. Theme Interest Model
+### 2. Working vs Live Model (Active State)
+
+**Purpose:** Allow presenters to edit sessions while Active without disrupting participant experience.
+
+**Architecture:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      SESSION (Active State)                      │
+├──────────────────────────────┬──────────────────────────────────┤
+│      WORKING VERSION         │        LIVE VERSION              │
+│   (Presenter edits)          │   (Participants see)             │
+├──────────────────────────────┼──────────────────────────────────┤
+│ welcome_message              │ published_welcome_message        │
+│ summary_condensed            │ published_summary_condensed      │
+│ themes table (rows)          │ published_topics (JSONB array)   │
+│                              │ published_at (timestamp)         │
+│ has_unpublished_changes      │                                  │
+└──────────────────────────────┴──────────────────────────────────┘
+```
+
+**Database Schema:**
+
+```sql
+ALTER TABLE sessions ADD COLUMN published_welcome_message TEXT;
+ALTER TABLE sessions ADD COLUMN published_summary_condensed TEXT;
+ALTER TABLE sessions ADD COLUMN published_topics JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE sessions ADD COLUMN published_at TIMESTAMPTZ;
+ALTER TABLE sessions ADD COLUMN has_unpublished_changes BOOLEAN NOT NULL DEFAULT false;
+```
+
+**Published Topics Format:**
+
+```typescript
+interface PublishedTopic {
+  themeId: string;    // Links to themes.id for selections continuity
+  text: string;       // Topic display text
+  sortOrder: number;  // Display order
+}
+```
+
+**Publish Workflow:**
+
+1. Presenter edits Working fields → `has_unpublished_changes = true`
+2. UI shows amber "Updates pending" badge
+3. Presenter clicks "Publish updates" →
+   - Fetch working themes from `themes` table
+   - Map to `published_topics` JSONB format
+   - Update session: copy Working → Live fields
+   - Set `has_unpublished_changes = false`
+4. Participants see updated Live version on next page load
+
+**Discard Workflow:**
+
+1. Presenter clicks "Discard changes" →
+   - Revert Working fields to Live fields
+   - Reconcile `themes` table to match `published_topics`
+   - Set `has_unpublished_changes = false`
+2. Working version restored to last published state
+
+**UX Guardrails:**
+
+- **Navigate away:** Modal confirmation if unpublished changes exist
+- **View live version:** Link in unpublished changes bar opens participant URL
+- **Active reassurance:** "Feedback collection stays on while you edit"
+- **Status row:** Shows "Participant view: Live" + "Edits: Working · [Up to date | Unpublished updates]"
+- **Edited indicators:** Amber pills next to changed sections
+
+**Canonical Copy:** All UX strings defined in `src/lib/copy.ts`
+
+### 3. Theme Interest Model
 
 Participants indicate interest using a three-state model per theme:
 

@@ -33,11 +33,14 @@ Presenters shouldn't guess what their audience wants. This tool flips the model:
 - All AI-generated content is editable
 - Explicit state transitions (no auto-advance)
 - Clear visibility into all responses
+- **Working vs Live model:** Edit while Active without disrupting participants
+- **Explicit publishing:** "Publish updates" action prevents accidental changes
 
 ### 3. Simple Over Clever
 - Manual refresh over real-time
 - Email-based access over OAuth
 - Copy link over in-app sharing
+- Publish/discard over auto-sync
 
 ---
 
@@ -96,7 +99,9 @@ Presenters shouldn't guess what their audience wants. This tool flips the model:
 ```
 Active session:
 - View responses
-- Edit summary/themes
+- Edit Working version (summary/topics)
+- Publish updates (make Working → Live)
+- Discard changes (revert Working to Live)
 - Mark as Completed
 - Delete
 
@@ -128,6 +133,77 @@ Archived session:
 8. Click Submit
 9. See "Thank you" message
 ```
+
+---
+
+## Working vs Live Model
+
+### Overview
+
+**Mental model:** Working version (presenter edits) vs Live version (participants see)
+
+**When active:**
+- Active sessions only
+- Draft/Completed/Archived use single version
+
+**Purpose:**
+- Allow presenter edits during Active without disrupting participants
+- Explicit "Publish updates" prevents accidental changes
+- Participants always see stable Live version
+
+### Database Fields
+
+**Working fields (presenter edits):**
+- `welcome_message`
+- `summary_condensed`
+- `themes` table (relational rows)
+
+**Live fields (participants read):**
+- `published_welcome_message`
+- `published_summary_condensed`
+- `published_topics` (JSONB array of `{themeId, text, sortOrder}`)
+- `published_at` (timestamp)
+
+**Dirty flag:**
+- `has_unpublished_changes` (boolean)
+
+### UI Components
+
+**UnpublishedChangesBar** (shown when `has_unpublished_changes = true`):
+- Title: "Updates ready to publish"
+- Body: Explains participants see Live version
+- Actions: "Publish updates" | "Discard changes"
+- Link: "View live version" (opens participant URL)
+- Active reassurance: "Feedback collection stays on while you edit"
+
+**SessionDetail status row** (Draft/Active only):
+- "Participant view: Live"
+- "Edits: Working · [Up to date | Unpublished updates]"
+
+**Edited indicators:**
+- Amber "Edited" pills next to changed sections
+- Compare Working vs Live fields
+
+**Dashboard badge:**
+- "Updates pending" (amber outline) when `has_unpublished_changes = true`
+
+**Navigate-away guardrail:**
+- Modal when leaving with unpublished changes
+- "Leave without publishing?" confirmation
+
+### Canonical Copy
+
+All UX strings defined in `src/lib/copy.ts`:
+- `TERMS`: Working version, Live version, Publish updates, Discard changes
+- `UNPUBLISHED_CHANGES_BAR`: Title, body, actions, helpers
+- `SESSION_STATUS`: Status row labels
+- `SECTION_INDICATORS`: Edited pill
+- `DASHBOARD_BADGES`: Updates pending badge
+- `ACTIVATION_COPY`: Draft→Active button
+- `NAVIGATION_GUARDRAIL`: Leave without publishing modal
+- `PARTICIPANT_COPY`: Instructions, empty state
+
+**Rule:** Use canonical strings, never hardcode copy.
 
 ---
 

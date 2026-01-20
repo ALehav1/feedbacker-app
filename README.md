@@ -71,11 +71,12 @@ npm run dev
 1. **Login:** Enter your email at `/` → Check for magic link → Click to authenticate
 2. **Profile:** First-time users complete profile at `/dashboard/profile`
 3. **Create Session:** Click "New Session" → Enter title, length, summary → Submit
-4. **Open Session:** View session detail → Click "Open Session" to make it active
+4. **Start Collecting:** View session detail → Click "Start collecting feedback" to publish initial Live version
 5. **Share Link:** Copy shareable link → Send to participants
-6. **Collect Feedback:** Participants visit `/s/{slug}` → Select themes → Submit
-7. **View Results:** Open Results tab → See aggregated theme interest + individual responses
-8. **Close Session:** Click "Close Session" when done collecting feedback
+6. **Collect Feedback:** Participants visit `/s/{slug}` → Select topics → Submit
+7. **Edit While Active:** Make changes to working version → Click "Publish updates" when ready (participants continue seeing Live version)
+8. **View Results:** Open Results tab → See aggregated topic interest + individual responses
+9. **Close Session:** Click "Close Session" when done collecting feedback
 
 ---
 
@@ -112,7 +113,26 @@ src/
 
 ---
 
-## 📊 Session States
+## 📊 Session States & Editing Model
+
+### Working vs Live Versions
+
+Feedbacker uses a **Working vs Live** model to let presenters edit while collecting feedback:
+
+- **Working version:** What the presenter edits (visible only to presenter)
+- **Live version:** What participants see (published snapshot)
+- **Publish updates:** Explicit action that makes Working become Live
+- **Discard changes:** Reverts Working back to Live
+
+**Key behaviors:**
+- Active sessions remain editable without disrupting participants
+- Participants always see the Live version (last published state)
+- Unpublished changes are clearly indicated with amber "Updates pending" badges
+- Navigate-away guardrail prevents accidental loss of unpublished work
+
+**Canonical copy:** All UX strings defined in `src/lib/copy.ts`
+
+### Session State Flow
 
 ```
 DRAFT ──────▶ ACTIVE ──────▶ COMPLETED ──────▶ ARCHIVED
@@ -120,8 +140,8 @@ DRAFT ──────▶ ACTIVE ──────▶ COMPLETED ────�
   │              │               │                │
   ▼              ▼               ▼                ▼
 Setup         Collecting      Reviewing        Closed
-Edit all      Can still edit  View results     Read-only
-              Accepting       No new feedback  Use as template
+Edit all      Edit + Publish  View results     Read-only
+              Live vs Working No new feedback  Use as template
 ```
 
 ---
@@ -213,18 +233,20 @@ npm run preview      # Preview production build
 
 - No real-time updates (manual refresh required)
 - No admin dashboard for usage monitoring
-- AI features (theme generation, outline export) not yet implemented
+- Topics currently manually entered (AI generation planned)
+- Outline export planned for future release
 
 ---
 
 ## 🔮 Future Enhancements
 
-- [ ] AI-generated themes from summary (OpenAI integration)
+- [ ] AI-generated topics from outline (OpenAI integration)
 - [ ] AI-generated prioritized outline export
 - [ ] Custom email domain (Resend integration)
-- [ ] Real-time updates
-- [ ] Participant visibility into others' responses
+- [ ] Real-time updates for live participant counts
+- [ ] Participant visibility into aggregated results
 - [ ] Usage analytics dashboard
+- [ ] Revision history for published versions
 
 ---
 
