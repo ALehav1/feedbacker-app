@@ -308,6 +308,115 @@ Manual smoke test must be run by user. Cascade cannot interact with browser UI.
 
 ---
 
+## Outline → Topics Extraction Checks
+
+**Test Date:** ⬜ PENDING  
+**Feature:** Outline format guidance + topic extraction heuristics
+
+### Test A: Bullets + Sub-bullets
+
+**Expected:** Only top-level bullets become topics (5 topics)
+
+**Test Outline:**
+```
+- Topic: Problem framing
+  - Why now
+  - Stakes
+- Topic: Current constraints
+  - What breaks today
+- Topic: Proposed approach
+  - Steps
+  - Tradeoffs
+- Topic: Case study
+- Topic: Close / ask
+```
+
+**Expected Topics:**
+- Problem framing
+- Current constraints
+- Proposed approach
+- Case study
+- Close / ask
+
+**Result:** ⬜ PENDING
+
+---
+
+### Test B: Numbered Top-Level
+
+**Expected:** Numbered lines become topics (5 topics)
+
+**Test Outline:**
+```
+1. Context and goal
+   - One sentence of why it matters
+2. What's broken today
+3. Options and tradeoffs
+4. Recommendation
+5. Next steps
+```
+
+**Expected Topics:**
+- Context and goal
+- What's broken today
+- Options and tradeoffs
+- Recommendation
+- Next steps
+
+**Result:** ⬜ PENDING
+
+---
+
+### Test C: Messy Outline (Deduplication + Filtering)
+
+**Expected:** Duplicate removed, overly long topic filtered, clean results
+
+**Test Outline:**
+```
+Intro — why this presentation matters
+
+- Topic: Market context (2026)
+- Topic: Market context (2026)
+  - duplicates should drop
+    - deep indentation should stay supporting
+
+- Topic: Execution plan: this line is intentionally very long to confirm the 120 char filter works and doesn't create a garbage topic in the list that you later have to clean up manually
+- Topic: Risks & mitigations
+- Topic: Ask
+```
+
+**Expected Topics:**
+- Market context (2026) ← appears once only
+- Risks & mitigations
+- Ask
+
+**Note:** The very long "Execution plan..." line should be filtered (>120 chars)
+
+**Result:** ⬜ PENDING
+
+---
+
+### Extraction Behavior Summary
+
+| Rule | Implementation |
+|------|----------------|
+| **Top-level bullets** | Lines with minimal indentation become topics |
+| **Numbered lines** | Both `1.` and `1)` formats recognized |
+| **"Topic:" prefix** | Stripped for display |
+| **Sub-bullets** | Ignored unless <4 top-level topics found (fallback) |
+| **Deduplication** | Case-insensitive |
+| **Length filter** | Topics >120 characters filtered out |
+| **Cap** | Maximum 12 topics |
+
+**Instructions:**
+1. Navigate to `/dashboard/sessions/new`
+2. Step 2: Paste each test outline into "Outline or notes"
+3. Step 3: Click "Extract topics from outline"
+4. Record extracted topics exactly as shown
+5. Mark ✅ PASS if matches expected, ❌ FAIL if different
+
+---
+
 ## Supabase Dashboard Verification Checklist
 
 After running smoke tests, verify in Supabase dashboard:
