@@ -197,6 +197,19 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Changed "No themes available" → "No topics available"
 **Lines modified:** 311-342 (CardContent structure)
 **Diff size:** ~20 lines
+**Commit:** `f3e9503`
+
+### Canonical Base URL for Share Links (January 20, 2026)
+
+**File:** `src/features/sessions/SessionDetail.tsx`
+**Change:** Use canonical base URL for share link display and copying
+**Justification:** Feature requirement - prevent multi-domain confusion when old vercel domain is accessed
+**Scope:** URL display only, zero logic changes
+- Added `const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin`
+- Updated `handleCopyLink` to use `baseUrl` instead of `window.location.origin`
+- Updated shareable link display to show `baseUrl` instead of `window.location.origin`
+**Lines modified:** 73, 186, 417 (URL construction + display)
+**Diff size:** 3 lines
 **Commit:** Pending
 
 ---

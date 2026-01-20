@@ -153,6 +153,8 @@ function SessionCard({ session }: SessionCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
+
   const getStateBadgeClassName = (state: SessionState): string => {
     const baseClasses = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold';
     
@@ -177,7 +179,7 @@ function SessionCard({ session }: SessionCardProps) {
     archived: 'Archived',
   };
 
-  const shareableLink = `${window.location.origin}/s/${session.slug}`;
+  const shareableLink = `${baseUrl}/s/${session.slug}`;
 
   const handleCopyLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -222,7 +224,7 @@ function SessionCard({ session }: SessionCardProps) {
 
         <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
           <code className="flex-1 truncate text-xs text-gray-700">
-            {window.location.origin}/s/{session.slug}
+            {baseUrl}/s/{session.slug}
           </code>
           <Button
             variant="ghost"

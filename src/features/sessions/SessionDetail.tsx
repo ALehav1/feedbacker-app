@@ -70,6 +70,8 @@ export function SessionDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin
+
   const [themeResults, setThemeResults] = useState<ThemeResult[]>([])
   const [responses, setResponses] = useState<Response[]>([])
   const [resultsLoading, setResultsLoading] = useState(false)
@@ -181,7 +183,7 @@ export function SessionDetail() {
   const handleCopyLink = async () => {
     if (!session) return
 
-    const link = `${window.location.origin}/s/${session.slug}`
+    const link = `${baseUrl}/s/${session.slug}`
     try {
       await navigator.clipboard.writeText(link)
       toast({
@@ -412,7 +414,7 @@ export function SessionDetail() {
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Shareable Link</h3>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-mono text-gray-900 flex-1">
-                    {window.location.origin}/s/{session.slug}
+                    {baseUrl}/s/{session.slug}
                   </p>
                   <Button
                     variant="outline"
