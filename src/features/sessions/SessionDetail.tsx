@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
+import { SESSION_STATUS, SECTION_INDICATORS, NAVIGATION_GUARDRAIL, ACTIVATION_COPY } from '@/lib/copy'
 import type { Session, SessionState } from '@/types'
 
 interface ThemeResult {
@@ -82,6 +83,8 @@ export function SessionDetail() {
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
+  const [showNavigateAwayDialog, setShowNavigateAwayDialog] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -522,6 +525,8 @@ export function SessionDetail() {
           onPublish={handlePublishUpdates}
           onDiscard={handleDiscardChanges}
           isPublishing={isPublishing}
+          isActive={session.state === 'active'}
+          slug={session.slug}
         />
       )}
       <header className="border-b bg-white" style={{ marginTop: session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active') ? '64px' : '0' }}>
@@ -538,14 +543,40 @@ export function SessionDetail() {
                   {stateLabels[session.state]}
                 </span>
               </div>
-              <p className="text-sm text-gray-600">
-                {session.lengthMinutes} minutes • Created {session.createdAt.toLocaleDateString()}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+                <span>{session.lengthMinutes} minutes</span>
+                <span>•</span>
+                <span>Created {session.createdAt.toLocaleDateString()}</span>
+              </div>
+              {(session.state === 'draft' || session.state === 'active') && (
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gray-500">{SESSION_STATUS.participantViewLabel}:</span>
+                    <span className="font-medium text-gray-700">{SESSION_STATUS.participantViewValue}</span>
+                  </div>
+                  <span className="text-gray-300">•</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gray-500">{SESSION_STATUS.editsLabel}:</span>
+                    <span className="font-medium text-gray-700">
+                      {session.hasUnpublishedChanges
+                        ? SESSION_STATUS.editsUnpublished
+                        : SESSION_STATUS.editsUpToDate}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             <Button
               variant="outline"
               className="min-h-[48px]"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => {
+                if (session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active')) {
+                  setPendingNavigation('/dashboard');
+                  setShowNavigateAwayDialog(true);
+                } else {
+                  navigate('/dashboard');
+                }
+              }}
             >
               Back to Dashboard
             </Button>
@@ -567,7 +598,14 @@ export function SessionDetail() {
               </CardHeader>
               <CardContent className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-700">Welcome Message</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-gray-700">Welcome message (Live)</h3>
+                  {session.publishedWelcomeMessage !== session.welcomeMessage && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                      {SECTION_INDICATORS.edited}
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 text-sm text-gray-900">
                   {session.welcomeMessage || <span className="text-gray-400">No welcome message</span>}
                 </p>
@@ -581,7 +619,14 @@ export function SessionDetail() {
               </div>
 
               <div>
-                <h3 className="text-sm font-medium text-gray-700">Condensed Summary</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-gray-700">Overview summary (Live)</h3>
+                  {session.publishedSummaryCondensed !== session.summaryCondensed && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                      {SECTION_INDICATORS.edited}
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 text-sm text-gray-900">
                   {session.summaryCondensed || <span className="text-gray-400">No condensed summary</span>}
                 </p>
@@ -608,13 +653,18 @@ export function SessionDetail() {
                 <h3 className="text-sm font-medium text-gray-700 mb-3">Session Actions</h3>
                 <div className="flex gap-2">
                   {session.state === 'draft' && (
-                    <Button
-                      onClick={handleOpenSession}
-                      disabled={isTransitioning}
-                      className="min-h-[48px]"
-                    >
-                      {isTransitioning ? 'Opening...' : 'Open Session'}
-                    </Button>
+                    <div className="space-y-2">
+                      <Button
+                        onClick={handleOpenSession}
+                        disabled={isTransitioning}
+                        className="min-h-[48px] w-full"
+                      >
+                        {isTransitioning ? 'Publishing...' : ACTIVATION_COPY.activateButton}
+                      </Button>
+                      <p className="text-xs text-gray-600">
+                        {ACTIVATION_COPY.activateHelper}
+                      </p>
+                    </div>
                   )}
                   {session.state === 'active' && (
                     <Button
@@ -820,6 +870,34 @@ export function SessionDetail() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleArchiveSession}>Archive Session</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showNavigateAwayDialog} onOpenChange={setShowNavigateAwayDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{NAVIGATION_GUARDRAIL.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {NAVIGATION_GUARDRAIL.body}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowNavigateAwayDialog(false);
+              setPendingNavigation(null);
+            }}>
+              {NAVIGATION_GUARDRAIL.stayButton}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setShowNavigateAwayDialog(false);
+              if (pendingNavigation) {
+                navigate(pendingNavigation);
+                setPendingNavigation(null);
+              }
+            }}>
+              {NAVIGATION_GUARDRAIL.leaveButton}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -256,6 +256,52 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Published topic shape:** `{themeId: string, text: string, sortOrder: number}` - uses `themeId` to preserve continuity with `theme_selections` table
 
 **Diff size:** ~180 lines added (SessionDetail), ~30 lines modified (FeedbackForm)
+**Commit:** `379d308`
+
+### UX Polish: Working vs Live Terminology + Canonical Copy (January 20, 2026)
+
+**Files:** `src/features/sessions/SessionDetail.tsx`, `src/features/participant/FeedbackForm.tsx`, `src/features/presenter/Dashboard.tsx`, `src/components/UnpublishedChangesBar.tsx`, `src/lib/copy.ts`
+**Change:** Implement coherent Working vs Live mental model with canonical copy strings
+**Justification:** User experience clarity - eliminate confusion about editing state, publish workflow, and participant visibility
+**Scope:** Copy updates, UI indicators, navigation guardrails
+
+**New file: src/lib/copy.ts**
+- Canonical string table for all presenter/participant copy
+- Terms: "Working version" (presenter edits), "Live version" (participant sees)
+- Sections: UnpublishedChangesBar, SessionStatus, SectionIndicators, DashboardBadges, ActivationCopy, NavigationGuardrail, ParticipantCopy
+
+**UnpublishedChangesBar.tsx changes:**
+- Updated copy: "Updates ready to publish" title
+- Added "View live version" link (opens participant URL in new tab)
+- Added Active reassurance: "Feedback collection stays on while you edit"
+- Helper text: "Publishing updates refreshes the participant page and applies to future submissions"
+- Lines modified: 1-3 (imports), 5-11 (props), 13-21 (component), 23-77 (layout)
+
+**SessionDetail.tsx changes (frozen file):**
+- Added status row under title: "Participant view: Live" + "Edits: Working · [Up to date | Unpublished updates]"
+- Added "Edited" pill badges next to changed sections (Welcome message, Overview summary)
+- Section headers now labeled "(Live)" to clarify what participants see
+- Navigate-away guardrail: modal if unpublished changes exist, asks "Leave without publishing?"
+- Draft→Active button: "Start collecting feedback" with helper text
+- Lines modified: 25 (imports), 86-87 (state), 549-567 (status row), 572-582 (nav guard wiring), 592-603, 613-624 (edited indicators), 655-668 (activation copy), 872-898 (nav guard modal)
+
+**Dashboard.tsx changes:**
+- Added "Updates pending" badge (amber outline) when `hasUnpublishedChanges = true`
+- Tooltip: "You have unpublished updates. Participants still see the live version."
+- Lines modified: 9 (import), 217-229 (badge display)
+
+**FeedbackForm.tsx changes (frozen file):**
+- Updated instructions: use PARTICIPANT_COPY.instructions
+- Empty state: "Session setup in progress" + "Topics will appear soon"
+- Lines modified: 17 (import), 312-313 (instructions), 322-327 (empty state)
+
+**Mental model consistency:**
+- No "draft" language in editor context (reserved for session state only)
+- Active + unpublished is framed as safe and normal
+- Participants never see workflow mechanics
+- Publishing always explicit, never automatic
+
+**Diff size:** ~120 lines modified across 5 files
 **Commit:** Pending
 
 ---

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, LogOut, Copy, ExternalLink, BarChart3 } from 'lucide-react';
+import { DASHBOARD_BADGES } from '@/lib/copy';
+import type { Session, SessionState } from '@/types';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -211,9 +213,19 @@ function SessionCard({ session }: SessionCardProps) {
           <h3 className="line-clamp-2 flex-1 text-base font-semibold text-gray-900">
             {session.title || 'Untitled Session'}
           </h3>
-          <span className={getStateBadgeClassName(session.state)}>
-            {stateLabels[session.state]}
-          </span>
+          <div className="flex shrink-0 gap-2">
+            <span className={getStateBadgeClassName(session.state)}>
+              {stateLabels[session.state]}
+            </span>
+            {session.hasUnpublishedChanges && (
+              <span
+                className="rounded-full border border-amber-500 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700"
+                title={DASHBOARD_BADGES.updatesPendingTooltip}
+              >
+                {DASHBOARD_BADGES.updatesPending}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3 text-sm text-gray-600">
@@ -264,5 +276,3 @@ function SessionCard({ session }: SessionCardProps) {
     </Card>
   );
 }
-
-import type { Session, SessionState } from '@/types';

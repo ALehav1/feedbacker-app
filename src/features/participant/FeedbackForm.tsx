@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ThemeSelector } from '@/components/ThemeSelector'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
+import { PARTICIPANT_COPY } from '@/lib/copy'
 import type { Session, Theme } from '@/types'
 
 type ThemeSelection = 'more' | 'less' | null
@@ -309,7 +310,7 @@ export function FeedbackForm() {
             <div>
               <h3 className="text-sm font-medium text-gray-900 mb-2">Instructions</h3>
               <p className="text-sm text-gray-600">
-                Tell the presenter which topics to cover more and which to cover less.
+                {PARTICIPANT_COPY.instructions}
               </p>
               <p className="text-xs text-gray-500 mt-2">
                 Session length: {session.lengthMinutes} minutes
@@ -318,8 +319,11 @@ export function FeedbackForm() {
 
             {themes.length === 0 ? (
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+                <p className="text-sm font-medium text-gray-900 mb-1">
+                  {PARTICIPANT_COPY.setupInProgressTitle}
+                </p>
                 <p className="text-sm text-gray-600">
-                  Topics aren't published yet. Check back soon!
+                  {PARTICIPANT_COPY.setupInProgressBody}
                 </p>
               </div>
             ) : (
