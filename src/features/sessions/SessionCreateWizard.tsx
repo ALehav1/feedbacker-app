@@ -466,24 +466,22 @@ export function SessionCreateWizard() {
   const renderStep2 = () => (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="summaryFull">
-          Outline or notes <span className="text-red-500">*</span>
-        </Label>
+        <Label htmlFor="welcomeMessage">Welcome message</Label>
         <Textarea
-          id="summaryFull"
-          placeholder="Paste your outline, talk track, or bullet notes here..."
-          value={wizardData.summaryFull}
-          onChange={(e) => setWizardData({ ...wizardData, summaryFull: e.target.value })}
-          rows={8}
+          id="welcomeMessage"
+          placeholder="A message to greet your participants..."
+          value={wizardData.welcomeMessage}
+          onChange={(e) => setWizardData({ ...wizardData, welcomeMessage: e.target.value })}
+          rows={3}
           className="resize-none"
         />
         <p className="text-xs text-gray-500">
-          Your outline or notes. Use this to generate topics and overview below.
+          Optional greeting shown at the top of the participant form.
         </p>
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Label htmlFor="summaryCondensed">Overview summary</Label>
           <Button
             type="button"
@@ -491,7 +489,7 @@ export function SessionCreateWizard() {
             size="sm"
             onClick={handleGenerateOverview}
             disabled={!wizardData.summaryFull.trim()}
-            className="h-8 text-xs"
+            className="h-8 text-xs w-full sm:w-auto"
           >
             Draft from outline
           </Button>
@@ -505,34 +503,33 @@ export function SessionCreateWizard() {
           className="resize-none"
         />
         <p className="text-xs text-gray-500">
-          This overview will be shown to participants. You can generate it from your outline or write it yourself.
+          Participant-facing description shown before the topics. Use 'Draft from outline' then edit.
         </p>
       </div>
 
-      <details className="rounded-lg border border-gray-200 bg-gray-50">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100">
-          Optional: Welcome message
-        </summary>
-        <div className="space-y-2 px-4 pb-4 pt-2">
-          <Label htmlFor="welcomeMessage">Welcome Message</Label>
-          <Textarea
-            id="welcomeMessage"
-            placeholder="A message to greet your participants..."
-            value={wizardData.welcomeMessage}
-            onChange={(e) => setWizardData({ ...wizardData, welcomeMessage: e.target.value })}
-            rows={3}
-            className="resize-none"
-          />
-          <p className="text-xs text-gray-500">Optional greeting shown at the top of the feedback form</p>
-        </div>
-      </details>
+      <div className="space-y-2">
+        <Label htmlFor="summaryFull">
+          Outline or notes <span className="text-red-500">*</span>
+        </Label>
+        <Textarea
+          id="summaryFull"
+          placeholder="Paste your outline, talk track, or bullet notes here..."
+          value={wizardData.summaryFull}
+          onChange={(e) => setWizardData({ ...wizardData, summaryFull: e.target.value })}
+          rows={8}
+          className="resize-none"
+        />
+        <p className="text-xs text-gray-500">
+          Private working notes. Used to draft the overview and extract topics.
+        </p>
+      </div>
     </div>
   )
 
   const renderStep3 = () => (
     <div className="space-y-6">
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm font-medium text-gray-900">Topics</h3>
           <Button
             type="button"
@@ -540,13 +537,13 @@ export function SessionCreateWizard() {
             size="sm"
             onClick={handleGenerateTopics}
             disabled={!wizardData.summaryFull.trim()}
-            className="h-8 text-xs"
+            className="h-8 text-xs w-full sm:w-auto"
           >
-            Generate from outline
+            Extract topics from outline
           </Button>
         </div>
         <p className="text-sm text-gray-600 mb-4">
-          Add the topics you're planning to cover. Participants will tell you what to spend more or less time on.
+          Extract topics from your outline, then review and edit.
         </p>
 
         <div className="flex gap-2">
@@ -597,6 +594,7 @@ export function SessionCreateWizard() {
       {wizardData.themes.length > 0 ? (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">Topics ({wizardData.themes.length})</h4>
+          <p className="text-xs text-gray-600">Edit wording, reorder, add/remove topics before publishing.</p>
           <div className="space-y-2">
             {wizardData.themes.map((theme, index) => (
               <div
