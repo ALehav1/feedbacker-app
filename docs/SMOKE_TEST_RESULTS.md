@@ -81,6 +81,9 @@
 |------|--------|-------|
 | Magic link login | ⬜ PENDING | Enter email → receive email → click link → redirect |
 | New user → profile setup | ⬜ PENDING | First login redirects to /dashboard/profile |
+| Returning user → profile confirmation | ⬜ PENDING | Shows "Welcome back" with Continue/Edit buttons |
+| Returning user → Continue button | ⬜ PENDING | Click Continue → reaches dashboard in 1 tap |
+| Returning user → Edit profile | ⬜ PENDING | Click Edit → fields enabled, can save changes |
 | Returning user → dashboard | ⬜ PENDING | Subsequent logins go to /dashboard |
 | Page refresh (soft) | ⬜ PENDING | F5 maintains auth state |
 | Hard refresh | ⬜ PENDING | Cmd+Shift+R maintains auth state |
@@ -156,10 +159,10 @@
 
 ## Summary
 
-**Total Tests:** 40  
+**Total Tests:** 43  
 **Passed:** 0  
 **Failed:** 0  
-**Pending:** 40
+**Pending:** 43
 
 **Status:** ⬜ NOT YET TESTED
 
