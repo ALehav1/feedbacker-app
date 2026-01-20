@@ -183,6 +183,22 @@ Application enforces active-only submission; RLS policies are currently permissi
 - No auto-redirect for expired links (user must click button)
 **Commit:** `a1c2f3c`
 
+### Participant Overview + Instructions (January 20, 2026)
+
+**File:** `src/features/participant/FeedbackForm.tsx`
+**Change:** Restructure participant page to show overview summary and explicit instructions
+**Justification:** Feature requirement - presenter provides curated overview for participants, clear instructions section
+**Scope:** Copy-only changes, zero logic modifications
+- Show `session.summaryCondensed` only (removed fallback to `summaryFull`)
+- Added "Instructions" section with explicit copy
+- Moved session length under Instructions
+- Changed "About this session" → removed section header, overview shows in gray box
+- Changed "Topics in this talk" → "Topics"
+- Changed "No themes available" → "No topics available"
+**Lines modified:** 311-342 (CardContent structure)
+**Diff size:** ~20 lines
+**Commit:** Pending
+
 ---
 
 ## Baseline Lock History

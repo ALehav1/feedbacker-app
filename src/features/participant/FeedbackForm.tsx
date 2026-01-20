@@ -309,10 +309,18 @@ export function FeedbackForm() {
             )}
           </CardHeader>
           <CardContent className="space-y-6">
+            {session.summaryCondensed && (
+              <div className="rounded-lg bg-gray-50 p-4">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {session.summaryCondensed}
+                </p>
+              </div>
+            )}
+
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">About this session</h3>
-              <p className="text-sm text-gray-900 whitespace-pre-wrap">
-                {session.summaryCondensed || session.summaryFull}
+              <h3 className="text-sm font-medium text-gray-900 mb-2">Instructions</h3>
+              <p className="text-sm text-gray-600">
+                Tell the presenter which topics to cover more and which to cover less.
               </p>
               <p className="text-xs text-gray-500 mt-2">
                 Session length: {session.lengthMinutes} minutes
@@ -322,18 +330,15 @@ export function FeedbackForm() {
             {themes.length === 0 ? (
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
                 <p className="text-sm text-gray-600">
-                  No themes available yet. The presenter is still setting up this session.
+                  No topics available yet. The presenter is still setting up this session.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-4">
-                    Topics in this talk
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">
+                    Topics
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Tell the presenter what to spend more time on, and what to spend less time on.
-                  </p>
                   <div className="space-y-3">
                     {themes.map((theme) => (
                       <ThemeSelector
