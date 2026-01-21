@@ -452,6 +452,35 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Step 3 copy frames as review/edit, not surprise
 
 **Diff size:** ~30 lines modified across 2 files
+**Commit:** `ad34831`
+
+### SessionEdit Route + Component (January 21, 2026)
+
+**Files:** `src/App.tsx`, `src/features/sessions/SessionEdit.tsx` (new)
+**Change:** Add edit route and component to make Edit Session button functional
+**Justification:** Button navigated to non-existent route. Edit capability must actually work.
+**Scope:** Route addition (App.tsx), new SessionEdit component for working version edits
+
+**App.tsx changes (frozen file - routing allowed):**
+- Line 17: Import SessionEdit component
+- Lines 53-60: Add route `/dashboard/sessions/:sessionId/edit`
+- Route placed before `:sessionId` detail route (more specific match first)
+
+**SessionEdit.tsx (new component):**
+- Fetches session + themes by sessionId
+- Editable fields: welcomeMessage, summaryCondensed, summaryFull
+- Topics displayed read-only (editing coming later)
+- Saves to working version, sets has_unpublished_changes = true
+- Navigation: Save → detail, Cancel → detail
+- Full error logging on save failure
+
+**Behavioral changes:**
+- Edit Session button now navigates to functional edit view
+- Presenter can edit working version text fields
+- Changes saved with unpublished flag (triggers publish workflow)
+- Topics shown but not editable in v1 (noted in UI)
+
+**Diff size:** ~270 lines (1 new file, 3 lines in App.tsx)
 **Commit:** Pending
 
 ---

@@ -14,6 +14,7 @@ import { ProfileSetup } from '@/features/presenter/ProfileSetup'
 import { Dashboard } from '@/features/presenter/Dashboard'
 import { SessionCreateWizard } from '@/features/sessions/SessionCreateWizard'
 import { SessionDetail } from '@/features/sessions/SessionDetail'
+import { SessionEdit } from '@/features/sessions/SessionEdit'
 import { FeedbackForm } from '@/features/participant/FeedbackForm'
 
 function App() {
@@ -46,6 +47,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <SessionCreateWizard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/sessions/:sessionId/edit"
+              element={
+                <ProtectedRoute>
+                  <SessionEdit />
                 </ProtectedRoute>
               }
             />
