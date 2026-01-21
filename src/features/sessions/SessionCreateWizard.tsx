@@ -47,8 +47,6 @@ export function SessionCreateWizard() {
   // Theme editing state
   const [editingThemeId, setEditingThemeId] = useState<string | null>(null)
   const [themeInputText, setThemeInputText] = useState('')
-  const [topicsWereExtracted, setTopicsWereExtracted] = useState(false)
-  const [reviewBannerDismissed, setReviewBannerDismissed] = useState(false)
 
   // Load wizard state from localStorage on mount
   useEffect(() => {
@@ -103,10 +101,12 @@ export function SessionCreateWizard() {
         toast({
           variant: 'destructive',
           title: 'Outline required',
-          description: 'Please enter an outline or notes.',
+          description: 'Please describe what you plan to cover.',
         })
         return
       }
+      
+      createTopicsFromOutline()
     }
 
     setCurrentStep((prev) => Math.min(prev + 1, 4))
@@ -199,111 +199,51 @@ export function SessionCreateWizard() {
     })
   }
 
-  const handleGenerateTopics = () => {
+  const createTopicsFromOutline = () => {
     const outline = wizardData.summaryFull.trim()
-    if (!outline) {
-      toast({
-        variant: 'destructive',
-        title: 'No outline',
-        description: 'Please enter an outline or notes first.',
-      })
+    if (!outline || wizardData.themes.length > 0) {
       return
     }
 
-    const MIN_TOPICS = 4
     const MAX_TOPICS = 12
     const MAX_TOPIC_LENGTH = 120
 
     const lines = outline.split('\n')
-    
-    interface ParsedLine {
-      text: string
-      indent: number
-      isBullet: boolean
-    }
-
-    const parsedLines: ParsedLine[] = []
+    const candidates: string[] = []
 
     for (const line of lines) {
-      if (!line.trim()) continue
+      const trimmed = line.trim()
+      if (!trimmed) continue
 
-      const leadingSpaces = line.match(/^\s*/)?.[0].length || 0
-      const hasBullet = /^\s*[-*•]\s/.test(line) || /^\s*\d+[.)]\s/.test(line)
-      
-      if (hasBullet) {
-        const cleaned = line.trim().replace(/^[-*•]\s*/, '').replace(/^\d+[.)]\s*/, '').trim()
-        parsedLines.push({
-          text: cleaned,
-          indent: leadingSpaces,
-          isBullet: true,
-        })
+      const cleaned = trimmed
+        .replace(/^[-*•]\s*/, '')
+        .replace(/^\d+[.)]\s*/, '')
+        .replace(/^Topic:\s*/i, '')
+        .trim()
+        .replace(/[.,;:]$/, '')
+        .trim()
+
+      if (cleaned.length > 3 && cleaned.length <= MAX_TOPIC_LENGTH) {
+        candidates.push(cleaned)
       }
     }
-
-    if (parsedLines.length === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'No topics found',
-        description: 'Could not extract topics from the outline. Please add topics manually.',
-      })
-      return
-    }
-
-    const minIndent = Math.min(...parsedLines.map(p => p.indent))
-    let topLevelCandidates = parsedLines.filter(p => p.indent === minIndent)
-
-    if (topLevelCandidates.length < MIN_TOPICS && parsedLines.length >= MIN_TOPICS) {
-      const secondLevelIndent = Math.min(
-        ...parsedLines.filter(p => p.indent > minIndent).map(p => p.indent)
-      )
-      if (isFinite(secondLevelIndent)) {
-        topLevelCandidates = parsedLines.filter(
-          p => p.indent === minIndent || p.indent === secondLevelIndent
-        )
-      }
-    }
-
-    const extractedTopics = topLevelCandidates
-      .map(p => p.text)
-      .filter(text => text.length > 3 && text.length <= MAX_TOPIC_LENGTH)
-      .map(text => {
-        let cleaned = text.replace(/^Topic:\s*/i, '').trim()
-        cleaned = cleaned.replace(/[.,;:]$/, '').trim()
-        return cleaned
-      })
-      .filter(text => text.length > 0)
 
     const uniqueTopics = Array.from(
-      new Map(extractedTopics.map(t => [t.toLowerCase(), t])).values()
+      new Map(candidates.map(t => [t.toLowerCase(), t])).values()
     ).slice(0, MAX_TOPICS)
 
-    if (uniqueTopics.length === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'No topics found',
-        description: 'Could not extract topics from the outline. Please add topics manually.',
+    if (uniqueTopics.length > 0) {
+      const newThemes: Theme[] = uniqueTopics.map((text, index) => ({
+        id: crypto.randomUUID(),
+        text,
+        sortOrder: index + 1,
+      }))
+
+      setWizardData({
+        ...wizardData,
+        themes: newThemes,
       })
-      return
     }
-
-    const newThemes: Theme[] = uniqueTopics.map((text, index) => ({
-      id: crypto.randomUUID(),
-      text,
-      sortOrder: index + 1,
-    }))
-
-    setWizardData({
-      ...wizardData,
-      themes: newThemes,
-    })
-
-    setTopicsWereExtracted(true)
-    setReviewBannerDismissed(false)
-
-    toast({
-      title: 'Topics extracted',
-      description: `Extracted ${newThemes.length} topics from your outline. Review and edit below.`,
-    })
   }
 
   const handleGenerateOverview = () => {
@@ -552,46 +492,28 @@ export function SessionCreateWizard() {
 
       <div className="space-y-2">
         <Label htmlFor="summaryFull">
-          Outline or notes <span className="text-red-500">*</span>
+          Your outline <span className="text-red-500">*</span>
         </Label>
         <Textarea
           id="summaryFull"
-          placeholder="Paste your outline, talk track, or bullet notes here..."
+          placeholder={`Market context
+
+What's changing
+
+Proposed approach
+  - Tradeoffs
+
+Case study
+
+Open questions`}
           value={wizardData.summaryFull}
           onChange={(e) => setWizardData({ ...wizardData, summaryFull: e.target.value })}
           rows={8}
           className="resize-none"
         />
         <p className="text-xs text-gray-500">
-          Private working notes. Used to draft the overview and extract topics.
+          Describe what you plan to cover in this session. We'll organize this into topics your audience can react to.
         </p>
-
-        <details className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-          <summary className="cursor-pointer text-sm font-medium text-gray-700 leading-relaxed">
-            Tip: Put each main topic on its own top-level bullet. Use sub-bullets for supporting detail.
-          </summary>
-          <div className="mt-3 space-y-3">
-            <h4 className="text-sm font-medium text-gray-900">Outline format example</h4>
-            <pre className="overflow-x-auto rounded-md bg-white p-3 text-sm leading-relaxed text-gray-900 font-mono border border-gray-200">
-{`- Topic: Problem framing
-  - Supporting: quick story
-  - Supporting: why it matters now
-- Topic: Current constraints
-  - Supporting: what's hard today
-- Topic: Proposed approach
-  - Supporting: steps and tradeoffs
-- Topic: Case study
-- Topic: Close / ask`}
-            </pre>
-            <ul className="space-y-1 text-sm text-gray-700 leading-relaxed">
-              <li>• One main idea per top-level bullet</li>
-              <li>• Keep top-level bullets short (3–10 words)</li>
-              <li>• Put detail in sub-bullets</li>
-              <li>• Avoid paragraphs; split into bullets</li>
-              <li>• "Topic:" prefix improves accuracy</li>
-            </ul>
-          </div>
-        </details>
       </div>
     </div>
   )
@@ -599,41 +521,12 @@ export function SessionCreateWizard() {
   const renderStep3 = () => (
     <div className="space-y-6">
       <div>
-        <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-sm font-medium text-gray-900">Topics</h3>
-          <div className="flex flex-col gap-2 w-full sm:w-auto">
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Uses top-level bullets as topics. Review and edit before publishing.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateTopics}
-              disabled={!wizardData.summaryFull.trim()}
-              className="min-h-[48px] text-xs w-full sm:w-auto"
-            >
-              Extract topics from outline
-            </Button>
-          </div>
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-gray-900 mb-1">Topics for audience feedback</h3>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            We've organized your outline into topics below. This is what participants will respond to.
+          </p>
         </div>
-
-        {topicsWereExtracted && !reviewBannerDismissed && wizardData.themes.length > 0 && (
-          <div className="mb-4 flex items-start gap-3 rounded-lg border border-violet-200 bg-violet-50 p-3">
-            <div className="flex-1">
-              <p className="text-sm text-violet-900 leading-relaxed">
-                Review: edit wording, reorder, add/remove topics. Publish updates controls what participants see.
-              </p>
-            </div>
-            <button
-              onClick={() => setReviewBannerDismissed(true)}
-              className="shrink-0 text-violet-700 hover:text-violet-900"
-              aria-label="Dismiss"
-            >
-              ✕
-            </button>
-          </div>
-        )}
 
         <div className="flex gap-2">
           <Input
@@ -683,7 +576,7 @@ export function SessionCreateWizard() {
       {wizardData.themes.length > 0 ? (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">Topics ({wizardData.themes.length})</h4>
-          <p className="text-xs text-gray-600">Edit wording, reorder, add/remove topics before publishing.</p>
+          <p className="text-xs text-gray-600">Review the wording and order. You can edit, reorder, or add topics.</p>
           <div className="space-y-2">
             {wizardData.themes.map((theme, index) => (
               <div
