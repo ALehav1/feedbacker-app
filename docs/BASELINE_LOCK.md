@@ -556,6 +556,51 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Diff size:** ~80 lines (1 new file, 20 lines App.tsx, 30 lines SessionDetail, 10 lines ProfileSetup)
 **Commit:** Pending
 
+### Mobile Hierarchy Refactor (January 21, 2026)
+
+**Files:** `src/features/sessions/SessionDetail.tsx`
+**Change:** Complete restructure of SessionDetail for mobile-first hierarchy
+**Justification:** Page was visually busy with competing actions; needed clear single-decision hierarchy per state
+
+**Structural changes:**
+1. **Sticky top bar**: Back (icon + text) left, overflow menu (⋯) right
+   - Replaces full "Back to Dashboard" button in header
+   - Overflow menu contains: Edit session, Close/Archive session
+
+2. **Header card simplified**: Title + Badge + minimal metadata
+   - Removed "Participant view: Live" and "Edits: Working" from header
+   - Moved operational metadata to collapsible Details accordion
+
+3. **State-specific primary action blocks**:
+   - Draft: "Edit session" button with subtext
+   - Active: "Copy participant link" + "Open participant page"
+   - Completed: "View audience feedback"
+
+4. **Draft activation block**: Separate amber card
+   - Clear separation from edit controls
+   - Badge: "Draft — preview only"
+   - CTA: "Confirm & start collecting feedback"
+
+5. **Participant link section**: Standalone card
+   - URL + Copy button
+   - "Preview/Open participant page" link
+
+6. **Details accordion**: Collapsed by default
+   - Session ID, Slug, Edits status, Last published date
+   - Keeps operational metadata out of decision zone
+
+7. **Tabs default based on state**:
+   - Active: defaults to "Audience feedback"
+   - Others: defaults to "Session details"
+
+**Copy changes:**
+- "Back to Dashboard" → "Dashboard" (icon + text in top bar)
+- "Participant view: Live" → Removed from header
+- "Preview participant page" (draft) / "Open participant page" (active)
+
+**Diff size:** ~200 lines (major restructure)
+**Commit:** Pending
+
 ---
 
 ## Baseline Lock History

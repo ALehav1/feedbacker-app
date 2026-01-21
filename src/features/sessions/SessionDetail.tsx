@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, MoreVertical, ExternalLink, ChevronDown, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -19,10 +20,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
-import { SESSION_STATUS, SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
+import { SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
 import type { Session, SessionState } from '@/types'
 
 interface ThemeResult {
@@ -506,7 +514,7 @@ export function SessionDetail() {
   }
 
   const stateColors = {
-    draft: 'bg-gray-100 text-gray-800',
+    draft: 'bg-amber-100 text-amber-800',
     active: 'bg-green-100 text-green-800',
     completed: 'bg-blue-100 text-blue-800',
     archived: 'bg-gray-100 text-gray-600',
@@ -519,8 +527,20 @@ export function SessionDetail() {
     archived: 'Archived',
   }
 
+  const participantUrl = `${baseUrl}/s/${session.slug}`
+
+  const handleBack = () => {
+    if (session.hasUnpublishedChanges) {
+      setPendingNavigation('/dashboard')
+      setShowNavigateAwayDialog(true)
+    } else {
+      navigate('/dashboard')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Unpublished changes bar (fixed position) */}
       {session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active') && (
         <UnpublishedChangesBar
           onPublish={handlePublishUpdates}
@@ -530,71 +550,228 @@ export function SessionDetail() {
           slug={session.slug}
         />
       )}
-      <header className="border-b bg-white" style={{ marginTop: session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active') ? '64px' : '0' }}>
-        <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{session.title}</h1>
-                <span
-                  className={`rounded-full px-3 py-1 text-sm font-medium shrink-0 ${
-                    stateColors[session.state]
-                  }`}
-                >
-                  {stateLabels[session.state]}
-                </span>
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
-                <span>{session.lengthMinutes} min</span>
-                <span className="text-gray-300">•</span>
-                <span>Created {session.createdAt.toLocaleDateString()}</span>
-              </div>
-              {(session.state === 'draft' || session.state === 'active') && (
-                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-gray-500">{SESSION_STATUS.participantViewLabel}:</span>
-                    <span className="font-medium text-gray-700">{SESSION_STATUS.participantViewValue}</span>
-                  </div>
-                  <span className="text-gray-300">•</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-gray-500">{SESSION_STATUS.editsLabel}:</span>
-                    <span className="font-medium text-gray-700">
-                      {session.hasUnpublishedChanges
-                        ? SESSION_STATUS.editsUnpublished
-                        : SESSION_STATUS.editsUpToDate}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col gap-2 w-full sm:flex-row sm:w-auto sm:shrink-0">
-              <Button
-                className="min-h-[48px] w-full sm:w-auto"
-                onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
-              >
-                Edit Session
-              </Button>
-              <Button
-                variant="outline"
-                className="min-h-[48px] w-full sm:w-auto"
-                onClick={() => {
-                  if (session.hasUnpublishedChanges) {
-                    setPendingNavigation('/dashboard');
-                    setShowNavigateAwayDialog(true);
-                  } else {
-                    navigate('/dashboard');
-                  }
-                }}
-              >
-                Back to Dashboard
-              </Button>
-            </div>
+
+      {/* Sticky top bar */}
+      <header
+        className="sticky top-0 z-40 border-b bg-white"
+        style={{ marginTop: session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active') ? '64px' : '0' }}
+      >
+        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 min-h-[44px]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Dashboard</span>
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px]">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {(session.state === 'draft' || session.state === 'active') && (
+                  <DropdownMenuItem onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}>
+                    Edit session
+                  </DropdownMenuItem>
+                )}
+                {session.state === 'active' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setShowCloseDialog(true)}>
+                      Close session
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {session.state === 'completed' && (
+                  <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
+                    Archive session
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <Tabs defaultValue="details" className="space-y-6">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+        {/* Header card: Title + Badge + Metadata */}
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{session.title}</h1>
+            <span className={`rounded-full px-3 py-1 text-sm font-medium shrink-0 ${stateColors[session.state]}`}>
+              {stateLabels[session.state]}
+            </span>
+          </div>
+          <p className="text-sm text-gray-600">
+            {session.lengthMinutes} min • Created {session.createdAt.toLocaleDateString()}
+          </p>
+        </div>
+
+        {/* Primary action block - Draft */}
+        {session.state === 'draft' && (
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <Button
+                className="w-full min-h-[48px]"
+                onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
+              >
+                Edit session
+              </Button>
+              <p className="text-sm text-gray-600 text-center">
+                Update welcome text, outline, and topics.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Draft activation block */}
+        {session.state === 'draft' && (
+          <Card className="border-amber-200 bg-amber-50">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
+                  Draft — preview only
+                </span>
+              </div>
+              <p className="text-sm text-amber-900">
+                Feedback collection starts after you confirm.
+              </p>
+              <Button
+                onClick={handleOpenSession}
+                disabled={isTransitioning}
+                className="w-full min-h-[48px]"
+              >
+                {isTransitioning ? 'Activating...' : 'Confirm & start collecting feedback'}
+              </Button>
+              <p className="text-xs text-gray-600 text-center">
+                Participant page becomes interactive.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Primary action block - Active */}
+        {session.state === 'active' && (
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <Button
+                className="w-full min-h-[48px]"
+                onClick={handleCopyLink}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copy participant link
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full min-h-[48px]"
+                onClick={() => window.open(participantUrl, '_blank')}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Open participant page
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Live status block - Active */}
+        {session.state === 'active' && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+                    Collecting feedback
+                  </span>
+                </div>
+                <span className="text-sm text-gray-600">{responses.length} responses</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Primary action block - Completed */}
+        {session.state === 'completed' && (
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <Button
+                className="w-full min-h-[48px]"
+                onClick={fetchResults}
+              >
+                View audience feedback
+              </Button>
+              <p className="text-sm text-gray-600 text-center">
+                Session closed. {responses.length} responses collected.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Participant link section */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Participant link</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-mono text-gray-900 flex-1 break-all">
+                {participantUrl}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyLink}
+                className="min-h-[40px] shrink-0"
+              >
+                Copy
+              </Button>
+            </div>
+            <a
+              href={participantUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
+            >
+              <ExternalLink className="h-3 w-3" />
+              {session.state === 'draft' ? 'Preview participant page' : 'Open participant page'}
+            </a>
+          </CardContent>
+        </Card>
+
+        {/* Details accordion */}
+        <details className="group">
+          <summary className="flex cursor-pointer items-center justify-between rounded-lg border bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <span>Details</span>
+            <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 rounded-lg border bg-white p-4 space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Session ID</span>
+              <span className="font-mono text-gray-700">{session.id.slice(0, 8)}...</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Slug</span>
+              <span className="font-mono text-gray-700">{session.slug}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Edits</span>
+              <span className="text-gray-700">
+                {session.hasUnpublishedChanges ? 'Unpublished changes' : 'Up to date'}
+              </span>
+            </div>
+            {session.publishedAt && (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Last published</span>
+                <span className="text-gray-700">{session.publishedAt.toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
+        </details>
+
+        {/* Tabs */}
+        <Tabs defaultValue={session.state === 'active' ? 'results' : 'details'} className="space-y-6">
           <TabsList>
             <TabsTrigger value="details">Session details</TabsTrigger>
             <TabsTrigger value="results" onClick={fetchResults}>Audience feedback</TabsTrigger>
@@ -641,99 +818,19 @@ export function SessionDetail() {
                 </p>
               </div>
 
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Participant Link</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-mono text-gray-900 flex-1 break-all">
-                      {baseUrl}/s/{session.slug}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopyLink}
-                      className="min-h-[40px] shrink-0"
-                    >
-                      Copy Link
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {session.state === 'draft' && (
-                      <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
-                        Draft — preview only
-                      </span>
-                    )}
-                    {session.state === 'active' && (
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
-                        Active — collecting feedback
-                      </span>
-                    )}
-                    {session.state === 'completed' && (
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
-                        Completed — feedback closed
-                      </span>
-                    )}
-                    {session.state === 'archived' && (
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-500">
-                        Archived — closed
-                      </span>
-                    )}
-                  </div>
-                  {session.state === 'draft' && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-3">
-                      <p className="text-sm text-amber-900">
-                        Feedback collection starts after you confirm & save.
-                      </p>
-                      <Button
-                        onClick={handleOpenSession}
-                        disabled={isTransitioning}
-                        className="min-h-[48px] w-full"
-                      >
-                        {isTransitioning ? 'Activating...' : 'Confirm & start collecting feedback'}
-                      </Button>
-                      <p className="text-xs text-gray-600">
-                        This keeps the same participant link. The page becomes interactive.
-                      </p>
-                    </div>
-                  )}
+              {/* Topics section - show published topics */}
+              {session.publishedTopics && session.publishedTopics.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Topics ({session.publishedTopics.length})</h3>
+                  <ul className="space-y-1">
+                    {session.publishedTopics.map((topic, idx) => (
+                      <li key={topic.themeId || idx} className="text-sm text-gray-900">
+                        {idx + 1}. {topic.text}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
-
-              <div className="border-t pt-4 mt-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Session Actions</h3>
-                <div className="flex gap-2">
-                  {session.state === 'draft' && (
-                    <p className="text-sm text-gray-600">
-                      Activate the participant link above to start collecting feedback.
-                    </p>
-                  )}
-                  {session.state === 'active' && (
-                    <Button
-                      onClick={() => setShowCloseDialog(true)}
-                      disabled={isTransitioning}
-                      variant="outline"
-                      className="min-h-[48px]"
-                    >
-                      Close Session
-                    </Button>
-                  )}
-                  {session.state === 'completed' && (
-                    <Button
-                      onClick={() => setShowArchiveDialog(true)}
-                      disabled={isTransitioning}
-                      variant="outline"
-                      className="min-h-[48px]"
-                    >
-                      Archive Session
-                    </Button>
-                  )}
-                  {session.state === 'archived' && (
-                    <p className="text-sm text-gray-600">
-                      This session is archived. No further actions available.
-                    </p>
-                  )}
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
           </TabsContent>
@@ -750,115 +847,70 @@ export function SessionDetail() {
               </Card>
             ) : resultsError ? (
               <Card>
-                <CardHeader>
-                  <CardTitle>Error Loading Results</CardTitle>
-                  <CardDescription>{resultsError}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={fetchResults}>Retry</Button>
+                <CardContent className="py-8 text-center">
+                  <p className="text-red-600">{resultsError}</p>
+                  <Button onClick={fetchResults} variant="outline" className="mt-4">
+                    Try again
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : themeResults.length === 0 && responses.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-gray-600">No responses yet.</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Share the participant link to start collecting feedback.
+                  </p>
                 </CardContent>
               </Card>
             ) : (
               <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex gap-6 text-sm">
-                      <div>
-                        <span className="font-medium">Responses:</span> {responses.length}
-                      </div>
-                      <div>
-                        <span className="font-medium">Themes:</span> {themeResults.length}
-                      </div>
-                      <div>
-                        <span className="font-medium">Selections:</span>{' '}
-                        {themeResults.reduce((sum, t) => sum + t.total, 0)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Topic Interest</CardTitle>
-                    <CardDescription>
-                      Topics ranked by participant interest
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {themeResults.length === 0 ? (
-                      <p className="text-sm text-gray-600">No themes yet.</p>
-                    ) : (
-                      <div className="space-y-4">
+                {/* Theme results */}
+                {themeResults.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Topic Prioritization</CardTitle>
+                      <CardDescription>
+                        Sorted by net interest (more minus less)
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
                         {themeResults.map((theme) => (
-                          <div
-                            key={theme.themeId}
-                            className="rounded-lg border border-gray-200 bg-white p-4"
-                          >
+                          <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
                             <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                              <div className="flex items-center gap-1">
-                                <span className="text-lg">👍</span>
-                                <span className="font-medium">{theme.more}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="text-lg">👎</span>
-                                <span className="font-medium">{theme.less}</span>
-                              </div>
-                              <div className="ml-auto">
-                                <span className="font-medium">
-                                  Net: {theme.net >= 0 ? '+' : ''}{theme.net}
-                                </span>
-                              </div>
+                              <span className="text-green-600">👍 {theme.more}</span>
+                              <span className="text-red-600">👎 {theme.less}</span>
+                              <span className={`font-medium ${theme.net > 0 ? 'text-green-700' : theme.net < 0 ? 'text-red-700' : 'text-gray-600'}`}>
+                                Net: {theme.net > 0 ? '+' : ''}{theme.net}
+                              </span>
                             </div>
-                            {theme.total > 0 && (
-                              <div className="mt-2">
-                                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-violet-600 rounded-full"
-                                    style={{
-                                      width: `${Math.max(
-                                        5,
-                                        (theme.total / Math.max(...themeResults.map((t) => t.total), 1)) * 100
-                                      )}%`,
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            )}
                           </div>
                         ))}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Participant Responses</CardTitle>
-                    <CardDescription>
-                      Feedback from participants (newest first)
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {responses.length === 0 ? (
-                      <p className="text-sm text-gray-600">No feedback submitted yet.</p>
-                    ) : (
+                {/* Individual responses */}
+                {responses.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Individual Responses</CardTitle>
+                      <CardDescription>{responses.length} responses</CardDescription>
+                    </CardHeader>
+                    <CardContent>
                       <div className="space-y-4">
                         {responses.map((response) => (
-                          <div
-                            key={response.id}
-                            className="rounded-lg border border-gray-200 bg-white p-4"
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <p className="text-sm font-medium text-gray-900">
+                          <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-900">
                                 {response.participantName || 'Anonymous'}
-                              </p>
-                              <p className="text-xs text-gray-500">
+                              </span>
+                              <span className="text-xs text-gray-500">
                                 {response.createdAt.toLocaleDateString()}
-                              </p>
+                              </span>
                             </div>
                             {response.participantEmail && (
                               <p className="text-xs text-gray-600 mb-2 break-all">
@@ -873,44 +925,47 @@ export function SessionDetail() {
                           </div>
                         ))}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
               </>
             )}
           </TabsContent>
         </Tabs>
       </main>
 
+      {/* Close Session Dialog */}
       <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Close this session?</AlertDialogTitle>
             <AlertDialogDescription>
-              Closing the session will immediately stop accepting new feedback. You can still
-              view all collected results.
+              The participant link will remain active, but you can move to reviewing results.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCloseSession}>Close Session</AlertDialogAction>
+            <AlertDialogAction onClick={handleCloseSession} disabled={isTransitioning}>
+              {isTransitioning ? 'Closing...' : 'Close session'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Archive Session Dialog */}
       <AlertDialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Archive this session?</AlertDialogTitle>
             <AlertDialogDescription>
-              Archiving will permanently close this session. The shareable link will show
-              "Session Closed" to all visitors. You can still view results, but no new
-              feedback will be accepted.
+              The participant link will show "session closed" and no more responses will be accepted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleArchiveSession}>Archive Session</AlertDialogAction>
+            <AlertDialogAction onClick={handleArchiveSession} disabled={isTransitioning}>
+              {isTransitioning ? 'Archiving...' : 'Archive session'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

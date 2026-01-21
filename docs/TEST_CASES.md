@@ -289,17 +289,50 @@ Q&A
 - [ ] Controls don't get clipped
 - [ ] Add topic button full width on mobile
 
-### SessionDetail Header
-- [ ] Title and state badge wrap properly
-- [ ] "Edit Session" and "Back to Dashboard" buttons stack vertically on mobile
-- [ ] Full width buttons on mobile (w-full sm:w-auto)
-- [ ] No horizontal overflow/scroll
-- [ ] Status metadata text wraps cleanly
+### SessionDetail - Mobile Hierarchy (375px)
 
-### SessionDetail Content
-- [ ] Participant link URL breaks properly (break-all)
-- [ ] Status chips don't clip
-- [ ] Copy Link button stays accessible
+**Sticky top bar:**
+- [ ] Back link (icon + "Dashboard") on left
+- [ ] Overflow menu (⋯) on right
+- [ ] Bar stays visible on scroll
+- [ ] No horizontal overflow
+
+**Header area:**
+- [ ] Title wraps properly
+- [ ] State badge visible next to title
+- [ ] Minimal metadata: "10 min • Created Jan 21"
+- [ ] No "Participant view" or "Edits" clutter
+
+**Primary action block (Draft):**
+- [ ] "Edit session" button full width
+- [ ] Subtext below button
+- [ ] Separate from activation block
+
+**Draft activation block:**
+- [ ] Amber background, amber border
+- [ ] "Draft — preview only" badge
+- [ ] "Confirm & start collecting feedback" button
+- [ ] Clear separation from edit block
+
+**Primary action block (Active):**
+- [ ] "Copy participant link" primary button
+- [ ] "Open participant page" secondary button
+- [ ] Live status card below with response count
+
+**Participant link section:**
+- [ ] URL with Copy button
+- [ ] "Preview/Open participant page" link
+- [ ] URL breaks properly (break-all)
+
+**Details accordion:**
+- [ ] Collapsed by default
+- [ ] Click to expand
+- [ ] Shows: Session ID, Slug, Edits status, Last published
+- [ ] ChevronDown rotates on open
+
+**Tabs:**
+- [ ] Active sessions default to "Audience feedback" tab
+- [ ] Other states default to "Session details" tab
 
 ### Participant Draft Banner
 - [ ] Banner copy wraps cleanly
