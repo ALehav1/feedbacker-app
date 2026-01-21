@@ -300,6 +300,14 @@ export function SessionCreateWizard() {
 
       // Note: welcome_message, summary_full, summary_condensed are NOT NULL DEFAULT ''
       // in schema.sql, so we must pass empty string (not null) for empty values
+      
+      // Build published topics snapshot
+      const publishedTopics = wizardData.themes.map((theme) => ({
+        themeId: theme.id,
+        text: theme.text,
+        sortOrder: theme.sortOrder,
+      }))
+
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -311,6 +319,10 @@ export function SessionCreateWizard() {
           summary_full: wizardData.summaryFull.trim(),
           summary_condensed: wizardData.summaryCondensed.trim(),
           slug,
+          published_welcome_message: wizardData.welcomeMessage.trim() || null,
+          published_summary_condensed: wizardData.summaryCondensed.trim() || null,
+          published_topics: publishedTopics.length > 0 ? publishedTopics : [],
+          has_unpublished_changes: false,
         })
         .select()
         .single()
@@ -335,6 +347,7 @@ export function SessionCreateWizard() {
 
       if (wizardData.themes.length > 0) {
         const themesInsert = wizardData.themes.map((theme) => ({
+          id: theme.id,
           session_id: sessionData.id,
           text: theme.text,
           sort_order: theme.sortOrder,
@@ -524,7 +537,7 @@ Open questions`}
         <div className="mb-4">
           <h3 className="text-sm font-medium text-gray-900 mb-1">Topics for audience feedback</h3>
           <p className="text-xs text-gray-600 leading-relaxed">
-            We've organized your outline into topics below. This is what participants will respond to.
+            These topics come from your outline. Review the wording and order. Add or remove topics as needed.
           </p>
         </div>
 

@@ -62,7 +62,7 @@ export function FeedbackForm() {
           const mappedSession: Session = {
             id: sessionData.id,
             presenterId: sessionData.presenter_id,
-            state: sessionData.state,
+            state: sessionData.state as Session['state'],
             lengthMinutes: sessionData.length_minutes,
             title: sessionData.title,
             welcomeMessage: sessionData.welcome_message,
@@ -287,10 +287,19 @@ export function FeedbackForm() {
   }
 
   const hasSelections = Object.values(selections).some((s) => s !== null)
+  const isDraft = (session.state as string) === 'draft'
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        {isDraft && (
+          <div className="mb-4 rounded-lg border border-gray-300 bg-white p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Session draft</h3>
+            <p className="text-sm text-gray-600">
+              Feedback collection starts after the presenter confirms and saves.
+            </p>
+          </div>
+        )}
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">{session.title}</CardTitle>
@@ -317,7 +326,7 @@ export function FeedbackForm() {
               </p>
             </div>
 
-            {themes.length === 0 ? (
+            {themes.length === 0 && !isDraft ? (
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
                 <p className="text-sm font-medium text-gray-900 mb-1">
                   {PARTICIPANT_COPY.setupInProgressTitle}
@@ -326,7 +335,7 @@ export function FeedbackForm() {
                   {PARTICIPANT_COPY.setupInProgressBody}
                 </p>
               </div>
-            ) : (
+            ) : themes.length > 0 ? (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900 mb-3">
@@ -339,10 +348,15 @@ export function FeedbackForm() {
                         text={theme.text}
                         selection={selections[theme.id] || null}
                         onSelect={(selection) => handleSelectionChange(theme.id, selection)}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isDraft}
                       />
                     ))}
                   </div>
+                  {isDraft && (
+                    <p className="text-xs text-gray-500 mt-3">
+                      Topics are visible while this is a draft. Responses unlock when the session is active.
+                    </p>
+                  )}
                 </div>
 
                 <div className="border-t pt-6 space-y-4">
@@ -390,13 +404,18 @@ export function FeedbackForm() {
 
                 <Button
                   type="submit"
-                  disabled={!hasSelections || isSubmitting}
+                  disabled={!hasSelections || isSubmitting || isDraft}
                   className="w-full min-h-[56px]"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
                 </Button>
+                {isDraft && (
+                  <p className="text-xs text-gray-500 text-center">
+                    This session is not collecting feedback yet.
+                  </p>
+                )}
               </form>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       </div>

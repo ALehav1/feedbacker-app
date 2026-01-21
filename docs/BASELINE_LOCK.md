@@ -302,6 +302,37 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Publishing always explicit, never automatic
 
 **Diff size:** ~120 lines modified across 5 files
+**Commit:** `8622809`
+
+### Draft Link Rendering + Initial Publish (January 21, 2026)
+
+**Files:** `src/features/participant/FeedbackForm.tsx`, `src/features/sessions/SessionCreateWizard.tsx`
+**Change:** Draft participant links render with inactive state + wizard publishes initial snapshot on draft creation
+**Justification:** Participant link must show content immediately after session creation to maintain trust and clarity
+**Scope:** Draft banner, disabled controls, initial publish workflow
+
+**FeedbackForm.tsx changes (frozen file):**
+- Added draft vs active rendering logic
+- Draft banner: "Session draft" + "Feedback collection starts after the presenter confirms and saves"
+- Disabled topic selectors and submit button when `state === 'draft'`
+- Helper text: "Topics are visible while this is a draft. Responses unlock when the session is active"
+- Submit disabled helper: "This session is not collecting feedback yet"
+- Lines modified: 65 (type assertion for state), 290 (isDraft flag), 295-302 (banner), 329-338 (conditional rendering), 351 (disabled prop), 355-359 (draft helper), 407 (disabled submit), 412-416 (submit helper)
+
+**SessionCreateWizard.tsx changes:**
+- Step 3 heading updated: "These topics come from your outline. Review the wording and order. Add or remove topics as needed."
+- Wizard now publishes initial snapshot on draft creation
+- Copies working fields → published fields: `published_welcome_message`, `published_summary_condensed`, `published_topics`
+- Sets `has_unpublished_changes = false` on creation
+- Uses theme IDs from wizard state for `publishedTopics.themeId` to maintain selection continuity
+- Lines modified: 304-309 (build published topics), 322-325 (insert published fields), 350 (preserve theme ID), 539-541 (step 3 copy)
+
+**Behavioral change:**
+- Draft links now load and display content (overview + topics visible but disabled)
+- Participant sees clear "draft" state instead of empty/broken experience
+- Session activation (Draft → Active) already implemented in SessionDetail.tsx
+
+**Diff size:** ~50 lines modified
 **Commit:** Pending
 
 ---
