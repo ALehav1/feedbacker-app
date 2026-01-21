@@ -333,6 +333,58 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Session activation (Draft → Active) already implemented in SessionDetail.tsx
 
 **Diff size:** ~50 lines modified
+**Commit:** `517b7c8`
+
+### Draft→Confirm→Active Flow Tightening (January 21, 2026)
+
+**Files:** `src/features/sessions/SessionDetail.tsx`, `src/features/participant/FeedbackForm.tsx`, `src/features/sessions/SessionCreateWizard.tsx`, `src/features/presenter/Dashboard.tsx`, `docs/EXTRACTION_TESTS.md`
+**Change:** Explicit Draft activation UX + mobile-safe copy + link status indicators
+**Justification:** Presenter needs clear "Confirm & start collecting feedback" moment; participant preview must work cleanly on mobile
+**Scope:** Activation CTA, link status labels, copy polish, test documentation
+
+**SessionDetail.tsx changes (frozen file):**
+- Renamed "Shareable Link" section to "Participant Link"
+- Added link status indicator below link (Draft/Active/Completed/Archived with color coding)
+- Draft state: amber "Draft — preview only"
+- Active state: green "Active — collecting feedback"
+- Added Draft activation panel (amber background) with:
+  - "Feedback collection starts after you confirm & save" message
+  - "Confirm & start collecting feedback" button
+  - Helper: "This keeps the same participant link. The page becomes interactive."
+- Session Actions section now shows guidance for Draft state
+- Lines modified: 25 (removed unused import), 636-683 (participant link section), 688-691 (session actions guidance)
+
+**FeedbackForm.tsx changes (frozen file):**
+- Updated draft banner copy for mobile clarity
+- Body text: "Preview only. Feedback collection starts after the presenter confirms and saves."
+- Added `leading-relaxed` for better mobile line wrapping
+- Lines modified: 298-300 (banner copy)
+
+**SessionCreateWizard.tsx changes (non-frozen):**
+- Step 2 helper: "Write your outline. We'll turn it into the topics your audience will prioritize."
+- Step 3 heading: "Review the topics created from your outline"
+- Step 3 helper: "Edit wording, reorder, and add any missing topics."
+- Lines modified: 528 (step 2 copy), 538-541 (step 3 copy)
+
+**Dashboard.tsx changes (non-frozen):**
+- Added link status labels below participant link in session cards
+- Same color coding as SessionDetail (amber/green/gray)
+- Wrapped link + status in `space-y-1` container
+- Lines modified: 237-266 (link section with status)
+
+**EXTRACTION_TESTS.md updates:**
+- Added Test Case 7: Plain text with blank lines (Context, Problem, Solution)
+- Added Test Case 8: Duplicate topics (case-insensitive deduplication)
+- Updated Extraction Behavior Summary to reflect simplified logic
+- Documents: every non-empty line is a candidate, blank lines are separators
+
+**Behavioral changes:**
+- Draft sessions show explicit "Confirm & start..." CTA in SessionDetail
+- Link status visible on Dashboard and SessionDetail
+- Participant draft banner is mobile-safe (short sentences)
+- Wizard copy frames topics as "review and refine" not "extraction"
+
+**Diff size:** ~80 lines modified across 5 files
 **Commit:** Pending
 
 ---

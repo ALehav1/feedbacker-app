@@ -88,13 +88,40 @@
 
 ---
 
+## Test Case 7: Plain text with blank lines (no bullets)
+```
+Context
+
+Problem
+
+Solution
+```
+
+**Expected:** 3 topics (Context, Problem, Solution)
+
+---
+
+## Test Case 8: Duplicate topics (case-insensitive)
+```
+- Market Context
+- market context
+- Product Vision
+- Product vision
+- Implementation Plan
+```
+
+**Expected:** 3 topics (Market Context, Product Vision, Implementation Plan) - first occurrence preserved, duplicates removed
+
+---
+
 ## Extraction Behavior Summary
 
-**Heuristics:**
-- Prioritize top-level bullets (minimal indentation)
-- Strip "Topic:" prefix for display
-- Remove trailing punctuation
-- Filter topics >120 chars
-- Deduplicate case-insensitive
+**Current Logic (Simplified):**
+- Every non-empty line is a topic candidate
+- Strip bullets (`-`, `*`, `•`), numbers (`1.`, `1)`), and "Topic:" prefix
+- Remove trailing punctuation (`.`, `,`, `;`, `:`)
+- Filter topics <4 chars or >120 chars
+- Deduplicate case-insensitively (first occurrence preserved)
+- Preserve original order
 - Cap at 12 topics
-- If <4 top-level found, include second-level bullets
+- Blank lines are separators (ignored)

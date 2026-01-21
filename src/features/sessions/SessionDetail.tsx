@@ -22,7 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
-import { SESSION_STATUS, SECTION_INDICATORS, NAVIGATION_GUARDRAIL, ACTIVATION_COPY } from '@/lib/copy'
+import { SESSION_STATUS, SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
 import type { Session, SessionState } from '@/types'
 
 interface ThemeResult {
@@ -633,19 +633,52 @@ export function SessionDetail() {
               </div>
 
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Shareable Link</h3>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-mono text-gray-900 flex-1">
-                    {baseUrl}/s/{session.slug}
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopyLink}
-                    className="min-h-[40px]"
-                  >
-                    Copy Link
-                  </Button>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Participant Link</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-mono text-gray-900 flex-1 break-all">
+                      {baseUrl}/s/{session.slug}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyLink}
+                      className="min-h-[40px] shrink-0"
+                    >
+                      Copy Link
+                    </Button>
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {session.state === 'draft' && (
+                      <span className="font-medium text-amber-700">Draft — preview only</span>
+                    )}
+                    {session.state === 'active' && (
+                      <span className="font-medium text-green-700">Active — collecting feedback</span>
+                    )}
+                    {session.state === 'completed' && (
+                      <span className="font-medium text-gray-700">Completed — feedback closed</span>
+                    )}
+                    {session.state === 'archived' && (
+                      <span className="font-medium text-gray-500">Archived — closed</span>
+                    )}
+                  </div>
+                  {session.state === 'draft' && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-3">
+                      <p className="text-sm text-amber-900">
+                        Feedback collection starts after you confirm & save.
+                      </p>
+                      <Button
+                        onClick={handleOpenSession}
+                        disabled={isTransitioning}
+                        className="min-h-[48px] w-full"
+                      >
+                        {isTransitioning ? 'Activating...' : 'Confirm & start collecting feedback'}
+                      </Button>
+                      <p className="text-xs text-gray-600">
+                        This keeps the same participant link. The page becomes interactive.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -653,18 +686,9 @@ export function SessionDetail() {
                 <h3 className="text-sm font-medium text-gray-700 mb-3">Session Actions</h3>
                 <div className="flex gap-2">
                   {session.state === 'draft' && (
-                    <div className="space-y-2">
-                      <Button
-                        onClick={handleOpenSession}
-                        disabled={isTransitioning}
-                        className="min-h-[48px] w-full"
-                      >
-                        {isTransitioning ? 'Publishing...' : ACTIVATION_COPY.activateButton}
-                      </Button>
-                      <p className="text-xs text-gray-600">
-                        {ACTIVATION_COPY.activateHelper}
-                      </p>
-                    </div>
+                    <p className="text-sm text-gray-600">
+                      Activate the participant link above to start collecting feedback.
+                    </p>
                   )}
                   {session.state === 'active' && (
                     <Button

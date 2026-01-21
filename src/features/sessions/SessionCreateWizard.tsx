@@ -525,7 +525,7 @@ Open questions`}
           className="resize-none"
         />
         <p className="text-xs text-gray-500">
-          Describe what you plan to cover in this session. We'll organize this into topics your audience can react to.
+          Write your outline. We'll turn it into the topics your audience will prioritize.
         </p>
       </div>
     </div>
@@ -535,9 +535,9 @@ Open questions`}
     <div className="space-y-6">
       <div>
         <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-1">Topics for audience feedback</h3>
+          <h3 className="text-sm font-medium text-gray-900 mb-1">Review the topics created from your outline</h3>
           <p className="text-xs text-gray-600 leading-relaxed">
-            These topics come from your outline. Review the wording and order. Add or remove topics as needed.
+            Edit wording, reorder, and add any missing topics.
           </p>
         </div>
 

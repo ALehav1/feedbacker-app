@@ -295,8 +295,8 @@ export function FeedbackForm() {
         {isDraft && (
           <div className="mb-4 rounded-lg border border-gray-300 bg-white p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">Session draft</h3>
-            <p className="text-sm text-gray-600">
-              Feedback collection starts after the presenter confirms and saves.
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Preview only. Feedback collection starts after the presenter confirms and saves.
             </p>
           </div>
         )}
