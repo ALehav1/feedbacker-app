@@ -425,6 +425,33 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Participant page shows details under each topic as light text
 
 **Diff size:** ~95 lines modified across 4 files
+**Commit:** `d18f67e`
+
+### Edit Session Affordance + Final Copy Polish (January 21, 2026)
+
+**Files:** `src/features/sessions/SessionDetail.tsx`, `src/features/sessions/SessionCreateWizard.tsx`
+**Change:** Add obvious "Edit Session" button, update wizard copy to be outcome-focused
+**Justification:** User reported "I don't see an option to edit." Edit affordance must be obvious.
+**Scope:** Minimal button addition, copy updates for clarity
+
+**SessionDetail.tsx changes (frozen file):**
+- Lines 569-590: Added "Edit Session" button next to "Back to Dashboard"
+- Button navigates to `/dashboard/sessions/${session.id}/edit`
+- Primary action (not outline), 48px min-height
+- Justification: Edit capability exists but entry point was not obvious to user
+
+**Wizard copy updates (SessionCreateWizard.tsx):**
+- Step 2 CardDescription: "Add a welcome message, an overview for participants, and your outline. Next, you'll review the topics we organize from it."
+- Step 3 headline: "Review the topics your audience will prioritize"
+- Step 3 subcopy: "We organized your outline into topics. Review wording and order, then add or remove topics."
+- Outline helper: "Write your outline. We'll organize it into topics your audience will prioritize."
+
+**Behavioral changes:**
+- Edit Session button always visible in SessionDetail header
+- Copy explicitly mentions welcome + overview + outline in Step 2
+- Step 3 copy frames as review/edit, not surprise
+
+**Diff size:** ~30 lines modified across 2 files
 **Commit:** Pending
 
 ---

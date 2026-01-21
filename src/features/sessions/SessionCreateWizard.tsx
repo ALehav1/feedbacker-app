@@ -552,7 +552,7 @@ Case study`}
           />
         </div>
         <p className="text-xs text-gray-500">
-          Each main section becomes a topic. Indented lines stay attached as supporting detail.
+          Write your outline. We'll organize it into topics your audience will prioritize.
         </p>
       </div>
     </div>
@@ -562,9 +562,9 @@ Case study`}
     <div className="space-y-6">
       <div>
         <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-1">Topics for audience feedback</h3>
+          <h3 className="text-sm font-medium text-gray-900 mb-1">Review the topics your audience will prioritize</h3>
           <p className="text-xs text-gray-600 leading-relaxed">
-            These are the topics your audience will prioritize. Review the wording and order, and add or remove any topics.
+            We organized your outline into topics. Review wording and order, then add or remove topics.
           </p>
         </div>
 
@@ -794,8 +794,8 @@ Case study`}
             </CardTitle>
             <CardDescription>
               {currentStep === 1 && 'Enter the basic information for your session'}
-              {currentStep === 2 && "Write what you plan to cover in this session. We'll organize it into topics your audience can respond to."}
-              {currentStep === 3 && 'Review and refine the topics for your audience'}
+              {currentStep === 2 && "Add a welcome message, an overview for participants, and your outline. Next, you'll review the topics we organize from it."}
+              {currentStep === 3 && 'We organized your outline into topics. Review wording and order, then add or remove topics.'}
               {currentStep === 4 && 'Review your session before creating'}
             </CardDescription>
           </CardHeader>

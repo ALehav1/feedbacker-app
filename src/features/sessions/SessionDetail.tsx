@@ -566,20 +566,28 @@ export function SessionDetail() {
                 </div>
               )}
             </div>
-            <Button
-              variant="outline"
-              className="min-h-[48px]"
-              onClick={() => {
-                if (session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active')) {
-                  setPendingNavigation('/dashboard');
-                  setShowNavigateAwayDialog(true);
-                } else {
-                  navigate('/dashboard');
-                }
-              }}
-            >
-              Back to Dashboard
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                className="min-h-[48px] flex-1"
+                onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
+              >
+                Edit Session
+              </Button>
+              <Button
+                variant="outline"
+                className="min-h-[48px]"
+                onClick={() => {
+                  if (session.hasUnpublishedChanges) {
+                    setPendingNavigation('/dashboard');
+                    setShowNavigateAwayDialog(true);
+                  } else {
+                    navigate('/dashboard');
+                  }
+                }}
+              >
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
         </div>
       </header>
