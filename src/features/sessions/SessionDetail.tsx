@@ -93,6 +93,7 @@ export function SessionDetail() {
   const [isPublishing, setIsPublishing] = useState(false)
   const [showNavigateAwayDialog, setShowNavigateAwayDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
+  const [responseCount, setResponseCount] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -135,6 +136,13 @@ export function SessionDetail() {
             createdAt: new Date(data.created_at),
             updatedAt: new Date(data.updated_at),
           })
+
+          // Fetch response count for smart tab default
+          const { count } = await supabase
+            .from('responses')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', sessionId)
+          setResponseCount(count ?? 0)
         }
       } catch (err) {
         console.error('Unexpected error:', err)
@@ -513,6 +521,15 @@ export function SessionDetail() {
     )
   }
 
+  // Crash test for ErrorBoundary verification (dev only)
+  // Usage: Add ?crash=1 to URL to trigger controlled crash
+  if (import.meta.env.DEV) {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('crash') === '1') {
+      throw new Error('Controlled crash for ErrorBoundary testing')
+    }
+  }
+
   const stateColors = {
     draft: 'bg-amber-100 text-amber-800',
     active: 'bg-green-100 text-green-800',
@@ -551,9 +568,9 @@ export function SessionDetail() {
         />
       )}
 
-      {/* Sticky top bar */}
+      {/* Sticky top bar with safe-area for iPhone notch */}
       <header
-        className="sticky top-0 z-40 border-b bg-white"
+        className="sticky top-0 z-40 border-b bg-white pt-[env(safe-area-inset-top,0px)]"
         style={{ marginTop: session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active') ? '64px' : '0' }}
       >
         <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 lg:px-8">
@@ -770,8 +787,8 @@ export function SessionDetail() {
           </div>
         </details>
 
-        {/* Tabs */}
-        <Tabs defaultValue={session.state === 'active' ? 'results' : 'details'} className="space-y-6">
+        {/* Tabs - Active with responses defaults to results, otherwise details */}
+        <Tabs defaultValue={session.state === 'active' && responseCount && responseCount > 0 ? 'results' : 'details'} className="space-y-6">
           <TabsList>
             <TabsTrigger value="details">Session details</TabsTrigger>
             <TabsTrigger value="results" onClick={fetchResults}>Audience feedback</TabsTrigger>

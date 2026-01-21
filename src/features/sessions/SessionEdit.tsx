@@ -411,6 +411,15 @@ export function SessionEdit() {
     }
   }
 
+  // Crash test for ErrorBoundary verification (dev only)
+  // Usage: Add ?crash=1 to URL to trigger controlled crash
+  if (import.meta.env.DEV) {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('crash') === '1') {
+      throw new Error('Controlled crash for ErrorBoundary testing')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
