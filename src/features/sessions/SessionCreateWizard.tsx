@@ -207,6 +207,7 @@ export function SessionCreateWizard() {
 
     const MAX_TOPICS = 12
     const MAX_TOPIC_LENGTH = 120
+    const MIN_TOPIC_LENGTH = 4
 
     const lines = outline.split('\n')
     const candidates: string[] = []
@@ -215,19 +216,21 @@ export function SessionCreateWizard() {
       const trimmed = line.trim()
       if (!trimmed) continue
 
+      // Strip bullets, numbers, em-dashes, and "Topic:" prefix
       const cleaned = trimmed
-        .replace(/^[-*•]\s*/, '')
+        .replace(/^[-*•—]\s*/, '')
         .replace(/^\d+[.)]\s*/, '')
         .replace(/^Topic:\s*/i, '')
         .trim()
         .replace(/[.,;:]$/, '')
         .trim()
 
-      if (cleaned.length > 3 && cleaned.length <= MAX_TOPIC_LENGTH) {
+      if (cleaned.length >= MIN_TOPIC_LENGTH && cleaned.length <= MAX_TOPIC_LENGTH) {
         candidates.push(cleaned)
       }
     }
 
+    // Deduplicate case-insensitively, preserve first occurrence
     const uniqueTopics = Array.from(
       new Map(candidates.map(t => [t.toLowerCase(), t])).values()
     ).slice(0, MAX_TOPICS)
@@ -244,43 +247,6 @@ export function SessionCreateWizard() {
         themes: newThemes,
       })
     }
-  }
-
-  const handleGenerateOverview = () => {
-    const outline = wizardData.summaryFull.trim()
-    if (!outline) {
-      toast({
-        variant: 'destructive',
-        title: 'No outline',
-        description: 'Please enter an outline or notes first.',
-      })
-      return
-    }
-
-    const lines = outline.split('\n').filter(line => line.trim().length > 0)
-    const firstFewLines = lines.slice(0, 3).join(' ').trim()
-    
-    let overview = firstFewLines
-    if (overview.length > 300) {
-      overview = overview.slice(0, 297) + '...'
-    }
-
-    if (!overview) {
-      overview = outline.slice(0, 250).trim()
-      if (outline.length > 250) {
-        overview += '...'
-      }
-    }
-
-    setWizardData({
-      ...wizardData,
-      summaryCondensed: overview,
-    })
-
-    toast({
-      title: 'Overview drafted',
-      description: 'You can edit the generated overview below.',
-    })
   }
 
   const handleSubmit = async () => {
@@ -328,6 +294,22 @@ export function SessionCreateWizard() {
         .single()
 
       if (sessionError) {
+        console.error('[SessionCreateWizard] Session insert failed:', {
+          error: sessionError,
+          code: sessionError.code,
+          message: sessionError.message,
+          details: sessionError.details,
+          hint: sessionError.hint,
+          wizardData: {
+            title: wizardData.title,
+            lengthMinutes: wizardData.lengthMinutes,
+            welcomeMessageLength: wizardData.welcomeMessage.length,
+            summaryFullLength: wizardData.summaryFull.length,
+            summaryCondensedLength: wizardData.summaryCondensed.length,
+            themesCount: wizardData.themes.length,
+          },
+        })
+
         if (sessionError.code === '23505') {
           toast({
             variant: 'destructive',
@@ -335,11 +317,10 @@ export function SessionCreateWizard() {
             description: 'Please try again.',
           })
         } else {
-          console.error('Session creation error:', sessionError)
           toast({
             variant: 'destructive',
-            title: 'Creation failed',
-            description: 'Unable to create session. Please try again.',
+            title: 'Session creation failed',
+            description: `${sessionError.message || 'Unable to create session'}. Check the console for details.`,
           })
         }
         return
@@ -356,11 +337,18 @@ export function SessionCreateWizard() {
         const { error: themesError } = await supabase.from('themes').insert(themesInsert)
 
         if (themesError) {
-          console.error('Topics creation error:', themesError)
+          console.error('[SessionCreateWizard] Themes insert failed:', {
+            error: themesError,
+            code: themesError.code,
+            message: themesError.message,
+            details: themesError.details,
+            themesCount: themesInsert.length,
+            sessionId: sessionData.id,
+          })
           toast({
             variant: 'destructive',
             title: 'Topics creation failed',
-            description: 'Session created but topics could not be added.',
+            description: `${themesError.message || 'Session created but topics could not be added'}. Check the console for details.`,
           })
         }
       }
@@ -462,44 +450,32 @@ export function SessionCreateWizard() {
   const renderStep2 = () => (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="welcomeMessage">Welcome message</Label>
+        <Label htmlFor="welcomeMessage">Welcome message (shown to participants)</Label>
         <Textarea
           id="welcomeMessage"
-          placeholder="A message to greet your participants..."
+          placeholder="Hi — please review the topics below and let me know which ones you'd like me to spend more or less time on. Thank you for your feedback."
           value={wizardData.welcomeMessage}
           onChange={(e) => setWizardData({ ...wizardData, welcomeMessage: e.target.value })}
           rows={3}
           className="resize-none"
         />
         <p className="text-xs text-gray-500">
-          Optional greeting shown at the top of the participant form.
+          This appears at the top of the participant page.
         </p>
       </div>
 
       <div className="space-y-2">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <Label htmlFor="summaryCondensed">Overview summary</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateOverview}
-            disabled={!wizardData.summaryFull.trim()}
-            className="h-8 text-xs w-full sm:w-auto"
-          >
-            Draft from outline
-          </Button>
-        </div>
+        <Label htmlFor="summaryCondensed">Overview summary (optional)</Label>
         <Textarea
           id="summaryCondensed"
-          placeholder="Short participant-facing description (1-2 sentences)..."
+          placeholder="Short description shown before the topics (1–2 sentences)"
           value={wizardData.summaryCondensed}
           onChange={(e) => setWizardData({ ...wizardData, summaryCondensed: e.target.value })}
           rows={3}
           className="resize-none"
         />
         <p className="text-xs text-gray-500">
-          Participant-facing description shown before the topics. Use 'Draft from outline' then edit.
+          You can leave this blank.
         </p>
       </div>
 
@@ -507,25 +483,24 @@ export function SessionCreateWizard() {
         <Label htmlFor="summaryFull">
           Your outline <span className="text-red-500">*</span>
         </Label>
-        <Textarea
-          id="summaryFull"
-          placeholder={`Market context
+        <div className="relative">
+          <Textarea
+            id="summaryFull"
+            placeholder={`Market context
+— why now
+— why later
 
-What's changing
+Analysis
 
-Proposed approach
-  - Tradeoffs
-
-Case study
-
-Open questions`}
-          value={wizardData.summaryFull}
-          onChange={(e) => setWizardData({ ...wizardData, summaryFull: e.target.value })}
-          rows={8}
-          className="resize-none"
-        />
+Case study`}
+            value={wizardData.summaryFull}
+            onChange={(e) => setWizardData({ ...wizardData, summaryFull: e.target.value })}
+            rows={8}
+            className="resize-none"
+          />
+        </div>
         <p className="text-xs text-gray-500">
-          Write your outline. We'll turn it into the topics your audience will prioritize.
+          Each non-empty line will become a topic your audience can react to.
         </p>
       </div>
     </div>
@@ -535,9 +510,9 @@ Open questions`}
     <div className="space-y-6">
       <div>
         <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-1">Review the topics created from your outline</h3>
+          <h3 className="text-sm font-medium text-gray-900 mb-1">Topics for audience feedback</h3>
           <p className="text-xs text-gray-600 leading-relaxed">
-            Edit wording, reorder, and add any missing topics.
+            These are the topics your audience will prioritize. Review the wording and order, and add or remove any topics.
           </p>
         </div>
 
@@ -589,7 +564,6 @@ Open questions`}
       {wizardData.themes.length > 0 ? (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">Topics ({wizardData.themes.length})</h4>
-          <p className="text-xs text-gray-600">Review the wording and order. You can edit, reorder, or add topics.</p>
           <div className="space-y-2">
             {wizardData.themes.map((theme, index) => (
               <div
@@ -678,7 +652,7 @@ Open questions`}
           <h4 className="text-sm font-medium text-gray-700 mb-2">Outline & Overview</h4>
           <dl className="space-y-2">
             <div>
-              <dt className="text-xs text-gray-500">Outline or notes</dt>
+              <dt className="text-xs text-gray-500">Your outline</dt>
               <dd className="text-sm text-gray-900 whitespace-pre-wrap">
                 {wizardData.summaryFull || <span className="text-gray-400">Not provided</span>}
               </dd>
@@ -759,8 +733,8 @@ Open questions`}
             </CardTitle>
             <CardDescription>
               {currentStep === 1 && 'Enter the basic information for your session'}
-              {currentStep === 2 && 'Add your outline and generate an overview for participants'}
-              {currentStep === 3 && 'Generate or manually add topics for participants to prioritize'}
+              {currentStep === 2 && "Write what you plan to cover in this session. We'll organize it into topics your audience can respond to."}
+              {currentStep === 3 && 'Review and refine the topics for your audience'}
               {currentStep === 4 && 'Review your session before creating'}
             </CardDescription>
           </CardHeader>
@@ -791,7 +765,7 @@ Open questions`}
                   disabled={isSubmitting}
                   className="min-h-[56px] flex-1"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Session'}
+                  {isSubmitting ? 'Creating...' : 'Confirm & create session'}
                 </Button>
               )}
             </div>
