@@ -93,7 +93,9 @@ export function SessionDetail() {
   const [isPublishing, setIsPublishing] = useState(false)
   const [showNavigateAwayDialog, setShowNavigateAwayDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
-  const [responseCount, setResponseCount] = useState<number | null>(null)
+  // responseCount is used to determine initial tab but not stored in state
+  // since we set activeTab directly in the fetch effect
+  const [activeTab, setActiveTab] = useState<string>('details')
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -142,7 +144,12 @@ export function SessionDetail() {
             .from('responses')
             .select('*', { count: 'exact', head: true })
             .eq('session_id', sessionId)
-          setResponseCount(count ?? 0)
+          const respCount = count ?? 0
+
+          // Set initial tab: active with responses → results, otherwise details
+          if (data.state === 'active' && respCount > 0) {
+            setActiveTab('results')
+          }
         }
       } catch (err) {
         console.error('Unexpected error:', err)
@@ -709,18 +716,28 @@ export function SessionDetail() {
           </Card>
         )}
 
-        {/* Primary action block - Completed */}
+        {/* Completed status block - links to Audience feedback tab */}
         {session.state === 'completed' && (
           <Card>
             <CardContent className="pt-6 space-y-4">
               <Button
                 className="w-full min-h-[48px]"
-                onClick={fetchResults}
+                onClick={() => {
+                  setActiveTab('results')
+                  fetchResults()
+                  // Scroll to tabs
+                  setTimeout(() => {
+                    const tabsEl = document.querySelector('[role="tablist"]')
+                    if (tabsEl) {
+                      tabsEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }
+                  }, 50)
+                }}
               >
                 View audience feedback
               </Button>
               <p className="text-sm text-gray-600 text-center">
-                Session closed. {responses.length} responses collected.
+                Session closed. See feedback below.
               </p>
             </CardContent>
           </Card>
@@ -787,11 +804,14 @@ export function SessionDetail() {
           </div>
         </details>
 
-        {/* Tabs - Active with responses defaults to results, otherwise details */}
-        <Tabs defaultValue={session.state === 'active' && responseCount && responseCount > 0 ? 'results' : 'details'} className="space-y-6">
+        {/* Tabs - Controlled for programmatic switching */}
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value)
+          if (value === 'results') fetchResults()
+        }} className="space-y-6">
           <TabsList>
             <TabsTrigger value="details">Session details</TabsTrigger>
-            <TabsTrigger value="results" onClick={fetchResults}>Audience feedback</TabsTrigger>
+            <TabsTrigger value="results">Audience feedback</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-6">
@@ -815,9 +835,10 @@ export function SessionDetail() {
               </div>
 
               <div>
-                <h3 className="text-sm font-medium text-gray-700">Full Summary</h3>
+                <h3 className="text-sm font-medium text-gray-700">Your outline</h3>
+                <p className="text-xs text-gray-500 mb-1">For your reference only — not shown to participants</p>
                 <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
-                  {session.summaryFull || <span className="text-gray-400">No summary</span>}
+                  {session.summaryFull || <span className="text-gray-400">No outline</span>}
                 </p>
               </div>
 

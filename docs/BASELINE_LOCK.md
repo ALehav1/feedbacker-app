@@ -599,6 +599,58 @@ Application enforces active-only submission; RLS policies are currently permissi
 - "Preview participant page" (draft) / "Open participant page" (active)
 
 **Diff size:** ~200 lines (major restructure)
+**Commit:** `46a8f3c`
+
+### Session UX Stability Pass (January 21, 2026)
+
+**Files:** `src/features/sessions/SessionDetail.tsx`, `src/features/sessions/SessionEdit.tsx`, `src/features/auth/AuthContext.tsx`, `src/features/auth/ProtectedRoute.tsx`
+**Change:** Fix duplicate feedback surfaces, iPhone back button data loss, auth bootstrap race, EditSession crash prevention
+**Justification:** Multiple reported UX issues: duplicate feedback areas, silent data loss on iOS, first-load spinner, Edit Session failures
+
+**Item 1: Audience feedback consolidation**
+- SessionDetail.tsx: Converted Tabs to controlled mode
+- "View audience feedback" button now switches tab + scrolls
+- Eliminated duplicate feedback content surfaces
+- Added responseCount fetch for smart tab default
+
+**Item 2: iPhone back button protection**
+- SessionEdit.tsx: Added popstate interception for iOS Chrome
+- Pushes history state on mount, catches popstate events
+- Shows "Leave without saving?" modal before navigation
+- Added localStorage draft persistence for crash recovery
+- Restore prompt when reopening with unsaved draft
+
+**Item 3: Participant message field clarity**
+- SessionDetail.tsx: Renamed "Full Summary" to "Your outline"
+- Added helper: "For your reference only — not shown to participants"
+- Consistent naming between SessionEdit and SessionDetail
+
+**Item 4: Topic hygiene (line fragment collapse)**
+- SessionEdit.tsx: Enhanced createTopicsFromOutline()
+- Merges consecutive short topics (≤20 chars or single word)
+- Dedupes case-insensitive variants ("why?" vs "Why")
+- Prevents fragmented topic lists from malformed outlines
+
+**Item 5: Edit Session crash prevention**
+- SessionEdit.tsx: Added mount context logging (dev)
+- Payload debug snapshot shows raw data shape
+- Defensive normalization before form binding
+- ?crash=1 query param for ErrorBoundary testing (dev)
+
+**Item 6: Auth bootstrap race fix**
+- AuthContext.tsx: Only setIsLoading(false) after getSession completes
+- Removed premature loading false from onAuthStateChange events
+- Added comprehensive bootstrap timing logs (dev)
+- ProtectedRoute.tsx: Added 6s "still loading" fallback with Retry/Back buttons
+
+**Behavioral changes:**
+- Single canonical feedback surface (Audience feedback tab)
+- Draft recovery after browser crash or accidental navigation
+- No silent data loss from iOS back gesture
+- First load succeeds without refresh
+- Topic parsing produces cleaner, deduplicated lists
+
+**Diff size:** ~300 lines across 4 frozen files
 **Commit:** Pending
 
 ---

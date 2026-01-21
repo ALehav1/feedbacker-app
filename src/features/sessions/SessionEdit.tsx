@@ -12,6 +12,19 @@ import { supabase } from '@/lib/supabase'
 import { Pencil, Trash2, Plus, RefreshCw, ArrowLeft } from 'lucide-react'
 import type { Session, Theme } from '@/types'
 
+// Helper: check if a topic text is a "fragment" (short, no structural delimiters)
+function isFragmentTopic(text: string): boolean {
+  const SHORT_THRESHOLD = 20
+  const hasDelimiter = /[:—\-•*]/.test(text)
+  const isSingleWord = !text.includes(' ')
+  return (text.length <= SHORT_THRESHOLD || isSingleWord) && !hasDelimiter
+}
+
+// Helper: normalize text for deduplication (lowercase, strip punctuation)
+function normalizeForDedup(text: string): string {
+  return text.toLowerCase().replace(/[?!.,;:'"]+/g, '').trim()
+}
+
 // Helper function to regenerate topics from outline
 function createTopicsFromOutline(outline: string): Theme[] {
   const MAX_TOPICS = 12
@@ -59,13 +72,46 @@ function createTopicsFromOutline(outline: string): Theme[] {
     }
   }
 
+  // Phase 2: Collapse consecutive "fragment" topics into one
+  const collapsedTopics: ParsedTopic[] = []
+  let fragmentBuffer: string[] = []
+
+  for (const topic of topics) {
+    if (isFragmentTopic(topic.text)) {
+      fragmentBuffer.push(topic.text)
+      // Also preserve any details from fragment topics
+      if (topic.details.length > 0 && collapsedTopics.length > 0) {
+        collapsedTopics[collapsedTopics.length - 1].details.push(...topic.details)
+      }
+    } else {
+      // Flush fragment buffer if non-empty
+      if (fragmentBuffer.length > 1) {
+        // Merge fragments into one topic
+        const merged = fragmentBuffer.join(' ')
+        collapsedTopics.push({ text: merged, details: [] })
+      } else if (fragmentBuffer.length === 1) {
+        // Single fragment, keep as-is
+        collapsedTopics.push({ text: fragmentBuffer[0], details: [] })
+      }
+      fragmentBuffer = []
+      collapsedTopics.push(topic)
+    }
+  }
+  // Flush remaining fragments
+  if (fragmentBuffer.length > 1) {
+    collapsedTopics.push({ text: fragmentBuffer.join(' '), details: [] })
+  } else if (fragmentBuffer.length === 1) {
+    collapsedTopics.push({ text: fragmentBuffer[0], details: [] })
+  }
+
+  // Phase 3: Dedupe using normalized text (handles "why?" vs "Why")
   const uniqueTopics: ParsedTopic[] = []
   const seen = new Set<string>()
 
-  for (const topic of topics) {
-    const lowerText = topic.text.toLowerCase()
-    if (!seen.has(lowerText) && uniqueTopics.length < MAX_TOPICS) {
-      seen.add(lowerText)
+  for (const topic of collapsedTopics) {
+    const normalizedText = normalizeForDedup(topic.text)
+    if (!seen.has(normalizedText) && uniqueTopics.length < MAX_TOPICS) {
+      seen.add(normalizedText)
       uniqueTopics.push(topic)
     }
   }
@@ -83,7 +129,19 @@ export function SessionEdit() {
   const { user } = useAuth()
   const { toast } = useToast()
   const { sessionId } = useParams<{ sessionId: string }>()
-  
+
+  // Log mount context for debugging
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[SessionEdit] Mount context:', {
+        pathname: window.location.pathname,
+        sessionId,
+        userId: user?.id,
+        timestamp: new Date().toISOString(),
+      })
+    }
+  }, [sessionId, user?.id])
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
@@ -128,6 +186,62 @@ export function SessionEdit() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
 
+  // Popstate interception for iOS Chrome back button
+  // iOS Safari/Chrome don't always trigger beforeunload on back swipe
+  useEffect(() => {
+    if (!isDirty) return
+
+    // Push a state so we can detect back navigation
+    window.history.pushState({ sessionEditGuard: true }, '')
+
+    const handlePopstate = (_e: PopStateEvent) => {
+      if (isDirty) {
+        // Re-push state to prevent navigation
+        window.history.pushState({ sessionEditGuard: true }, '')
+        // Show the dialog
+        setShowUnsavedDialog(true)
+        setPendingNavigation('/dashboard')
+      }
+    }
+
+    window.addEventListener('popstate', handlePopstate)
+    return () => window.removeEventListener('popstate', handlePopstate)
+  }, [isDirty])
+
+  // Local draft persistence for recovery after crash/refresh
+  const draftKey = sessionId ? `feedbacker-draft-${sessionId}` : null
+
+  // Save draft to localStorage when dirty
+  useEffect(() => {
+    if (!draftKey || !isDirty) return
+
+    const draft = {
+      welcomeMessage,
+      summaryCondensed,
+      summaryFull,
+      themes,
+      savedAt: new Date().toISOString(),
+    }
+    localStorage.setItem(draftKey, JSON.stringify(draft))
+  }, [draftKey, isDirty, welcomeMessage, summaryCondensed, summaryFull, themes])
+
+  // Clear draft after successful save (isDirty becomes false)
+  useEffect(() => {
+    if (draftKey && !isDirty) {
+      localStorage.removeItem(draftKey)
+    }
+  }, [draftKey, isDirty])
+
+  // State for restore prompt
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false)
+  const [savedDraft, setSavedDraft] = useState<{
+    welcomeMessage: string
+    summaryCondensed: string
+    summaryFull: string
+    themes: Theme[]
+    savedAt: string
+  } | null>(null)
+
   // React Router navigation blocker
   const blocker = useBlocker(isDirty)
 
@@ -148,6 +262,7 @@ export function SessionEdit() {
         .single()
 
       if (error || !data) {
+        console.error('[SessionEdit] Session fetch failed:', { error, sessionId })
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -157,24 +272,48 @@ export function SessionEdit() {
         return
       }
 
+      // Debug snapshot (dev only): log raw payload shape
+      if (import.meta.env.DEV) {
+        console.log('[SessionEdit] Session payload snapshot:', {
+          id: data.id,
+          state: data.state,
+          hasWelcome: !!data.welcome_message,
+          hasSummaryFull: !!data.summary_full,
+          hasSummaryCondensed: !!data.summary_condensed,
+          topicsSource: data.topics_source,
+          publishedTopicsCount: Array.isArray(data.published_topics) ? data.published_topics.length : 'not array',
+          publishedTopicsType: typeof data.published_topics,
+        })
+      }
+
+      // Normalize payload defensively
+      const normalizedData = {
+        ...data,
+        welcome_message: data.welcome_message ?? '',
+        summary_full: data.summary_full ?? '',
+        summary_condensed: data.summary_condensed ?? '',
+        topics_source: data.topics_source ?? 'generated',
+        published_topics: Array.isArray(data.published_topics) ? data.published_topics : [],
+      }
+
       const mappedSession: Session = {
-        id: data.id,
-        presenterId: data.presenter_id,
-        state: data.state as Session['state'],
-        lengthMinutes: data.length_minutes,
-        title: data.title,
-        welcomeMessage: data.welcome_message || '',
-        summaryFull: data.summary_full || '',
-        summaryCondensed: data.summary_condensed || '',
-        slug: data.slug,
-        topicsSource: (data.topics_source as 'generated' | 'manual') || 'generated',
-        publishedWelcomeMessage: data.published_welcome_message,
-        publishedSummaryCondensed: data.published_summary_condensed,
-        publishedTopics: data.published_topics || [],
-        publishedAt: data.published_at ? new Date(data.published_at) : undefined,
-        hasUnpublishedChanges: data.has_unpublished_changes || false,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
+        id: normalizedData.id,
+        presenterId: normalizedData.presenter_id,
+        state: normalizedData.state as Session['state'],
+        lengthMinutes: normalizedData.length_minutes,
+        title: normalizedData.title,
+        welcomeMessage: normalizedData.welcome_message,
+        summaryFull: normalizedData.summary_full,
+        summaryCondensed: normalizedData.summary_condensed,
+        slug: normalizedData.slug,
+        topicsSource: normalizedData.topics_source as 'generated' | 'manual',
+        publishedWelcomeMessage: normalizedData.published_welcome_message,
+        publishedSummaryCondensed: normalizedData.published_summary_condensed,
+        publishedTopics: normalizedData.published_topics,
+        publishedAt: normalizedData.published_at ? new Date(normalizedData.published_at) : undefined,
+        hasUnpublishedChanges: normalizedData.has_unpublished_changes || false,
+        createdAt: new Date(normalizedData.created_at),
+        updatedAt: new Date(normalizedData.updated_at),
       }
 
       setSession(mappedSession)
@@ -201,6 +340,36 @@ export function SessionEdit() {
         }))
         setThemes(loadedThemes)
         setInitialThemes(loadedThemes)
+      }
+
+      // Check for saved draft to restore
+      const draftKey = `feedbacker-draft-${sessionId}`
+      const savedDraftStr = localStorage.getItem(draftKey)
+      if (savedDraftStr) {
+        try {
+          const draft = JSON.parse(savedDraftStr)
+          // Only offer restore if draft differs from current server state
+          const hasDraftChanges =
+            draft.welcomeMessage !== mappedSession.welcomeMessage ||
+            draft.summaryCondensed !== mappedSession.summaryCondensed ||
+            draft.summaryFull !== mappedSession.summaryFull ||
+            JSON.stringify(draft.themes) !== JSON.stringify(themesData?.map((t: { id: string; text: string; sort_order: number }) => ({
+              id: t.id,
+              text: t.text,
+              sortOrder: t.sort_order,
+            })))
+
+          if (hasDraftChanges) {
+            setSavedDraft(draft)
+            setShowRestorePrompt(true)
+          } else {
+            // Draft matches server state, clean it up
+            localStorage.removeItem(draftKey)
+          }
+        } catch {
+          // Invalid draft, remove it
+          localStorage.removeItem(draftKey)
+        }
       }
 
       setLoading(false)
@@ -689,6 +858,51 @@ export function SessionEdit() {
             </Button>
             <Button variant="destructive" onClick={confirmLeave}>
               Leave
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Restore draft dialog */}
+      <Dialog open={showRestorePrompt} onOpenChange={setShowRestorePrompt}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restore unsaved changes?</DialogTitle>
+            <DialogDescription>
+              {savedDraft && (
+                <>
+                  You have unsaved changes from {new Date(savedDraft.savedAt).toLocaleString()}.
+                  Would you like to restore them?
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Discard draft
+                if (draftKey) localStorage.removeItem(draftKey)
+                setSavedDraft(null)
+                setShowRestorePrompt(false)
+              }}
+            >
+              Discard
+            </Button>
+            <Button
+              onClick={() => {
+                // Restore draft
+                if (savedDraft) {
+                  setWelcomeMessage(savedDraft.welcomeMessage)
+                  setSummaryCondensed(savedDraft.summaryCondensed)
+                  setSummaryFull(savedDraft.summaryFull)
+                  setThemes(savedDraft.themes)
+                }
+                setSavedDraft(null)
+                setShowRestorePrompt(false)
+              }}
+            >
+              Restore
             </Button>
           </DialogFooter>
         </DialogContent>

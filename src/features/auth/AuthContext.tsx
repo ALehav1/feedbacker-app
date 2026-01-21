@@ -78,9 +78,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let isMounted = true;
     let lastUserId: string | null = null;
 
-    const handleSession = async (session: Session | null) => {
+    // Log timestamp for debugging bootstrap timing
+    const bootStart = Date.now();
+    if (import.meta.env.DEV) {
+      console.log('[Auth] Bootstrap starting at', new Date().toISOString());
+    }
+
+    const handleSession = async (session: Session | null, source: string) => {
       try {
         const nextUserId = session?.user?.id ?? null;
+
+        if (import.meta.env.DEV) {
+          console.log(`[Auth] handleSession (${source}):`, {
+            nextUserId: nextUserId?.slice(0, 8),
+            lastUserId: lastUserId?.slice(0, 8),
+            elapsed: Date.now() - bootStart,
+          });
+        }
 
         if (nextUserId === lastUserId) {
           setUser(session?.user ?? null);
@@ -107,19 +121,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Only log significant auth events to reduce console noise
-        // (TOKEN_REFRESHED fires frequently and causes log spam)
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        // Log all auth events in dev mode for debugging
+        if (import.meta.env.DEV) {
           console.log('[Auth] onAuthStateChange:', event, session ? 'has session' : 'no session');
         }
         try {
-          await handleSession(session);
+          await handleSession(session, `onAuthStateChange:${event}`);
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') return;
           console.error('Auth state change handler error:', err);
-        } finally {
-          if (isMounted) setIsLoading(false);
         }
+        // Don't set isLoading false here - wait for initial bootstrap
+        // Only set loading false after initial getSession completes
+        // Auth state changes after that are handled without blocking UI
       }
     );
 
@@ -127,13 +141,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       for (let i = 0; i < retries; i++) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          console.log('[Auth] getSession result:', session ? 'has session' : 'no session');
-          if (!isMounted) return;
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            const p = await fetchPresenter(session.user.id);
-            if (isMounted) setPresenter(p);
+          if (import.meta.env.DEV) {
+            console.log('[Auth] getSession result:', session ? 'has session' : 'no session', 'elapsed:', Date.now() - bootStart);
           }
+          if (!isMounted) return;
+          await handleSession(session, 'getSession');
           return;
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') {
@@ -148,8 +160,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.warn('[Auth] getSession failed after retries');
     };
 
+    // Bootstrap: getSession first, then mark loading complete
     getSessionWithRetry().finally(() => {
-      if (isMounted) setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+        if (import.meta.env.DEV) {
+          console.log('[Auth] Bootstrap complete. Elapsed:', Date.now() - bootStart, 'ms');
+        }
+      }
     });
 
     return () => {
