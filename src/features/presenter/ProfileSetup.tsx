@@ -252,6 +252,17 @@ export function ProfileSetup() {
                 ? (presenter ? 'Saving...' : 'Creating profile...')
                 : (presenter ? (hasChanges ? 'Save Changes' : 'No Changes') : 'Complete setup')}
             </Button>
+            {presenter && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-[48px]"
+                onClick={() => navigate('/dashboard')}
+                disabled={isSubmitting}
+              >
+                Back to Dashboard
+              </Button>
+            )}
           </form>
         </CardContent>
       </Card>

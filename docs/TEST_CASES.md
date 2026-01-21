@@ -289,10 +289,17 @@ Q&A
 - [ ] Controls don't get clipped
 - [ ] Add topic button full width on mobile
 
-### SessionDetail
-- [ ] "Edit Session" and "Back to Dashboard" buttons stack or wrap
-- [ ] Link doesn't overflow (breaks or wraps)
+### SessionDetail Header
+- [ ] Title and state badge wrap properly
+- [ ] "Edit Session" and "Back to Dashboard" buttons stack vertically on mobile
+- [ ] Full width buttons on mobile (w-full sm:w-auto)
+- [ ] No horizontal overflow/scroll
+- [ ] Status metadata text wraps cleanly
+
+### SessionDetail Content
+- [ ] Participant link URL breaks properly (break-all)
 - [ ] Status chips don't clip
+- [ ] Copy Link button stays accessible
 
 ### Participant Draft Banner
 - [ ] Banner copy wraps cleanly
@@ -303,6 +310,33 @@ Q&A
 - [ ] Content wraps to multiple lines
 - [ ] Buttons stack on mobile
 - [ ] "View live version" link readable
+
+### Edit Profile Page
+- [ ] Form fields display properly
+- [ ] "Back to Dashboard" button visible and tappable when editing existing profile
+- [ ] Submit button spans full width
+- [ ] No horizontal scroll
+
+### Edit Session Page
+- [ ] Header buttons stack vertically on mobile
+- [ ] Topic list items don't overflow
+- [ ] Edit/Delete buttons accessible on topics
+- [ ] Save/Cancel buttons span full width
+
+---
+
+## Error Boundary Verification
+
+**To test error boundary:**
+1. Temporarily add `throw new Error('Test error')` to SessionEdit or SessionDetail
+2. Navigate to the page
+3. Verify:
+   - [ ] Error card shows "Something went wrong"
+   - [ ] "Try again" button visible and clickable
+   - [ ] "Back to Dashboard" button visible and clickable
+   - [ ] Technical details expandable
+   - [ ] Console shows error details
+4. Remove test error and verify normal operation
 
 ---
 

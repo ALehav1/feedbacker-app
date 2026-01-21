@@ -16,6 +16,7 @@ import { SessionCreateWizard } from '@/features/sessions/SessionCreateWizard'
 import { SessionDetail } from '@/features/sessions/SessionDetail'
 import { SessionEdit } from '@/features/sessions/SessionEdit'
 import { FeedbackForm } from '@/features/participant/FeedbackForm'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 function App() {
   return (
@@ -54,7 +55,9 @@ function App() {
               path="/dashboard/sessions/:sessionId/edit"
               element={
                 <ProtectedRoute>
-                  <SessionEdit />
+                  <ErrorBoundary>
+                    <SessionEdit />
+                  </ErrorBoundary>
                 </ProtectedRoute>
               }
             />
@@ -62,7 +65,9 @@ function App() {
               path="/dashboard/sessions/:sessionId"
               element={
                 <ProtectedRoute>
-                  <SessionDetail />
+                  <ErrorBoundary>
+                    <SessionDetail />
+                  </ErrorBoundary>
                 </ProtectedRoute>
               }
             />

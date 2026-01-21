@@ -521,6 +521,41 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Diff size:** ~60 lines modified across 4 files
 **Commit:** Pending
 
+### Mobile UX Fixes + Error Boundary (January 21, 2026)
+
+**Files:** `src/App.tsx`, `src/features/sessions/SessionDetail.tsx`, `src/features/presenter/ProfileSetup.tsx`, `src/components/ErrorBoundary.tsx` (new)
+**Change:** Fix mobile header overflow, add exit path from Edit Profile, add error boundary for presenter pages
+**Justification:** Mobile UX regressions - header buttons overflow at 375px, Edit Profile stuck without exit, blank screen needs fallback
+
+**App.tsx changes (frozen file - routing allowed):**
+- Added ErrorBoundary import
+- Wrapped SessionEdit and SessionDetail routes with ErrorBoundary
+- Provides fallback UI instead of blank screen on uncaught errors
+
+**SessionDetail.tsx changes (frozen file):**
+- Header now uses `flex-col sm:flex-row` for responsive stacking
+- Buttons stack vertically at mobile width, horizontal at sm+
+- Title uses smaller font on mobile (text-xl vs text-2xl)
+- Added `min-w-0 flex-1` to title container for proper truncation
+
+**ProfileSetup.tsx changes:**
+- Added "Back to Dashboard" button in edit mode when presenter exists
+- Users can now exit profile edit without making changes
+
+**ErrorBoundary.tsx (new component):**
+- Class-based React error boundary
+- Catches uncaught errors in presenter pages
+- Shows user-friendly message with "Try again" and "Back to Dashboard" buttons
+- Logs error details to console
+
+**Behavioral changes:**
+- SessionDetail header no longer overflows at 375px
+- Edit Profile always has exit path to dashboard
+- Edit Session / Session Detail show error card instead of blank screen on failure
+
+**Diff size:** ~80 lines (1 new file, 20 lines App.tsx, 30 lines SessionDetail, 10 lines ProfileSetup)
+**Commit:** Pending
+
 ---
 
 ## Baseline Lock History

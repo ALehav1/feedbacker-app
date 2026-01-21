@@ -532,25 +532,25 @@ export function SessionDetail() {
       )}
       <header className="border-b bg-white" style={{ marginTop: session.hasUnpublishedChanges && (session.state === 'draft' || session.state === 'active') ? '64px' : '0' }}>
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{session.title}</h1>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{session.title}</h1>
                 <span
-                  className={`rounded-full px-3 py-1 text-sm font-medium ${
+                  className={`rounded-full px-3 py-1 text-sm font-medium shrink-0 ${
                     stateColors[session.state]
                   }`}
                 >
                   {stateLabels[session.state]}
                 </span>
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
-                <span>{session.lengthMinutes} minutes</span>
-                <span>•</span>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
+                <span>{session.lengthMinutes} min</span>
+                <span className="text-gray-300">•</span>
                 <span>Created {session.createdAt.toLocaleDateString()}</span>
               </div>
               {(session.state === 'draft' || session.state === 'active') && (
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className="text-gray-500">{SESSION_STATUS.participantViewLabel}:</span>
                     <span className="font-medium text-gray-700">{SESSION_STATUS.participantViewValue}</span>
@@ -567,16 +567,16 @@ export function SessionDetail() {
                 </div>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 w-full sm:flex-row sm:w-auto sm:shrink-0">
               <Button
-                className="min-h-[48px] flex-1"
+                className="min-h-[48px] w-full sm:w-auto"
                 onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
               >
                 Edit Session
               </Button>
               <Button
                 variant="outline"
-                className="min-h-[48px]"
+                className="min-h-[48px] w-full sm:w-auto"
                 onClick={() => {
                   if (session.hasUnpublishedChanges) {
                     setPendingNavigation('/dashboard');

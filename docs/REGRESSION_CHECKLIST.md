@@ -58,7 +58,23 @@ npm run lint
 - [ ] See participant responses list
 - [ ] Verify sorting: net desc, total desc, sort_order asc
 
-### 8. Console Check
+### 8. Edit Session Flow
+- [ ] Navigate to Session Detail → Edit Session
+- [ ] Verify Edit Session loads without blank screen
+- [ ] Modify a field → Save
+- [ ] Verify changes saved (toast shown)
+
+### 9. Edit Profile Exit Path
+- [ ] Navigate to Dashboard → Profile
+- [ ] In edit mode, verify "Back to Dashboard" button exists
+- [ ] Click "Back to Dashboard" → lands on dashboard
+
+### 10. Mobile Header (375px)
+- [ ] Session Detail header: buttons stack vertically
+- [ ] No horizontal scroll on any page
+- [ ] All text wraps properly
+
+### 11. Console Check
 - [ ] Open browser DevTools console
 - [ ] Verify: **Zero errors** during smoke test
 - [ ] Warnings are acceptable if pre-existing
