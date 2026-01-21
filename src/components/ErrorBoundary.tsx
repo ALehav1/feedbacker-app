@@ -10,20 +10,46 @@ interface Props {
 interface State {
   hasError: boolean
   error: Error | null
+  errorContext: {
+    pathname: string
+    sessionId?: string
+    timestamp: string
+  } | null
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = { hasError: false, error: null, errorContext: null }
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+  static getDerivedStateFromError(error: Error): Partial<State> {
+    // Extract session ID from URL if present
+    const pathname = window.location.pathname
+    const sessionIdMatch = pathname.match(/\/sessions\/([^/]+)/)
+    const sessionId = sessionIdMatch?.[1]
+
+    return {
+      hasError: true,
+      error,
+      errorContext: {
+        pathname,
+        sessionId,
+        timestamp: new Date().toISOString(),
+      },
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ErrorBoundary] Caught error:', error)
+    const { errorContext } = this.state
+    console.error('[ErrorBoundary] Caught error:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      pathname: errorContext?.pathname,
+      sessionId: errorContext?.sessionId,
+      timestamp: errorContext?.timestamp,
+    })
     console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack)
   }
 
@@ -50,8 +76,11 @@ export class ErrorBoundary extends Component<Props, State> {
               {this.state.error && (
                 <details className="text-xs text-gray-500">
                   <summary className="cursor-pointer hover:text-gray-700">Technical details</summary>
-                  <pre className="mt-2 whitespace-pre-wrap break-words bg-gray-100 p-2 rounded">
-                    {this.state.error.message}
+                  <pre className="mt-2 whitespace-pre-wrap break-words bg-gray-100 p-2 rounded text-left">
+{`Error: ${this.state.error.message}
+Route: ${this.state.errorContext?.pathname || 'unknown'}
+Session ID: ${this.state.errorContext?.sessionId || 'N/A'}
+Time: ${this.state.errorContext?.timestamp || 'unknown'}`}
                   </pre>
                 </details>
               )}
