@@ -14,6 +14,7 @@ interface SessionRow {
   summary_full: string
   summary_condensed: string
   slug: string
+  topics_source: string
   published_welcome_message?: string
   published_summary_condensed?: string
   published_topics: { themeId: string; text: string; sortOrder: number }[] // JSONB array from database
@@ -90,6 +91,7 @@ export function useSessions(): UseSessionsReturn {
         summaryFull: row.summary_full,
         summaryCondensed: row.summary_condensed,
         slug: row.slug,
+        topicsSource: (row.topics_source as 'generated' | 'manual') || 'generated',
         publishedWelcomeMessage: row.published_welcome_message,
         publishedSummaryCondensed: row.published_summary_condensed,
         publishedTopics: row.published_topics || [],

@@ -74,6 +74,7 @@ export function FeedbackForm() {
             summaryFull: sessionData.summary_full,
             summaryCondensed: sessionData.summary_condensed,
             slug: sessionData.slug,
+            topicsSource: (sessionData.topics_source as 'generated' | 'manual') || 'generated',
             publishedWelcomeMessage: sessionData.published_welcome_message,
             publishedSummaryCondensed: sessionData.published_summary_condensed,
             publishedTopics: sessionData.published_topics || [],

@@ -28,6 +28,7 @@ export interface Session {
   summaryFull: string;
   summaryCondensed: string;
   slug: string;
+  topicsSource: 'generated' | 'manual'; // Tracks whether topics auto-regenerate from outline
   // Published snapshot fields (what participants see)
   publishedWelcomeMessage?: string;
   publishedSummaryCondensed?: string;

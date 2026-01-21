@@ -324,6 +324,7 @@ export function SessionCreateWizard() {
           summary_full: wizardData.summaryFull.trim() || '',
           summary_condensed: wizardData.summaryCondensed.trim() || '',
           slug,
+          topics_source: 'generated',
           published_welcome_message: wizardData.welcomeMessage.trim() || '',
           published_summary_condensed: wizardData.summaryCondensed.trim() || '',
           published_topics: publishedTopics.length > 0 ? publishedTopics : [],

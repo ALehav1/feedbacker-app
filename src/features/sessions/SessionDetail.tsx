@@ -118,6 +118,7 @@ export function SessionDetail() {
             summaryFull: data.summary_full,
             summaryCondensed: data.summary_condensed,
             slug: data.slug,
+            topicsSource: (data.topics_source as 'generated' | 'manual') || 'generated',
             publishedWelcomeMessage: data.published_welcome_message,
             publishedSummaryCondensed: data.published_summary_condensed,
             publishedTopics: data.published_topics || [],
