@@ -534,7 +534,7 @@ export function SessionDetail() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-gray-900">{session.title}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{session.title}</h1>
                 <span
                   className={`rounded-full px-3 py-1 text-sm font-medium ${
                     stateColors[session.state]
@@ -656,18 +656,26 @@ export function SessionDetail() {
                       Copy Link
                     </Button>
                   </div>
-                  <div className="text-xs text-gray-600">
+                  <div className="flex items-center gap-2">
                     {session.state === 'draft' && (
-                      <span className="font-medium text-amber-700">Draft — preview only</span>
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
+                        Draft — preview only
+                      </span>
                     )}
                     {session.state === 'active' && (
-                      <span className="font-medium text-green-700">Active — collecting feedback</span>
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+                        Active — collecting feedback
+                      </span>
                     )}
                     {session.state === 'completed' && (
-                      <span className="font-medium text-gray-700">Completed — feedback closed</span>
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
+                        Completed — feedback closed
+                      </span>
                     )}
                     {session.state === 'archived' && (
-                      <span className="font-medium text-gray-500">Archived — closed</span>
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-500">
+                        Archived — closed
+                      </span>
                     )}
                   </div>
                   {session.state === 'draft' && (
@@ -788,8 +796,8 @@ export function SessionDetail() {
                             key={theme.themeId}
                             className="rounded-lg border border-gray-200 bg-white p-4"
                           >
-                            <p className="text-sm font-medium text-gray-900 mb-2">{theme.text}</p>
-                            <div className="flex items-center gap-4 text-sm">
+                            <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
                               <div className="flex items-center gap-1">
                                 <span className="text-lg">👍</span>
                                 <span className="font-medium">{theme.more}</span>
@@ -852,7 +860,7 @@ export function SessionDetail() {
                               </p>
                             </div>
                             {response.participantEmail && (
-                              <p className="text-xs text-gray-600 mb-2">
+                              <p className="text-xs text-gray-600 mb-2 break-all">
                                 {response.participantEmail}
                               </p>
                             )}

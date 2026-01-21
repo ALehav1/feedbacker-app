@@ -161,8 +161,13 @@ Q&A
 ## Session Detail Verification
 
 ### Draft State
-**Link status:**
+**Link status (prominent pill badge):**
 - [ ] Shows "Draft — preview only"
+- [ ] Amber background (amber-100)
+- [ ] Amber text (amber-800)
+- [ ] Rounded-full pill shape
+- [ ] `text-sm` font size (not text-xs)
+- [ ] Impossible to miss
 
 **Activation panel:**
 - [ ] Panel visible with amber background
@@ -171,8 +176,13 @@ Q&A
 - [ ] Helper: "This keeps the same participant link. The page becomes interactive."
 
 ### Active State
-**Link status:**
+**Link status (prominent pill badge):**
 - [ ] Shows "Active — collecting feedback"
+- [ ] Green background (green-100)
+- [ ] Green text (green-800)
+- [ ] Rounded-full pill shape
+- [ ] `text-sm` font size (not text-xs)
+- [ ] Impossible to miss
 
 **Action:**
 - [ ] "Close Session" button visible
@@ -224,7 +234,7 @@ Q&A
 **Banner:**
 - [ ] Visible at top
 - [ ] Copy: "Session draft"
-- [ ] Secondary copy: "Preview only. Feedback starts after the presenter confirms and starts collecting feedback."
+- [ ] Secondary copy: "Preview only. Feedback collection starts after the presenter confirms and saves."
 - [ ] Mobile-safe (wraps cleanly at 375px)
 
 ---

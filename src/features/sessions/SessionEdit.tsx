@@ -98,9 +98,9 @@ export function SessionEdit() {
       const { error } = await supabase
         .from('sessions')
         .update({
-          welcome_message: welcomeMessage,
-          summary_condensed: summaryCondensed,
-          summary_full: summaryFull,
+          welcome_message: welcomeMessage.trim() || '',
+          summary_condensed: summaryCondensed.trim() || '',
+          summary_full: summaryFull.trim() || '',
           has_unpublished_changes: true,
         })
         .eq('id', sessionId)

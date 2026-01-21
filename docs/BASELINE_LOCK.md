@@ -53,7 +53,7 @@ This document defines the **frozen baseline** for the Feedbacker app. These modu
 
 **Enforcement:**
 - Participant submission allowed **only** when `state === 'active'`
-- Draft shows "Session Not Open Yet"
+- Draft shows full preview with voting disabled and banner: "Preview only. Feedback collection starts after the presenter confirms and saves."
 - Completed/archived show "Session Closed"
 
 **Defense-in-Depth Note:**
@@ -481,6 +481,44 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Topics shown but not editable in v1 (noted in UI)
 
 **Diff size:** ~270 lines (1 new file, 3 lines in App.tsx)
+**Commit:** Pending
+
+### Draft Blocker Removal + Presenter Profile Guard (January 21, 2026)
+
+**Files:** `src/features/participant/FeedbackForm.tsx`, `src/features/sessions/SessionCreateWizard.tsx`, `src/components/ThemeSelector.tsx`, `src/features/sessions/SessionDetail.tsx`
+**Change:** Remove draft early return, add presenter profile validation, mobile overflow fixes, prominent status line
+**Justification:** Draft links must show content (preview mode); session creation requires presenter profile; prevent horizontal overflow at 375px; status line must be impossible to miss
+
+**FeedbackForm.tsx changes (frozen file):**
+- Removed early return block for `state === 'draft'` (lines 128-141)
+- Draft sessions now render full preview with disabled controls
+- Existing draft handling code (banner, disabled props) now reachable
+- Lines modified: 128-129 (replaced with comment), 346 (added break-words to detail items)
+- **Behavioral change:** Draft links show content instead of "Session Not Open Yet" message
+
+**SessionCreateWizard.tsx changes:**
+- Added `presenter` and `isLoading` to useAuth destructuring (line 41)
+- Added loading guard with spinner (lines 757-766)
+- Added presenter profile check with redirect to `/dashboard/profile` (lines 768-780)
+- Added presenter check in handleSubmit with toast + redirect (lines 296-304)
+- Enhanced error handling for FK constraint (23503) and RLS policy (42501) failures (lines 359-378)
+- **Behavioral change:** Users without presenter profile see friendly redirect instead of cryptic error
+
+**ThemeSelector.tsx changes (frozen file):**
+- Added `break-words` to theme text paragraph (line 35)
+- Prevents long topic text from causing horizontal overflow on mobile
+- Lines modified: 35
+
+**SessionDetail.tsx changes (frozen file):**
+- Made participant link status line more prominent with pill/badge styling
+- Changed from `text-xs text-gray-600` to `text-sm` with colored backgrounds:
+  - Draft: amber-100 bg, amber-800 text
+  - Active: green-100 bg, green-800 text
+  - Completed/Archived: gray-100 bg
+- Added `break-words` to theme text, `flex-wrap` to stats row, `break-all` to email
+- Lines modified: 659-679 (status line), 791-792 (theme text + stats), 855 (email)
+
+**Diff size:** ~60 lines modified across 4 files
 **Commit:** Pending
 
 ---

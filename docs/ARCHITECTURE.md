@@ -1,7 +1,7 @@
 # Feedbacker App - Architecture Documentation
 
-**Last Updated:** January 17, 2026  
-**Version:** 1.0
+**Last Updated:** January 21, 2026
+**Version:** 1.1
 
 ---
 
@@ -290,11 +290,11 @@ Presenter can:              Presenter can:              Presenter can:          
                             - View responses            - Delete
                             - Mark completed
                             - Delete
-                            
+
 Participants:               Participants:               Participants:                Participants:
-- Cannot access             - See Live version          - See Live version           - See "closed" message
-                            - Can respond               - Can still respond
-                            - Can edit response         - Can edit response
+- See preview (disabled)    - See Live version          - See Live version           - See "closed" message
+- Voting disabled           - Can respond               - Can still respond
+- Banner: "Preview only"    - Can edit response         - Can edit response
 ```
 
 **State Invariants:**

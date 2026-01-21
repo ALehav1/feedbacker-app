@@ -2,8 +2,8 @@
 
 ## Product Requirements Specification
 
-**Version:** 1.0  
-**Date:** January 17, 2026
+**Version:** 1.1
+**Date:** January 21, 2026
 
 ---
 
@@ -71,7 +71,7 @@ The person responding to a session with their interests.
 
 | State | Description | Participant Link | Presenter Actions |
 |-------|-------------|------------------|-------------------|
-| **Draft** | Setting up, not shared | Not active | Edit, Publish initial version to go Active, Delete |
+| **Draft** | Setting up, not shared | Shows preview (voting disabled, banner explains) | Edit, Publish initial version to go Active, Delete |
 | **Active** | Link shared, collecting responses | Works (shows Live version) | Edit Working version, Publish updates, View results, Mark as Completed, Delete |
 | **Completed** | Done collecting, reviewing results | Still works (shows Live version) | View results, Move to Archived, Delete |
 | **Archived** | Closed, read-only | Shows "closed" message | View (read-only), Delete, Use as template |

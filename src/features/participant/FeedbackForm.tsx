@@ -5,7 +5,8 @@
  */
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { useAuth } from '@/features/auth/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -23,7 +24,11 @@ type ThemeSelection = 'more' | 'less' | null
 
 export function FeedbackForm() {
   const { slug } = useParams<{ slug: string }>()
+  const [searchParams] = useSearchParams()
+  const { user } = useAuth()
   const { toast } = useToast()
+  const previewRequested = searchParams.get('preview') === 'working'
+  const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
   const [themes, setThemes] = useState<Theme[]>([])
   const [loading, setLoading] = useState(true)
@@ -80,15 +85,47 @@ export function FeedbackForm() {
 
           setSession(mappedSession)
 
-          // Read published topics instead of working themes table
-          const publishedThemes: Theme[] = (mappedSession.publishedTopics || []).map((t) => ({
-            id: t.themeId,
-            sessionId: mappedSession.id,
-            text: t.text,
-            sortOrder: t.sortOrder,
-            createdAt: new Date(), // Not stored in published snapshot
-          }))
-          setThemes(publishedThemes)
+          // Access control: Only presenter can preview working version
+          const canPreview = !!(previewRequested && user && user.id === mappedSession.presenterId)
+          setIsPreviewMode(canPreview)
+
+          // If preview mode (and authorized), fetch working themes; otherwise use published topics
+          if (canPreview) {
+            const { data: themesData, error: themesError } = await supabase
+              .from('themes')
+              .select('*')
+              .eq('session_id', mappedSession.id)
+              .order('sort_order', { ascending: true })
+
+            if (themesError) {
+              console.error('Error fetching themes:', themesError)
+            } else if (themesData) {
+              const workingThemes: Theme[] = themesData.map((t: {
+                id: string;
+                session_id: string;
+                text: string;
+                sort_order: number;
+                created_at: string;
+              }) => ({
+                id: t.id,
+                sessionId: t.session_id,
+                text: t.text,
+                sortOrder: t.sort_order,
+                createdAt: new Date(t.created_at),
+              }))
+              setThemes(workingThemes)
+            }
+          } else {
+            // Read published topics instead of working themes table
+            const publishedThemes: Theme[] = (mappedSession.publishedTopics || []).map((t) => ({
+              id: t.themeId,
+              sessionId: mappedSession.id,
+              text: t.text,
+              sortOrder: t.sortOrder,
+              createdAt: new Date(), // Not stored in published snapshot
+            }))
+            setThemes(publishedThemes)
+          }
         }
       } catch (err) {
         console.error('Unexpected error:', err)
@@ -99,7 +136,7 @@ export function FeedbackForm() {
     }
 
     fetchSessionAndThemes()
-  }, [slug])
+  }, [slug, previewRequested, user])
 
   if (loading) {
     return (
@@ -125,20 +162,8 @@ export function FeedbackForm() {
     )
   }
 
-  if (session.state === 'draft') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Session Not Open Yet</CardTitle>
-            <CardDescription>
-              This session is still being set up. Please check back later!
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
+  // Draft sessions now render full preview (voting disabled, banner shown)
+  // See isDraft variable and conditional rendering below
 
   if (session.state === 'completed' || session.state === 'archived') {
     return (
@@ -292,7 +317,15 @@ export function FeedbackForm() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        {isDraft && (
+        {isPreviewMode && (
+          <div className="mb-4 rounded-lg border border-violet-300 bg-violet-50 p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-violet-900 mb-1">Preview mode — working version</h3>
+            <p className="text-sm text-violet-700 leading-relaxed">
+              Viewing your unpublished changes. Participants still see the live version until you publish.
+            </p>
+          </div>
+        )}
+        {isDraft && !isPreviewMode && (
           <div className="mb-4 rounded-lg border border-gray-300 bg-white p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">Session draft</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
@@ -303,15 +336,17 @@ export function FeedbackForm() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">{session.title}</CardTitle>
-            {session.publishedWelcomeMessage && (
-              <CardDescription className="text-base">{session.publishedWelcomeMessage}</CardDescription>
+            {(isPreviewMode ? session.welcomeMessage : session.publishedWelcomeMessage) && (
+              <CardDescription className="text-base">
+                {isPreviewMode ? session.welcomeMessage : session.publishedWelcomeMessage}
+              </CardDescription>
             )}
           </CardHeader>
           <CardContent className="space-y-6">
-            {session.publishedSummaryCondensed && (
+            {(isPreviewMode ? session.summaryCondensed : session.publishedSummaryCondensed) && (
               <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {session.publishedSummaryCondensed}
+                  {isPreviewMode ? session.summaryCondensed : session.publishedSummaryCondensed}
                 </p>
               </div>
             )}
@@ -355,7 +390,7 @@ export function FeedbackForm() {
                           {publishedTopic?.details && publishedTopic.details.length > 0 && (
                             <ul className="mt-1 ml-4 space-y-0.5">
                               {publishedTopic.details.map((detail, idx) => (
-                                <li key={idx} className="text-xs text-gray-600">
+                                <li key={idx} className="text-xs text-gray-600 break-words">
                                   — {detail}
                                 </li>
                               ))}

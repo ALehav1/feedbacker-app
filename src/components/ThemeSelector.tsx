@@ -32,7 +32,7 @@ export function ThemeSelector({ text, selection, onSelect, disabled }: ThemeSele
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <p className="text-sm text-gray-900 mb-3">{text}</p>
+      <p className="text-sm text-gray-900 mb-3 break-words">{text}</p>
       <div className="flex gap-2">
         <Button
           type="button"

@@ -38,7 +38,7 @@ const emptyWizardData: WizardData = {
 
 export function SessionCreateWizard() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, presenter, isLoading } = useAuth()
   const { toast } = useToast()
   
   const [currentStep, setCurrentStep] = useState(1)
@@ -49,17 +49,10 @@ export function SessionCreateWizard() {
   const [editingThemeId, setEditingThemeId] = useState<string | null>(null)
   const [themeInputText, setThemeInputText] = useState('')
 
-  // Load wizard state from localStorage on mount
+  // Clear wizard state on mount to ensure fresh start
   useEffect(() => {
-    const saved = localStorage.getItem(WIZARD_STORAGE_KEY)
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        setWizardData(parsed)
-      } catch (err) {
-        console.error('Failed to parse wizard state:', err)
-      }
-    }
+    localStorage.removeItem(WIZARD_STORAGE_KEY)
+    setWizardData(emptyWizardData)
   }, [])
 
   // Save wizard state to localStorage on change
@@ -294,6 +287,16 @@ export function SessionCreateWizard() {
       return
     }
 
+    if (!presenter) {
+      toast({
+        variant: 'destructive',
+        title: 'Profile required',
+        description: 'Please complete your profile before creating a session.',
+      })
+      navigate('/dashboard/profile')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -317,12 +320,12 @@ export function SessionCreateWizard() {
           state: 'draft',
           length_minutes: parseInt(wizardData.lengthMinutes, 10),
           title: wizardData.title.trim(),
-          welcome_message: wizardData.welcomeMessage.trim(),
-          summary_full: wizardData.summaryFull.trim(),
-          summary_condensed: wizardData.summaryCondensed.trim(),
+          welcome_message: wizardData.welcomeMessage.trim() || '',
+          summary_full: wizardData.summaryFull.trim() || '',
+          summary_condensed: wizardData.summaryCondensed.trim() || '',
           slug,
-          published_welcome_message: wizardData.welcomeMessage.trim() || null,
-          published_summary_condensed: wizardData.summaryCondensed.trim() || null,
+          published_welcome_message: wizardData.welcomeMessage.trim() || '',
+          published_summary_condensed: wizardData.summaryCondensed.trim() || '',
           published_topics: publishedTopics.length > 0 ? publishedTopics : [],
           has_unpublished_changes: false,
         })
@@ -351,6 +354,21 @@ export function SessionCreateWizard() {
             variant: 'destructive',
             title: 'Slug conflict',
             description: 'Please try again.',
+          })
+        } else if (sessionError.code === '23503') {
+          // FK constraint failure - presenter record doesn't exist
+          toast({
+            variant: 'destructive',
+            title: 'Profile required',
+            description: 'Please complete your profile before creating a session.',
+          })
+          navigate('/dashboard/profile')
+        } else if (sessionError.code === '42501' || sessionError.message?.includes('policy')) {
+          // RLS policy violation
+          toast({
+            variant: 'destructive',
+            title: 'Permission denied',
+            description: 'Please sign in again and try once more.',
           })
         } else {
           toast({
@@ -389,11 +407,13 @@ export function SessionCreateWizard() {
         }
       }
 
-      clearWizardState()
       toast({
         title: 'Session created',
         description: 'Your draft session has been created.',
       })
+      
+      // Clear wizard state on successful creation
+      clearWizardState()
       navigate(`/dashboard/sessions/${sessionData.id}`)
     } catch (err) {
       console.error('Unexpected error:', err)
@@ -561,16 +581,11 @@ Case study`}
   const renderStep3 = () => (
     <div className="space-y-6">
       <div>
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-1">Review the topics your audience will prioritize</h3>
-          <p className="text-xs text-gray-600 leading-relaxed">
-            We organized your outline into topics. Review wording and order, then add or remove topics.
-          </p>
-        </div>
+        <h3 className="text-sm font-medium text-gray-900 mb-3">Add or edit topics</h3>
 
         <div className="flex gap-2">
           <Input
-            placeholder="Enter a topic (e.g., 'Product Vision')"
+            placeholder="Add a topic…"
             value={themeInputText}
             onChange={(e) => setThemeInputText(e.target.value)}
             onKeyDown={(e) => {
@@ -587,11 +602,11 @@ Case study`}
                 setThemeInputText('')
               }
             }}
-            className="min-h-[48px] flex-1"
+            className="min-h-[48px] flex-1 min-w-0"
           />
           {editingThemeId ? (
             <>
-              <Button onClick={handleSaveTheme} className="min-h-[48px]">
+              <Button onClick={handleSaveTheme} className="min-h-[48px] shrink-0">
                 Save
               </Button>
               <Button
@@ -600,17 +615,20 @@ Case study`}
                   setEditingThemeId(null)
                   setThemeInputText('')
                 }}
-                className="min-h-[48px]"
+                className="min-h-[48px] shrink-0"
               >
                 Cancel
               </Button>
             </>
           ) : (
-            <Button onClick={handleAddTheme} className="min-h-[48px]">
+            <Button onClick={handleAddTheme} className="min-h-[48px] shrink-0">
               Add
             </Button>
           )}
         </div>
+        <p className="mt-2 text-xs text-gray-500">
+          Type a topic name, then tap Add or press Return.
+        </p>
       </div>
 
       {wizardData.themes.length > 0 ? (
@@ -736,17 +754,28 @@ Case study`}
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">
             Topics ({wizardData.themes.length})
           </h4>
           {wizardData.themes.length > 0 ? (
-            <ol className="space-y-1">
+            <div className="space-y-3">
               {wizardData.themes.map((theme) => (
-                <li key={theme.id} className="text-sm text-gray-900">
-                  {theme.sortOrder}. {theme.text}
-                </li>
+                <div key={theme.id}>
+                  <p className="text-sm font-medium text-gray-900">
+                    {theme.sortOrder}. {theme.text}
+                  </p>
+                  {theme.details && theme.details.length > 0 && (
+                    <ul className="mt-1 ml-6 space-y-0.5">
+                      {theme.details.map((detail, idx) => (
+                        <li key={idx} className="text-xs text-gray-600">
+                          — {detail}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               ))}
-            </ol>
+            </div>
           ) : (
             <p className="text-sm text-gray-400">No topics added</p>
           )}
@@ -754,6 +783,34 @@ Case study`}
       </div>
     </div>
   )
+
+  // Guard: require presenter profile to create sessions
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!presenter) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <div className="text-center max-w-md">
+          <h1 className="mb-2 text-2xl font-bold text-gray-900">Profile Required</h1>
+          <p className="mb-6 text-gray-600">
+            Please complete your profile before creating a session.
+          </p>
+          <Button onClick={() => navigate('/dashboard/profile')} className="min-h-[48px]">
+            Set Up Profile
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -770,7 +827,8 @@ Case study`}
               variant="outline"
               className="min-h-[48px]"
               onClick={() => {
-                if (confirm('Exit wizard? Your progress will be saved.')) {
+                if (confirm('Exit wizard? Your progress will be lost.')) {
+                  clearWizardState()
                   navigate('/dashboard')
                 }
               }}
@@ -805,26 +863,26 @@ Case study`}
             {currentStep === 3 && renderStep3()}
             {currentStep === 4 && renderStep4()}
 
-            <div className="mt-8 flex gap-3">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               {currentStep > 1 && (
                 <Button
                   variant="outline"
                   onClick={handleBack}
                   disabled={isSubmitting}
-                  className="min-h-[56px] flex-1"
+                  className="min-h-[56px] w-full sm:flex-1"
                 >
                   Back
                 </Button>
               )}
               {currentStep < 4 ? (
-                <Button onClick={handleNext} className="min-h-[56px] flex-1">
+                <Button onClick={handleNext} className="min-h-[56px] w-full sm:flex-1">
                   Next
                 </Button>
               ) : (
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="min-h-[56px] flex-1"
+                  className="min-h-[56px] w-full sm:flex-1"
                 >
                   {isSubmitting ? 'Creating...' : 'Confirm & create session'}
                 </Button>

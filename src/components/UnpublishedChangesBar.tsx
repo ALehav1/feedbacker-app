@@ -61,15 +61,26 @@ export function UnpublishedChangesBar({
               {UNPUBLISHED_CHANGES_BAR.helper}
             </p>
             {liveUrl && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.open(liveUrl, '_blank')}
-                className="h-8 text-xs text-amber-900 hover:text-amber-950 hover:bg-amber-100 justify-start sm:justify-center"
-              >
-                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                {UNPUBLISHED_CHANGES_BAR.viewLiveLink}
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(`${liveUrl}?preview=working`, '_blank')}
+                  className="h-8 text-xs text-amber-900 hover:text-amber-950 hover:bg-amber-100 justify-start sm:justify-center"
+                >
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                  Preview changes
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(liveUrl, '_blank')}
+                  className="h-8 text-xs text-amber-900 hover:text-amber-950 hover:bg-amber-100 justify-start sm:justify-center"
+                >
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                  {UNPUBLISHED_CHANGES_BAR.viewLiveLink}
+                </Button>
+              </div>
             )}
           </div>
         </div>
