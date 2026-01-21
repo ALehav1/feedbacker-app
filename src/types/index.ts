@@ -45,14 +45,16 @@ export interface PublishedTopic {
   themeId: string;  // Matches themes.id for selections
   text: string;
   sortOrder: number;
+  details?: string[];  // Supporting sub-bullets shown as context
 }
 
 // Theme
 export interface Theme {
   id: string;
-  sessionId: string;
+  sessionId?: string;  // Optional for wizard state before creation
   text: string;
   sortOrder: number;
+  details?: string[];  // Supporting sub-bullets
 }
 
 // Response

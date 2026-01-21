@@ -342,15 +342,28 @@ export function FeedbackForm() {
                     Topics
                   </h3>
                   <div className="space-y-3">
-                    {themes.map((theme) => (
-                      <ThemeSelector
-                        key={theme.id}
-                        text={theme.text}
-                        selection={selections[theme.id] || null}
-                        onSelect={(selection) => handleSelectionChange(theme.id, selection)}
-                        disabled={isSubmitting || isDraft}
-                      />
-                    ))}
+                    {themes.map((theme) => {
+                      const publishedTopic = session.publishedTopics.find(t => t.themeId === theme.id)
+                      return (
+                        <div key={theme.id}>
+                          <ThemeSelector
+                            text={theme.text}
+                            selection={selections[theme.id] || null}
+                            onSelect={(selection) => handleSelectionChange(theme.id, selection)}
+                            disabled={isSubmitting || isDraft}
+                          />
+                          {publishedTopic?.details && publishedTopic.details.length > 0 && (
+                            <ul className="mt-1 ml-4 space-y-0.5">
+                              {publishedTopic.details.map((detail, idx) => (
+                                <li key={idx} className="text-xs text-gray-600">
+                                  — {detail}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                   {isDraft && (
                     <p className="text-xs text-gray-500 mt-3">

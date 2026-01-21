@@ -385,6 +385,46 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Wizard copy frames topics as "review and refine" not "extraction"
 
 **Diff size:** ~80 lines modified across 5 files
+**Commit:** `08644df`
+
+### Sub-Bullets as Topic Details (January 21, 2026)
+
+**Files:** `src/types/index.ts`, `src/features/sessions/SessionCreateWizard.tsx`, `src/features/participant/FeedbackForm.tsx`, `docs/EXTRACTION_TESTS.md`
+**Change:** Topic parsing treats sub-bullets as supporting details (context), not standalone topics
+**Justification:** Participants vote on topics, sub-bullets provide context without fragmenting the voting surface
+**Scope:** Type updates, parsing logic, display in wizard + participant view, suggested welcome message
+
+**Type changes:**
+- `PublishedTopic`: added optional `details?: string[]`
+- `Theme`: added optional `details?: string[]`, made `sessionId` optional for wizard state
+
+**Wizard parsing logic (SessionCreateWizard.tsx):**
+- Lines with leading indent (2 spaces or tab) attach to most recent topic as details
+- Lines starting with em-dash after a topic also attach as details
+- Details capped at 6 per topic
+- Deduped within each topic (case-insensitive)
+- Topics deduplicated by text, cap at 12
+- Local interface updated to include `details?: string[]`
+- Lines modified: 14-18 (local Theme interface), 202-284 (parsing logic), 305-310 (published topics with details), 488-516 (suggested welcome message), 539-555 (outline copy), 646-657 (display details in Step 3)
+
+**FeedbackForm.tsx changes (frozen file):**
+- Display topic details under each ThemeSelector as context (read-only)
+- Details shown as `— detail` in light gray text
+- Lines modified: 344-367 (map with details display)
+
+**EXTRACTION_TESTS.md:**
+- Added Test Case 9: Sub-bullets attach to parent topic
+- Documents Market context with 2 details, Analysis with 2 details, Case study with 0 details
+- Clarifies: participants vote on topics only, details shown as context
+
+**Behavioral changes:**
+- Sub-bullets never become standalone topics
+- Details provide context for voting decisions
+- Published topics include details array in JSONB
+- Wizard Step 3 shows details under each topic
+- Participant page shows details under each topic as light text
+
+**Diff size:** ~95 lines modified across 4 files
 **Commit:** Pending
 
 ---

@@ -15,6 +15,7 @@ interface Theme {
   id: string
   text: string
   sortOrder: number
+  details?: string[]
 }
 
 interface WizardData {
@@ -207,17 +208,27 @@ export function SessionCreateWizard() {
 
     const MAX_TOPICS = 12
     const MAX_TOPIC_LENGTH = 120
-    const MIN_TOPIC_LENGTH = 4
-
+    const MAX_DETAILS_PER_TOPIC = 6
     const lines = outline.split('\n')
-    const candidates: string[] = []
+
+    interface ParsedTopic {
+      text: string
+      details: string[]
+    }
+
+    const topics: ParsedTopic[] = []
+    let currentTopic: ParsedTopic | null = null
 
     for (const line of lines) {
       const trimmed = line.trim()
       if (!trimmed) continue
 
-      // Strip bullets, numbers, em-dashes, and "Topic:" prefix
-      const cleaned = trimmed
+      // Check if this line is indented (detail line)
+      const isIndented = line.startsWith('  ') || line.startsWith('\t')
+      const startsWithDash = trimmed.startsWith('—') || trimmed.startsWith('-')
+
+      // Normalize the text (strip bullets, numbers, prefixes)
+      const normalized = trimmed
         .replace(/^[-*•—]\s*/, '')
         .replace(/^\d+[.)]\s*/, '')
         .replace(/^Topic:\s*/i, '')
@@ -225,21 +236,45 @@ export function SessionCreateWizard() {
         .replace(/[.,;:]$/, '')
         .trim()
 
-      if (cleaned.length >= MIN_TOPIC_LENGTH && cleaned.length <= MAX_TOPIC_LENGTH) {
-        candidates.push(cleaned)
+      if (!normalized || normalized.length > MAX_TOPIC_LENGTH) continue
+
+      // Determine if this is a topic or detail
+      const isDetail = currentTopic && (isIndented || (startsWithDash && currentTopic.details.length === 0))
+
+      if (isDetail && currentTopic) {
+        // Attach as detail to current topic
+        if (currentTopic.details.length < MAX_DETAILS_PER_TOPIC) {
+          // Dedupe within topic details
+          const lowerDetail = normalized.toLowerCase()
+          if (!currentTopic.details.some(d => d.toLowerCase() === lowerDetail)) {
+            currentTopic.details.push(normalized)
+          }
+        }
+      } else {
+        // Start new topic
+        currentTopic = { text: normalized, details: [] }
+        topics.push(currentTopic)
       }
     }
 
-    // Deduplicate case-insensitively, preserve first occurrence
-    const uniqueTopics = Array.from(
-      new Map(candidates.map(t => [t.toLowerCase(), t])).values()
-    ).slice(0, MAX_TOPICS)
+    // Deduplicate topics by text (case-insensitive), cap at MAX_TOPICS
+    const uniqueTopics: ParsedTopic[] = []
+    const seen = new Set<string>()
+
+    for (const topic of topics) {
+      const lowerText = topic.text.toLowerCase()
+      if (!seen.has(lowerText) && uniqueTopics.length < MAX_TOPICS) {
+        seen.add(lowerText)
+        uniqueTopics.push(topic)
+      }
+    }
 
     if (uniqueTopics.length > 0) {
-      const newThemes: Theme[] = uniqueTopics.map((text, index) => ({
+      const newThemes: Theme[] = uniqueTopics.map((topic, index) => ({
         id: crypto.randomUUID(),
-        text,
+        text: topic.text,
         sortOrder: index + 1,
+        details: topic.details.length > 0 ? topic.details : undefined,
       }))
 
       setWizardData({
@@ -267,11 +302,12 @@ export function SessionCreateWizard() {
       // Note: welcome_message, summary_full, summary_condensed are NOT NULL DEFAULT ''
       // in schema.sql, so we must pass empty string (not null) for empty values
       
-      // Build published topics snapshot
+      // Build published topics snapshot with details
       const publishedTopics = wizardData.themes.map((theme) => ({
         themeId: theme.id,
         text: theme.text,
         sortOrder: theme.sortOrder,
+        details: theme.details,
       }))
 
       const { data: sessionData, error: sessionError } = await supabase
@@ -450,17 +486,33 @@ export function SessionCreateWizard() {
   const renderStep2 = () => (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="welcomeMessage">Welcome message (shown to participants)</Label>
+        <Label htmlFor="welcomeMessage">Message to your audience</Label>
+        {!wizardData.welcomeMessage && (
+          <div className="rounded-md bg-gray-50 border border-gray-200 p-3 mb-2">
+            <p className="text-sm text-gray-700 mb-2">
+              Hi — please review the topics below and tell me which ones you'd like more time on and which ones matter less. Thank you for your feedback.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setWizardData({ ...wizardData, welcomeMessage: "Hi — please review the topics below and tell me which ones you'd like more time on and which ones matter less. Thank you for your feedback." })}
+              className="h-8 text-xs"
+            >
+              Use suggested message
+            </Button>
+          </div>
+        )}
         <Textarea
           id="welcomeMessage"
-          placeholder="Hi — please review the topics below and let me know which ones you'd like me to spend more or less time on. Thank you for your feedback."
+          placeholder="Message shown to participants..."
           value={wizardData.welcomeMessage}
           onChange={(e) => setWizardData({ ...wizardData, welcomeMessage: e.target.value })}
           rows={3}
           className="resize-none"
         />
         <p className="text-xs text-gray-500">
-          This appears at the top of the participant page.
+          Appears at the top of the participant page.
         </p>
       </div>
 
@@ -500,7 +552,7 @@ Case study`}
           />
         </div>
         <p className="text-xs text-gray-500">
-          Each non-empty line will become a topic your audience can react to.
+          Each main section becomes a topic. Indented lines stay attached as supporting detail.
         </p>
       </div>
     </div>
@@ -592,7 +644,16 @@ Case study`}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-gray-900">{theme.text}</p>
-                  <p className="text-xs text-gray-500">Order: {theme.sortOrder}</p>
+                  {theme.details && theme.details.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {theme.details.map((detail, idx) => (
+                        <li key={idx} className="text-xs text-gray-600">
+                          — {detail}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">Order: {theme.sortOrder}</p>
                 </div>
                 <div className="flex gap-1">
                   <Button

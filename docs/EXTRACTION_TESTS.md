@@ -101,6 +101,28 @@ Solution
 
 ---
 
+## Test Case 9: Sub-bullets attach to parent topic
+```
+Market context
+  - why now
+  - why later
+
+Analysis
+  - key drivers
+  - implications
+
+Case study
+```
+
+**Expected:** 
+- 3 topics: Market context, Analysis, Case study
+- Market context has 2 details: "why now", "why later"
+- Analysis has 2 details: "key drivers", "implications"
+- Case study has 0 details
+- Participants vote on topics only, details shown as context
+
+---
+
 ## Test Case 8: Duplicate topics (case-insensitive)
 ```
 - Market Context
