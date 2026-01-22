@@ -59,7 +59,7 @@ export function FeedbackForm() {
 
         if (sessionError) {
           console.error('Error fetching session:', sessionError)
-          setError('Session not found')
+          setError('Presentation not found')
           setLoading(false)
           return
         }
@@ -156,7 +156,7 @@ export function FeedbackForm() {
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
-          <p className="text-gray-600">Loading session...</p>
+          <p className="text-gray-600">Loading presentation...</p>
         </div>
       </div>
     )
@@ -167,7 +167,7 @@ export function FeedbackForm() {
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Session Not Found</CardTitle>
+            <CardTitle>Presentation Not Found</CardTitle>
             <CardDescription>{error || 'This session does not exist'}</CardDescription>
           </CardHeader>
         </Card>
@@ -326,7 +326,7 @@ export function FeedbackForm() {
         )}
         {isDraft && !isPreviewMode && (
           <div className="mb-4 rounded-lg border border-gray-300 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">Session draft</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Presentation draft</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
               Preview only. Feedback collection starts after the presenter confirms and saves.
             </p>

@@ -151,9 +151,9 @@ export function LoginPage() {
     <div className="flex min-h-[100svh] items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Feedbacker App</CardTitle>
+          <CardTitle>Presentation Feedbacker</CardTitle>
           <CardDescription>
-            Sign in to create sessions and view feedback
+            Get feedback on your proposed presentation topics from prospective participants.
           </CardDescription>
         </CardHeader>
         <CardContent>

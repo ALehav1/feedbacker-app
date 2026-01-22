@@ -565,7 +565,7 @@ export function SessionEdit() {
   if (!session) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Session not found</p>
+        <p className="text-gray-600">Presentation not found</p>
       </div>
     )
   }
@@ -577,7 +577,7 @@ export function SessionEdit() {
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <h1 className="text-xl font-semibold text-gray-900 break-words">Edit Session</h1>
+              <h1 className="text-xl font-semibold text-gray-900 break-words">Edit Presentation</h1>
               <p className="text-sm text-gray-600 mt-1 break-words">{session.title}</p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 shrink-0">

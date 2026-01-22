@@ -34,7 +34,7 @@ export const UNPUBLISHED_CHANGES_BAR = {
 };
 
 export const SESSION_STATUS = {
-  sessionStatusLabel: "Session status",
+  sessionStatusLabel: "Presentation status",
   participantViewLabel: "Participant view",
   editsLabel: "Edits",
 
@@ -81,7 +81,7 @@ export const PARTICIPANT_COPY = {
   instructions:
     "Tell the presenter which topics to cover more and which to cover less.",
 
-  setupInProgressTitle: "Session setup in progress",
+  setupInProgressTitle: "Presentation setup in progress",
   setupInProgressBody: "Topics will appear soon.",
 };
 

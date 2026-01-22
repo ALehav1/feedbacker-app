@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, LogOut, Copy, ExternalLink, BarChart3, Trash2 } from 'lucide-react';
+import { Plus, LogOut, Copy, ExternalLink, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { DASHBOARD_BADGES } from '@/lib/copy';
 import type { Session, SessionState } from '@/types';
@@ -52,7 +52,7 @@ export function Dashboard() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
-          <p className="text-gray-600">Loading sessions...</p>
+          <p className="text-gray-600">Loading presentations...</p>
         </div>
       </div>
     );
@@ -63,7 +63,7 @@ export function Dashboard() {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Error Loading Sessions</CardTitle>
+            <CardTitle>Error Loading Presentations</CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -116,9 +116,9 @@ export function Dashboard() {
         {hasNoSessions ? (
           <Card>
             <CardHeader className="text-center">
-              <CardTitle>No Sessions Yet</CardTitle>
+              <CardTitle>No Presentations Yet</CardTitle>
               <CardDescription>
-                Create your first session to start gathering feedback from your audience
+                Create your first presentation to start gathering feedback from your audience
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center pb-6">
@@ -128,7 +128,7 @@ export function Dashboard() {
                 className="h-14 w-full sm:w-auto"
               >
                 <Plus className="mr-2 h-5 w-5" />
-                Create Your First Session
+                Create Your First Presentation
               </Button>
             </CardContent>
           </Card>
@@ -145,7 +145,7 @@ export function Dashboard() {
             </div>
 
             <div>
-              <h3 className="mb-3 text-lg font-medium text-gray-900">Active Sessions — Participant Voting Open</h3>
+              <h3 className="mb-3 text-lg font-medium text-gray-900">Active Presentations — Participant Voting Open</h3>
               {activeVotingSessions.length > 0 ? (
                 <div className="space-y-3">
                   {activeVotingSessions.map((session) => (
@@ -153,13 +153,13 @@ export function Dashboard() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No active voting sessions.</p>
+                <p className="text-sm text-gray-500">No active presentations.</p>
               )}
             </div>
 
             {closedVotingSessions.length > 0 && (
               <div>
-                <h3 className="mb-3 text-lg font-medium text-gray-900">Closed Sessions — Participant Voting Closed</h3>
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Closed Presentations — Participant Voting Closed</h3>
                 <div className="space-y-3">
                   {closedVotingSessions.map((session) => (
                     <SessionCard key={session.id} session={session} onSessionChange={refetch} />
@@ -316,7 +316,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <h3 className="line-clamp-2 flex-1 text-base font-semibold text-gray-900">
-            {session.title || 'Untitled Session'}
+            {session.title || 'Untitled Presentation'}
           </h3>
           <div className="flex shrink-0 gap-2">
             <span className={getStateBadgeClassName(session.state)}>
@@ -370,31 +370,17 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleViewFeedback}
-            className="h-12 flex-1"
-          >
-            <ExternalLink className="mr-2 h-4 w-4" />
-            {(session.responseCount || 0) > 0 ? 'Presentation details' : 'View preview'}
-          </Button>
-          {(session.responseCount || 0) > 0 && (
-            <Button
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/dashboard/sessions/${session.id}`);
-              }}
-              className="h-12 flex-1"
-            >
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Audience feedback
-            </Button>
-          )}
-        </div>
+        {/* Primary action: always Open details */}
+        <Button
+          variant="outline"
+          onClick={handleViewFeedback}
+          className="h-12 w-full"
+        >
+          <ExternalLink className="mr-2 h-4 w-4" />
+          Open details
+        </Button>
 
-        {/* Action buttons based on state */}
+        {/* Secondary action based on state */}
         {session.state === 'active' && (
           <Button
             variant="outline"
@@ -417,7 +403,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
             className="h-12 w-full"
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete
+            Delete presentation
           </Button>
         )}
       </div>

@@ -137,8 +137,8 @@ export function SessionDetail() {
             .eq('session_id', sessionId)
           const respCount = count ?? 0
 
-          // Set initial tab: active with responses → results, otherwise details
-          if (data.state === 'active' && respCount > 0) {
+          // Set initial tab: completed → results, active with responses → results, otherwise details
+          if (data.state === 'completed' || (data.state === 'active' && respCount > 0)) {
             setActiveTab('results')
           }
         }
@@ -186,8 +186,8 @@ export function SessionDetail() {
 
       setSession({ ...session, state: newState })
       toast({
-        title: 'Session updated',
-        description: `Session is now ${newState}.`,
+        title: 'Presentation updated',
+        description: `Presentation is now ${newState}.`,
       })
     } catch (err) {
       console.error('Unexpected error:', err)
@@ -337,7 +337,7 @@ export function SessionDetail() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
-          <p className="text-gray-600">Loading session...</p>
+          <p className="text-gray-600">Loading presentation...</p>
         </div>
       </div>
     )
@@ -349,7 +349,7 @@ export function SessionDetail() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Error Loading Session</CardTitle>
-            <CardDescription>{error || 'Session not found'}</CardDescription>
+            <CardDescription>{error || 'Presentation not found'}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => navigate('/dashboard')} className="w-full">
@@ -472,21 +472,13 @@ export function SessionDetail() {
         {/* Primary action block - Active */}
         {session.state === 'active' && (
           <Card>
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="pt-6">
               <Button
                 className="w-full min-h-[48px]"
                 onClick={handleCopyLink}
               >
                 <Copy className="mr-2 h-4 w-4" />
                 Copy participant link
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full min-h-[48px]"
-                onClick={() => window.open(participantUrl, '_blank')}
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Open participant page
               </Button>
             </CardContent>
           </Card>
@@ -519,7 +511,7 @@ export function SessionDetail() {
         {/* Completed status - Voting closed */}
         {session.state === 'completed' && (
           <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="pt-6">
               <div className="text-center space-y-2">
                 <p className="text-sm font-medium text-blue-900">
                   Participant voting is closed.
@@ -528,21 +520,6 @@ export function SessionDetail() {
                   Participants can no longer submit feedback.
                 </p>
               </div>
-              <Button
-                className="w-full min-h-[48px]"
-                onClick={() => {
-                  setActiveTab('results')
-                  fetchResults()
-                  setTimeout(() => {
-                    const tabsEl = document.querySelector('[role="tablist"]')
-                    if (tabsEl) {
-                      tabsEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                    }
-                  }, 50)
-                }}
-              >
-                View audience feedback
-              </Button>
             </CardContent>
           </Card>
         )}
@@ -768,8 +745,8 @@ export function SessionDetail() {
                       <div className="space-y-4">
                         {responses.map((response) => (
                           <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-gray-900 break-words">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <span className="text-sm font-medium text-gray-900 break-words min-w-0">
                                 {response.participantName || 'Anonymous'}
                               </span>
                               <span className="text-xs text-gray-500 shrink-0">

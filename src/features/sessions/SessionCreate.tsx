@@ -41,7 +41,7 @@ export function SessionCreate() {
       toast({
         variant: 'destructive',
         title: 'Not authenticated',
-        description: 'Please sign in to create a session.',
+        description: 'Please sign in to create a presentation.',
       })
       return
     }
@@ -51,7 +51,7 @@ export function SessionCreate() {
       toast({
         variant: 'destructive',
         title: 'Invalid length',
-        description: 'Session length must be a positive number.',
+        description: 'Presentation length must be a positive number.',
       })
       return
     }
@@ -60,7 +60,7 @@ export function SessionCreate() {
       toast({
         variant: 'destructive',
         title: 'Title required',
-        description: 'Please enter a session title.',
+        description: 'Please enter a presentation title.',
       })
       return
     }
@@ -97,7 +97,7 @@ export function SessionCreate() {
           toast({
             variant: 'destructive',
             title: 'Creation failed',
-            description: 'Unable to create session. Please try again.',
+            description: 'Unable to create presentation. Please try again.',
           })
         }
         return
@@ -105,8 +105,8 @@ export function SessionCreate() {
 
       if (data) {
         toast({
-          title: 'Session created',
-          description: 'Your draft session has been created.',
+          title: 'Presentation created',
+          description: 'Your draft presentation has been created.',
         })
         navigate(`/dashboard/sessions/${data.id}`)
       }
@@ -128,9 +128,9 @@ export function SessionCreate() {
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Create Session</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Create Presentation</h1>
               <p className="text-sm text-gray-600">
-                Set up a new feedback session for your audience
+                Set up a new feedback presentation for your audience
               </p>
             </div>
             <Button
@@ -147,7 +147,7 @@ export function SessionCreate() {
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle>Session Details</CardTitle>
+            <CardTitle>Presentation Details</CardTitle>
             <CardDescription>
               Fill in the details for your feedback session
             </CardDescription>

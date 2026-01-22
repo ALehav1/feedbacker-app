@@ -226,7 +226,7 @@ export function SessionCreateWizard() {
         toast({
           variant: 'destructive',
           title: 'Invalid length',
-          description: 'Session length must be a positive number.',
+          description: 'Presentation length must be a positive number.',
         })
         return
       }
@@ -234,7 +234,7 @@ export function SessionCreateWizard() {
         toast({
           variant: 'destructive',
           title: 'Title required',
-          description: 'Please enter a session title.',
+          description: 'Please enter a presentation title.',
         })
         return
       }
@@ -483,8 +483,8 @@ export function SessionCreateWizard() {
         } else {
           toast({
             variant: 'destructive',
-            title: 'Session creation failed',
-            description: `${sessionError.message || 'Unable to create session'}. Check the console for details.`,
+            title: 'Presentation creation failed',
+            description: `${sessionError.message || 'Unable to create presentation'}. Check the console for details.`,
           })
         }
         return
@@ -505,14 +505,14 @@ export function SessionCreateWizard() {
           toast({
             variant: 'destructive',
             title: 'Topics creation failed',
-            description: `${themesError.message || 'Session created but topics could not be added'}. Check the console for details.`,
+            description: `${themesError.message || 'Presentation created but topics could not be added'}. Check the console for details.`,
           })
         }
       }
 
       toast({
-        title: 'Session created',
-        description: 'Your draft session has been created.',
+        title: 'Presentation created',
+        description: 'Your draft presentation has been created.',
       })
 
       clearWizardState()
