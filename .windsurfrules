@@ -227,6 +227,44 @@ setProfile(profile);
 
 ---
 
+## Hard-Won Patterns (CRITICAL)
+
+**See `docs/contract.md` for full details and code examples.**
+
+### Quick Reference
+
+1. **Mobile Overflow (375px):**
+   - `break-words` on user text
+   - `min-w-0` on flex children that should shrink
+   - `flex-wrap` on badge/stat rows
+   - Test with 50+ char strings without spaces
+
+2. **Navigation Protection (4 layers needed):**
+   - `beforeunload` — browser close/refresh
+   - `popstate` — browser back button
+   - `localStorage` — crash recovery draft
+   - Dialog — in-app navigation confirmation
+
+3. **Controlled Tabs:**
+   - Set default based on context (session state), not memory
+   - Use `value` + `onValueChange`, not `defaultValue`
+
+4. **Data Router Required:**
+   - `useBlocker` only works with `createBrowserRouter`
+   - NOT with `BrowserRouter` + `Routes`
+
+5. **Working vs Live Versioning:**
+   - Dual fields: `welcome_message` (working) + `published_welcome_message` (live)
+   - Explicit publish action copies working → live
+   - Participants always read `published_*` fields
+
+6. **Topic Encoding:**
+   - Title + subtopics in single TEXT field
+   - Newline delimiter: `"Title\n- Sub1\n- Sub2"`
+   - `encodeTopicBlock()` / `decodeTopicBlock()` helpers
+
+---
+
 ## Refactor Safety (Universal)
 - Never refactor behavior without locking it first (tests or explicit guarantees)
 - One refactor goal per branch

@@ -207,6 +207,212 @@ const bootstrap = async () => {
 
 ---
 
+## Hard-Won Patterns
+
+Patterns discovered through debugging. Follow exactly.
+
+### 1. Mobile Overflow Prevention (375px)
+
+**Problem:** Long text causes horizontal scroll on mobile.
+
+```typescript
+// ❌ Text overflows container
+<p className="text-sm">{longText}</p>
+
+// ✅ Prevent overflow with these utilities
+<p className="text-sm break-words">{longText}</p>
+
+// For flex containers, add min-w-0 to allow shrinking
+<div className="flex gap-2">
+  <div className="flex-1 min-w-0">  {/* min-w-0 critical! */}
+    <p className="break-words truncate">{longText}</p>
+  </div>
+</div>
+
+// For stats/badges that wrap, use flex-wrap
+<div className="flex flex-wrap gap-2">
+  <span>Badge 1</span>
+  <span>Badge 2</span>
+</div>
+```
+
+**Checklist for 375px:**
+- `break-words` on all user-generated text
+- `min-w-0` on flex children that should shrink
+- `flex-wrap` on badge/stat rows
+- `overflow-hidden` on containers if needed
+- Test with long strings (50+ chars, no spaces)
+
+### 2. Navigation Protection (Unsaved Changes)
+
+**Problem:** Users lose work when navigating away. Single approach doesn't cover all cases.
+
+**Solution:** Multi-layer protection:
+
+```typescript
+// Layer 1: Browser close/refresh
+useEffect(() => {
+  const handler = (e: BeforeUnloadEvent) => {
+    if (isDirty) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  };
+  window.addEventListener('beforeunload', handler);
+  return () => window.removeEventListener('beforeunload', handler);
+}, [isDirty]);
+
+// Layer 2: Browser back button (especially iOS)
+useEffect(() => {
+  if (!isDirty) return;
+  window.history.pushState({ guard: true }, '');
+
+  const handler = () => {
+    if (isDirty) {
+      window.history.pushState({ guard: true }, '');
+      setShowUnsavedDialog(true);
+    }
+  };
+  window.addEventListener('popstate', handler);
+  return () => window.removeEventListener('popstate', handler);
+}, [isDirty]);
+
+// Layer 3: localStorage draft for crash recovery
+useEffect(() => {
+  if (isDirty) {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+  }
+}, [formData, isDirty]);
+
+// Layer 4: In-app navigation dialog
+const handleNavigateAway = () => {
+  if (isDirty) {
+    setShowUnsavedDialog(true);
+    setPendingNavigation(targetPath);
+  } else {
+    navigate(targetPath);
+  }
+};
+```
+
+**All four layers needed** for complete protection.
+
+### 3. Controlled Tabs (Context-Based Defaults)
+
+**Problem:** Tabs remembering last selection confuses users who expect consistent behavior.
+
+```typescript
+// ❌ Uncontrolled - remembers last tab
+<Tabs defaultValue="details">
+
+// ✅ Controlled - set based on context
+const [activeTab, setActiveTab] = useState('details');
+
+useEffect(() => {
+  // Set default based on session state, not memory
+  if (session.state === 'active' || session.state === 'completed') {
+    setActiveTab('results');  // Show feedback first
+  } else {
+    setActiveTab('details');  // Show details for drafts
+  }
+}, [session.state]);
+
+<Tabs value={activeTab} onValueChange={setActiveTab}>
+```
+
+**Rule:** Tab defaults should reflect user intent for current context, not persist across visits.
+
+### 4. Data Router for Navigation Blocking
+
+**Problem:** `useBlocker` hook only works with React Router data routers.
+
+```typescript
+// ❌ useBlocker crashes with BrowserRouter
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+<BrowserRouter><Routes>...</Routes></BrowserRouter>
+
+// ✅ useBlocker works with createBrowserRouter
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+
+const router = createBrowserRouter([
+  { path: '/', element: <Home /> },
+  { path: '/edit', element: <EditPage /> },  // Can use useBlocker
+]);
+
+<RouterProvider router={router} />
+```
+
+**Migration required** if adding useBlocker to existing BrowserRouter app.
+
+### 5. Working vs Live Versioning (Active Content)
+
+**Problem:** Editing active/published content disrupts users viewing it.
+
+**Solution:** Dual-field pattern with explicit publish:
+
+```sql
+-- Working fields (presenter edits)
+welcome_message TEXT,
+summary_condensed TEXT,
+
+-- Live fields (participants see)
+published_welcome_message TEXT,
+published_summary_condensed TEXT,
+published_at TIMESTAMPTZ,
+has_unpublished_changes BOOLEAN DEFAULT false
+```
+
+```typescript
+// Edit updates working fields only
+await supabase.from('sessions').update({
+  welcome_message: newValue,
+  has_unpublished_changes: true,
+});
+
+// Publish copies working → live
+await supabase.from('sessions').update({
+  published_welcome_message: workingValue,
+  published_at: new Date().toISOString(),
+  has_unpublished_changes: false,
+});
+
+// Participants always read published_* fields
+const { data } = await supabase
+  .from('sessions')
+  .select('published_welcome_message, published_summary_condensed');
+```
+
+### 6. Structured Data in Single Text Field
+
+**Problem:** Need to store hierarchical data (title + subtopics) but want simple schema.
+
+**Solution:** Newline-delimited encoding:
+
+```typescript
+// Encode: title + subtopics → single string
+function encodeTopicBlock(title: string, subtopics: string[]): string {
+  if (subtopics.length === 0) return title;
+  return title + '\n' + subtopics.map(s => `- ${s}`).join('\n');
+}
+
+// Decode: single string → title + subtopics
+function decodeTopicBlock(text: string): { title: string; subtopics: string[] } {
+  const lines = text.split('\n');
+  const title = lines[0];
+  const subtopics = lines.slice(1)
+    .map(l => l.replace(/^[-•]\s*/, '').trim())
+    .filter(Boolean);
+  return { title, subtopics };
+}
+
+// Storage: "Market Analysis\n- Competitor review\n- Pricing trends"
+// Display: Title with bullet list underneath
+```
+
+**Benefits:** Simple TEXT column, no JSONB complexity, human-readable in DB.
+
+---
+
 ## Supabase Patterns (CRITICAL)
 
 These patterns were learned through painful debugging. Follow them exactly.
