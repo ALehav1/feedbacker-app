@@ -988,6 +988,54 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ---
 
+---
+
+### v0.1.3: UX Polish & Simplified Creation Flow (2026-01-22)
+
+**Date:** January 22, 2026
+
+**Scope:** Streamlined presentation creation, improved visual hierarchy, consistent tab navigation
+
+**Changes:**
+
+1. **Profile Page Header:**
+   - Added "Presentation Feedbacker" title and subtitle to ProfileSetup page
+   - Matches header styling from Dashboard and other pages
+   - Both confirm mode and edit mode now show consistent branding
+
+2. **Tabs Visual Distinction:**
+   - Updated tabs.tsx with more prominent styling
+   - TabsList: Added border, increased height (h-11), gray-100 background
+   - TabsTrigger: Added border on active state, white background, shadow
+   - Makes tabs more obviously interactive elements
+
+3. **Wizard Creates Active Directly:**
+   - SessionCreateWizard now creates presentations as 'active' (not 'draft')
+   - Sets `published_at` timestamp on creation
+   - Button text changed: "Confirm & Publish" (was "Create as Draft")
+   - Success toast: "Presentation published" with description about being live
+   - Eliminates extra "Start collecting feedback" step
+
+4. **Session Detail Tab Navigation:**
+   - Always defaults to 'results' (Audience feedback) tab for active/completed sessions
+   - Removes "last tab memory" behavior that caused confusion
+   - Draft sessions still default to 'details' tab
+
+**Files Changed:**
+- `src/features/presenter/ProfileSetup.tsx` — Header with title/subtitle
+- `src/components/ui/tabs.tsx` — Enhanced visual styling
+- `src/features/sessions/SessionCreateWizard.tsx` — Create as active, updated copy
+- `src/features/sessions/SessionDetail.tsx` — Tab default behavior
+
+**Build verification:**
+- `npm run build` — ✅ Pass
+- `npm run lint` — ✅ Pass
+
+**Commit:** `b4a1419`
+**Tag:** `v0.1.3`
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation

@@ -2,8 +2,8 @@
 
 ## Product Requirements Specification
 
-**Version:** 1.1
-**Date:** January 21, 2026
+**Version:** 1.2
+**Date:** January 22, 2026
 
 ---
 
@@ -71,7 +71,7 @@ The person responding to a session with their interests.
 
 | State | Description | Participant Link | Presenter Actions |
 |-------|-------------|------------------|-------------------|
-| **Draft** | Setting up, not shared | Shows preview (voting disabled, banner explains) | Edit, Publish initial version to go Active, Delete |
+| **Draft** | (Not used in current flow) | N/A | N/A |
 | **Active** | Link shared, participant voting open | Works (shows Live version) | Edit Working version, Publish updates, View results, Close participant voting, Delete |
 | **Completed** | Participant voting closed, reviewing results | Content visible, voting disabled (banner explains) | View results, Delete |
 | **Archived** | (Not currently used in UI) | Shows "closed" message | View (read-only), Delete, Use as template |
@@ -86,12 +86,14 @@ The person responding to a session with their interests.
 ### 3.2 State Transitions
 
 ```
-Draft → Active (presenter clicks "Start collecting feedback" - publishes initial Live version)
+(Wizard creates directly as Active with published snapshot)
 Active → Completed (presenter clicks "Close participant voting")
 Completed → Archived (not currently implemented in UI)
-Archived → Draft (use as template - creates new draft with summary/topics, no responses)
+Archived → Active (use as template - creates new active session with summary/topics, no responses)
 Any state → Deleted (permanent removal via Delete button with confirmation)
 ```
+
+**Current Implementation Note:** The creation wizard now creates presentations directly as Active (skipping Draft state). This simplifies the flow: presenter enters info → reviews topics → clicks "Confirm & Publish" → presentation is immediately live.
 
 **Current Implementation Note:** Dashboard shows two sections:
 - "Active Sessions — Participant Voting Open" (state = 'active')
@@ -619,16 +621,15 @@ None remaining - all decisions documented above.
 ### Presenter Journey
 
 ```
-Homepage → Enter email → Magic link → 
+Homepage → Enter email → Magic link →
 [First time: Profile setup] → Dashboard →
-Create session → Enter title + length → 
-Add outline (bullet format recommended) → 
-Extract topics from outline → Review/edit topics → 
-Create session (draft) → 
-Start collecting feedback (draft → active) → 
-Copy link → Share externally →
+Create presentation → Enter title + length →
+Add outline → Review/edit extracted topics →
+Confirm & Publish (creates active presentation) →
+See confirmation with participant link →
+Share link externally →
 [Optional: Edit working version → Publish updates] →
-Check results → Mark completed →
+Check results → Close participant voting →
 Export outline → Archive
 ```
 

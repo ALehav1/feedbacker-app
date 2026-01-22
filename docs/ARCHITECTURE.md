@@ -1,7 +1,7 @@
 # Feedbacker App - Architecture Documentation
 
-**Last Updated:** January 21, 2026
-**Version:** 1.1
+**Last Updated:** January 22, 2026
+**Version:** 1.2
 
 ---
 
@@ -277,31 +277,32 @@ OpenAI and Resend integrations are planned for future versions. When implemented
 Sessions follow a strict state machine:
 
 ```
-┌───────┐   publish initial   ┌────────┐    presenter     ┌───────────┐    presenter    ┌──────────┐
-│ DRAFT │ ─────────────────▶ │ ACTIVE │ ────clicks────▶ │ COMPLETED │ ───clicks────▶ │ ARCHIVED │
-└───────┘                     └────────┘                  └───────────┘                 └──────────┘
-    │                             │                            │                            │
-    │                             │                            │                            │
-    ▼                             ▼                            ▼                            ▼
-Presenter can:              Presenter can:              Presenter can:               Presenter can:
-- Edit all fields           - Edit Working version      - View results               - View (read-only)
-- Delete                    - Publish updates           - Export outline             - Use as template
+                              ┌────────┐    presenter     ┌───────────┐    presenter    ┌──────────┐
+      (Wizard creates) ─────▶ │ ACTIVE │ ────clicks────▶ │ COMPLETED │ ───clicks────▶ │ ARCHIVED │
+                              └────────┘                  └───────────┘                 └──────────┘
+                                  │                            │                            │
+                                  │                            │                            │
+                                  ▼                            ▼                            ▼
+                            Presenter can:              Presenter can:               Presenter can:
+                            - Edit Working version      - View results               - View (read-only)
+                            - Publish updates           - Export outline             - Use as template
                             - Discard changes           - Move to archived           - Delete
                             - View responses            - Delete
-                            - Mark completed
+                            - Close voting
                             - Delete
 
-Participants:               Participants:               Participants:                Participants:
-- See preview (disabled)    - See Live version          - See Live version           - See "closed" message
-- Voting disabled           - Can respond               - Can still respond
-- Banner: "Preview only"    - Can edit response         - Can edit response
+                            Participants:               Participants:                Participants:
+                            - See Live version          - See Live version           - See "closed" message
+                            - Can respond               - Voting disabled
+                            - Can edit response         - Content still visible
 ```
 
-**State Invariants:**
-- Draft → Active: Triggered by "Start collecting feedback" button (publishes initial Live version)
-- Active → Completed: Explicit presenter action only
+**Current Flow (v0.1.3+):**
+- Wizard creates presentations directly as Active with published snapshot
+- No Draft state in normal flow (schema supports it but UI bypasses)
+- Active → Completed: Presenter clicks "Close participant voting"
 - Completed → Archived: Explicit presenter action only
-- Archived → Draft: "Use as template" creates NEW session (copies summary/topics, removes responses)
+- Archived → Active: "Use as template" creates NEW active session (copies summary/topics, removes responses)
 
 ### 2. Working vs Live Model (Active State)
 
