@@ -207,6 +207,142 @@ const bootstrap = async () => {
 
 ---
 
+## Supabase Patterns (CRITICAL)
+
+These patterns were learned through painful debugging. Follow them exactly.
+
+### 1. Supabase Client Singleton (Vite HMR)
+
+**Problem:** Vite HMR creates multiple Supabase clients, causing auth state conflicts.
+
+```typescript
+// ❌ NEVER - Creates new client on every HMR reload
+export const supabase = createClient(url, key);
+
+// ✅ ALWAYS - Singleton pattern with version control
+declare global {
+  var __supabaseClient: SupabaseClient | undefined;
+  var __supabaseVersion: number | undefined;
+}
+
+const CLIENT_VERSION = 1;  // Bump to force new client after config changes
+
+if (globalThis.__supabaseVersion !== CLIENT_VERSION) {
+  globalThis.__supabaseClient = undefined;
+}
+
+export const supabase: SupabaseClient =
+  globalThis.__supabaseClient ??
+  (globalThis.__supabaseClient = createClient(url, key, options));
+
+globalThis.__supabaseVersion = CLIENT_VERSION;
+```
+
+### 2. Navigator Lock API Workaround
+
+**Problem:** Supabase uses Navigator Lock API which causes `AbortError` during Vite HMR.
+
+```typescript
+// ✅ Disable Navigator Lock BEFORE creating Supabase client
+if (typeof navigator !== 'undefined') {
+  Object.defineProperty(navigator, 'locks', {
+    get: () => undefined,
+    configurable: true,
+  });
+}
+
+// Then create client...
+```
+
+### 3. Auth State: Listener, Not One-Time Check
+
+**Problem:** One-time `getUser()` misses auth state changes and causes stale state.
+
+```typescript
+// ❌ NEVER - Stale state, misses changes
+const { data: { user } } = await supabase.auth.getUser();
+
+// ✅ ALWAYS - Reactive listener
+supabase.auth.onAuthStateChange((event, session) => {
+  setUser(session?.user ?? null);
+});
+
+// Initial bootstrap still needs getSession, but listener handles updates
+const { data: { session } } = await supabase.auth.getSession();
+```
+
+### 4. Presenter ID = Auth UID (RLS Critical)
+
+**Problem:** If `presenters.id` doesn't match `auth.uid()`, ALL RLS policies fail silently.
+
+```typescript
+// ❌ NEVER - Generates random ID, breaks RLS
+await supabase.from('presenters').insert({
+  email: user.email,
+  name: formData.name,
+});
+
+// ✅ ALWAYS - Explicitly set id to auth.uid()
+await supabase.from('presenters').insert({
+  id: user.id,  // MUST match auth.uid()
+  email: user.email,
+  name: formData.name,
+});
+```
+
+**Why:** RLS policies use `auth.uid() = id` and `auth.uid() = presenter_id`. Mismatch = silent query failures.
+
+### 5. Auth Bootstrap with Retry
+
+**Problem:** `getSession()` can throw `AbortError` on initial load due to Navigator Lock timing.
+
+```typescript
+// ✅ Retry pattern for initial bootstrap
+const getSessionWithRetry = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        await new Promise(r => setTimeout(r, 100 * (i + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+  return null;
+};
+```
+
+### 6. Magic Link Callback Race Condition
+
+**Problem:** `AuthCallback` component can navigate before Supabase processes the magic link token in the URL.
+
+```typescript
+// ❌ NEVER - Navigates before session is established
+useEffect(() => {
+  if (!isLoading && !user) navigate('/');
+}, [isLoading]);
+
+// ✅ ALWAYS - Wait for session when URL has auth tokens
+const hasAuthToken = window.location.hash.includes('access_token') ||
+                     searchParams.has('code');
+
+useEffect(() => {
+  if (!isLoading && !hasAuthToken) {
+    // No token in URL, safe to redirect
+    navigate(user ? '/dashboard' : '/');
+  }
+  if (!isLoading && hasAuthToken && user) {
+    // Token processed, user established
+    navigate('/dashboard');
+  }
+}, [isLoading, user, hasAuthToken]);
+```
+
+---
+
 ## Documentation Requirements
 
 ### When to Update Docs

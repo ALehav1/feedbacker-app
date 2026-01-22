@@ -191,6 +191,42 @@ setProfile(profile);
 
 ---
 
+## Supabase Patterns (CRITICAL)
+
+**See `docs/contract.md` for full details and code examples.**
+
+### Quick Reference Checklist
+
+1. **Client Singleton:** Use global variable pattern for HMR safety
+   - `globalThis.__supabaseClient` pattern, NOT bare `createClient()`
+
+2. **Navigator Lock Disabled:** Must disable BEFORE creating client
+   - `Object.defineProperty(navigator, 'locks', { get: () => undefined })`
+
+3. **Auth Listener:** Use `onAuthStateChange`, NOT one-time `getUser()`
+   - Listener for reactive updates
+   - `getSession()` only for initial bootstrap
+
+4. **Presenter ID = auth.uid():** Always set `id: user.id` on insert
+   - RLS depends on `auth.uid() = id` match
+   - Silent failures if mismatched
+
+5. **Bootstrap Retry:** `getSession()` can throw `AbortError`
+   - Retry 3x with backoff on AbortError
+   - Set loading false after primary data (see Bootstrap Loading Pattern)
+
+6. **Magic Link Race:** Wait for session when URL has auth tokens
+   - Check for `access_token` or `code` in URL
+   - Don't navigate until token is processed
+
+**Invariant:** Any auth-related change MUST be tested with:
+- Fresh browser (no session)
+- Returning user (existing session)
+- Magic link click flow
+- Page refresh while authenticated
+
+---
+
 ## Refactor Safety (Universal)
 - Never refactor behavior without locking it first (tests or explicit guarantees)
 - One refactor goal per branch
