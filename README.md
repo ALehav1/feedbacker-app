@@ -2,6 +2,8 @@
 
 **AI-powered presentation feedback tool that helps presenters tailor their talks to what audiences actually want to hear.**
 
+**📘 Quick Start:** Product requirements in `docs/SPEC.md` • Technical architecture in `docs/ARCHITECTURE.md`
+
 ---
 
 ## 🎯 What It Does
@@ -244,13 +246,19 @@ Topics and their optional sub-bullets are encoded as a single string in the data
 |----------|---------|
 | `.windsurfrules` | Cascade agent rules (read first) |
 | `docs/contract.md` | Universal + project rules |
-| `docs/ARCHITECTURE.md` | Technical architecture & schema |
 | `docs/SPEC.md` | Product requirements |
+| `docs/ARCHITECTURE.md` | Technical architecture & schema |
 | `docs/BASELINE_LOCK.md` | Frozen file change log |
+| `docs/TEST_CASES.md` | Manual test checklist |
+| `docs/REGRESSION_CHECKLIST.md` | Smoke test for releases |
+| `docs/TESTING.md` | Testing strategy |
+| `docs/SECURITY.md` | Security model & RLS policies |
 | `docs/PROJECT_SETUP_GUIDE.md` | Detailed setup instructions |
 | `docs/SUPABASE_SETUP_GUIDE.md` | Supabase configuration |
 | `docs/SCHEMA_FIXES.md` | Schema migration notes |
 | `docs/SCRAP.md` | Development notes & scratchpad |
+
+**Product and Architecture Canon:** `docs/SPEC.md` and `docs/ARCHITECTURE.md` are the single sources of truth for product requirements and technical architecture, respectively.
 
 ---
 
