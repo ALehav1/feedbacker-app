@@ -923,7 +923,68 @@ Application enforces active-only submission; RLS policies are currently permissi
 12. SCRAP.md — Development notes & scratchpad
 
 **Commit:** `0750bfb` — Documentation table completeness fix
-**Doc-freeze point:** Ready for v0.1.2 tag
+
+**Additional commits (2026-01-22):**
+- `5b2f6eb` — Added Vercel deployment section and production URL
+- `3f2104d` — Fixed Supabase setup guide env var (VITE_PUBLIC_BASE_URL)
+- `85fd32b` — Archived SCHEMA_FIXES.md, updated SPEC.md for accuracy
+
+**Final freeze point:** `85fd32b`
+**Tag:** `v0.1.2`
+
+---
+
+### Final Documentation Freeze Summary (v0.1.2)
+
+**Date:** January 22, 2026
+
+**Scope:** Complete documentation consolidation, accuracy verification, and freeze
+
+**Changes:**
+
+1. **Documentation Organization:**
+   - Root directory: README.md only (standard convention)
+   - Canonical docs: 11 files in `docs/`
+   - Historical/scratch: 8 files in `docs/archive/`
+
+2. **Documentation Accuracy Updates:**
+   - Added Vercel deployment instructions + production URL
+   - Fixed SUPABASE_SETUP_GUIDE.md env var (VITE_PUBLIC_BASE_URL not VITE_APP_URL)
+   - Updated SPEC.md session states to match implementation
+   - Updated SPEC.md Dashboard section to reflect Active/Closed sections
+   - Corrected participant voting terminology throughout SPEC.md
+   - Archived historical SCHEMA_FIXES.md (fixes already in current schema)
+
+3. **Canonical Documentation (11 files):**
+   - `.windsurfrules` — Cascade agent rules
+   - `docs/contract.md` — Universal + project rules
+   - `docs/SPEC.md` — Product requirements (CANON)
+   - `docs/ARCHITECTURE.md` — Technical architecture & schema (CANON)
+   - `docs/BASELINE_LOCK.md` — This file
+   - `docs/TEST_CASES.md` — Manual test checklist
+   - `docs/REGRESSION_CHECKLIST.md` — Smoke test for releases
+   - `docs/TESTING.md` — Testing strategy
+   - `docs/SECURITY.md` — Security model & RLS policies
+   - `docs/PROJECT_SETUP_GUIDE.md` — Detailed setup
+   - `docs/SUPABASE_SETUP_GUIDE.md` — Supabase configuration
+   - `docs/SCRAP.md` — Development scratchpad
+
+4. **Verification:**
+   - All moved file links use `docs/` paths (git grep verified)
+   - All README links exist on disk (Python script verified)
+   - File count matches README table: 11 canonical docs
+   - Build passes (2.12s), lint passes (4 pre-existing warnings)
+
+**Production:**
+- Live URL: https://feedbacker-app-aqim.vercel.app
+- Auto-deploys from `main` branch
+- Supabase backend fully configured
+
+**Frozen baseline confirmed:**
+- Dashboard UX complete (active/closed sections, close voting, delete)
+- Participant voting model implemented (voting closed state)
+- Documentation accurate to final implementation
+- All setup guides current and tested
 
 ---
 
