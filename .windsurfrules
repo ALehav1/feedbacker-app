@@ -150,9 +150,33 @@ Use Tailwind classes directly:
 ❌ Never one-time `getUser()` only
 
 ### Async Operations
-✅ Must expose: `loading` state, `error` state  
-✅ Loading: Show spinner or skeleton  
+✅ Must expose: `loading` state, `error` state
+✅ Loading: Show spinner or skeleton
 ✅ Error: User-friendly message + console detail
+
+### Bootstrap Loading Pattern (CRITICAL)
+**Never block loading state on secondary data fetches.**
+
+When bootstrapping (auth, page load, etc.):
+1. Fetch primary data (e.g., auth session)
+2. Set `isLoading = false` immediately after primary data
+3. Fetch secondary data (e.g., user profile) in background
+4. Update state when secondary data arrives
+
+```typescript
+// ❌ WRONG - hangs if profile fetch is slow
+const session = await getSession();
+const profile = await fetchProfile();  // Can hang!
+setIsLoading(false);
+
+// ✅ CORRECT - unblock after primary, secondary in background
+const session = await getSession();
+setIsLoading(false);  // Unblock immediately
+const profile = await fetchProfile();  // Non-blocking
+setProfile(profile);
+```
+
+**Why:** Secondary fetches can hang on network issues, causing infinite spinner.
 
 ### Forms
 ✅ Controlled components

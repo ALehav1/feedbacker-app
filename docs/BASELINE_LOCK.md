@@ -1036,6 +1036,32 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ---
 
+### Auth Bootstrap Fix (2026-01-22)
+
+**File:** `src/features/auth/AuthContext.tsx`
+
+**Change:** Set `isLoading = false` immediately after session is confirmed, before fetching presenter profile
+
+**Justification:** Bug fix - app hung on loading spinner when presenter profile fetch was slow or failed. The loading state was blocking on secondary data (profile) instead of unblocking after primary data (session).
+
+**Root cause:** The `finally` block that set `isLoading(false)` only ran after `handleSession` completed, which included the `fetchPresenter` call. If `fetchPresenter` hung (network issues, slow response), the entire app stayed in loading state indefinitely.
+
+**Fix:**
+- Added `isInitialBoot` parameter to `handleSession`
+- When `isInitialBoot=true` and session is valid, set `isLoading(false)` immediately after setting user
+- Presenter profile still fetches in background and populates when ready
+- User sees app immediately, profile data loads asynchronously
+
+**Pattern documented in:**
+- `docs/contract.md` — "Bootstrap Loading Pattern" section
+- `.windsurfrules` — Under "React Patterns (Mandatory)"
+
+**Lines modified:** 87-97 (handleSession), 140-170 (getSessionWithRetry + finally block)
+
+**Commit:** Pending
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation

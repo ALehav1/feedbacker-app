@@ -84,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('[Auth] Bootstrap starting at', new Date().toISOString());
     }
 
-    const handleSession = async (session: Session | null, source: string) => {
+    const handleSession = async (session: Session | null, source: string, isInitialBoot = false) => {
       try {
         const nextUserId = session?.user?.id ?? null;
 
@@ -110,6 +110,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         setUser(session!.user);
+
+        // On initial boot, set loading false BEFORE fetching presenter
+        // This ensures the app doesn't hang if presenter fetch is slow
+        if (isInitialBoot && isMounted) {
+          setIsLoading(false);
+          if (import.meta.env.DEV) {
+            console.log('[Auth] Bootstrap complete (session found). Elapsed:', Date.now() - bootStart, 'ms');
+          }
+        }
+
         const presenterData = await fetchPresenter(nextUserId);
         if (!isMounted) return;
         setPresenter(presenterData);
@@ -145,7 +155,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.log('[Auth] getSession result:', session ? 'has session' : 'no session', 'elapsed:', Date.now() - bootStart);
           }
           if (!isMounted) return;
-          await handleSession(session, 'getSession');
+          // Pass isInitialBoot=true so loading is set false before presenter fetch
+          await handleSession(session, 'getSession', true);
           return;
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') {
@@ -160,12 +171,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.warn('[Auth] getSession failed after retries');
     };
 
-    // Bootstrap: getSession first, then mark loading complete
+    // Bootstrap: getSession determines auth state
+    // Loading is set false inside handleSession for authenticated users (before presenter fetch)
+    // For unauthenticated users or errors, set loading false here
     getSessionWithRetry().finally(() => {
       if (isMounted) {
+        // Always ensure loading is false after bootstrap attempt
         setIsLoading(false);
         if (import.meta.env.DEV) {
-          console.log('[Auth] Bootstrap complete. Elapsed:', Date.now() - bootStart, 'ms');
+          console.log('[Auth] Bootstrap finally block. Elapsed:', Date.now() - bootStart, 'ms');
         }
       }
     });

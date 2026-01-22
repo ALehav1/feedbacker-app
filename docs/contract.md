@@ -168,6 +168,43 @@ if (error) return <ErrorMessage error={error} onRetry={refetch} />;
 return <List data={data} />;
 ```
 
+### Bootstrap Loading Pattern (CRITICAL)
+
+**Problem:** App hangs on loading spinner when secondary data fetches are slow or fail.
+
+**Rule:** Never block loading state on secondary data fetches. Set loading to false as soon as you have the primary data, then fetch secondary data in the background.
+
+```typescript
+// ❌ NEVER - Blocks loading on secondary fetch
+const bootstrap = async () => {
+  const session = await getSession();        // Primary
+  const profile = await fetchProfile(id);    // Secondary - can hang!
+  setIsLoading(false);                       // Too late if profile hangs
+};
+
+// ✅ ALWAYS - Set loading false after primary, fetch secondary in background
+const bootstrap = async () => {
+  const session = await getSession();        // Primary
+  setUser(session.user);
+  setIsLoading(false);                       // Unblock UI immediately
+
+  // Secondary fetch in background (non-blocking)
+  const profile = await fetchProfile(id);
+  setProfile(profile);
+};
+```
+
+**Why this matters:**
+- Network issues can cause secondary fetches to hang indefinitely
+- Users see infinite spinner with no recourse
+- Primary data (auth session) is sufficient to render the app
+- Secondary data (profile) can populate when ready
+
+**Apply to:**
+- Auth bootstrap (session → profile)
+- Page loads (route data → supplementary data)
+- Any multi-step data fetching sequence
+
 ---
 
 ## Documentation Requirements
