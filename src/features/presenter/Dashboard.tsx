@@ -198,8 +198,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
         return `${baseClasses} bg-gray-100 text-gray-700 border border-gray-200`;
       case 'completed':
         return `${baseClasses} bg-slate-100 text-slate-700 border border-slate-200`;
-      case 'archived':
-        return `${baseClasses} bg-gray-50 text-gray-500 border border-gray-200`;
+      // archived state exists in DB but not exposed in UI
       default:
         return `${baseClasses} bg-gray-100 text-gray-600 border border-gray-200`;
     }
@@ -363,9 +362,6 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
             )}
             {session.state === 'completed' && (
               <span className="font-medium text-blue-700">Participant voting closed</span>
-            )}
-            {session.state === 'archived' && (
-              <span className="font-medium text-gray-500">Archived</span>
             )}
           </p>
         </div>

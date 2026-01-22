@@ -505,7 +505,7 @@ export function SessionDetail() {
               <TabsTrigger value="details">Presentation details</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="results" className="space-y-6">
+            <TabsContent value="results" className="space-y-6 overflow-hidden">
               {resultsLoading ? (
                 <Card>
                   <CardContent className="flex items-center justify-center py-12">

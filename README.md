@@ -22,7 +22,7 @@ These rules prevent regressions. Follow them strictly:
 
 | Invariant | Rule |
 |-----------|------|
-| **Presentation States** | Only 4 states: `draft` → `active` → `completed` → `archived`. No skipping. State reflects **participant voting** lifecycle, not presentation content. |
+| **Presentation States** | States: `draft` → `active` → `completed`. State reflects **participant voting** lifecycle. (`archived` exists in DB schema but is not exposed in UI.) |
 | **Theme Selection** | Per participant, per theme: `more`, `less`, or neutral (no row). Never both. |
 | **Presenter Auth** | Magic link via email only. No passwords. |
 | **Participant Access** | Public link, optional email. No verification. No account. |
@@ -168,14 +168,16 @@ Feedbacker uses a **Working vs Live** model to let presenters edit while collect
 ### Presentation State Flow
 
 ```
-DRAFT ──────▶ ACTIVE ──────▶ COMPLETED ──────▶ ARCHIVED
-  │              │               │                │
-  │              │               │                │
-  ▼              ▼               ▼                ▼
-Setup         Collecting      Reviewing        Closed
-Edit all      Edit + Publish  View results     Read-only
-              Live vs Working No new feedback  Use as template
+DRAFT ──────▶ ACTIVE ──────▶ COMPLETED
+  │              │               │
+  │              │               │
+  ▼              ▼               ▼
+Setup         Collecting      Closed
+Edit all      Edit + Publish  View results
+              Live vs Working Delete when done
 ```
+
+*Note: `archived` state exists in DB schema but is not exposed in UI.*
 
 ---
 
