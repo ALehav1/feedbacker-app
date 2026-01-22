@@ -794,6 +794,70 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ---
 
+### v0.1.1 Patch: Presenter Name + UI Cleanup (January 21, 2026)
+
+**Files:** `src/features/participant/FeedbackForm.tsx`, `src/features/sessions/SessionCreateWizard.tsx`, `src/features/sessions/SessionDetail.tsx`, `README.md`, restored 8 markdown docs from archive
+
+**Change:** Presenter name made visible to participants, metadata tile renamed for clarity, UnpublishedChangesBar removed entirely, documentation restored from archive
+
+**Justification:** User-facing improvements for clarity and eliminating UI overlap. Documentation accuracy restored after premature archiving.
+
+**Key Changes:**
+
+**Presenter Name Visibility:**
+- FeedbackForm now fetches presenter name from `presenters` table
+- Participant metadata section displays: Title, Presenter, Length (in that order)
+- ProfileSetup already enforced presenter name as required field (no changes needed)
+
+**Metadata Tile Rename:**
+- SessionCreateWizard: renamed "Presentation Title and Length" to "Title, Presenter and Length"
+- Step indicator: "Title, Presenter & Length" (shortened for mobile)
+- Review section now shows Title, Presenter, Length in correct order
+- Presenter name pulled from AuthContext (presenter?.name)
+
+**UnpublishedChangesBar Removal:**
+- Removed entire UnpublishedChangesBar component usage from SessionDetail
+- Removed import statement
+- Removed fixed positioning header offset logic
+- Removed unused `isPublishing` state
+- Removed unused `handlePublishUpdates` and `handleDiscardChanges` functions (~160 lines)
+- Preview/open actions moved inline with participant link section
+- "Preview participant view" only shown for active sessions
+- "Open participant page" always shown
+- Both use small text links with ExternalLink icon
+- No blocking banner, no UI overlap with participant link
+
+**Preview vs Open Actions:**
+- Preview participant view: `${participantUrl}?preview=working` (only active sessions)
+- Open participant page: `${participantUrl}` (always available)
+- Distinct purposes: preview shows working version (auth-gated), open shows published version
+
+**Documentation Restored:**
+- Moved 8 files back from `archive/old-docs/` to original locations:
+  - PROJECT_SETUP_GUIDE.md (root)
+  - SCHEMA_FIXES.md (root)
+  - SCRAP.md (root)
+  - SUPABASE_SETUP_GUIDE.md (root)
+  - docs/EXTRACTION_TESTS.md
+  - docs/MOBILE_AUDIT.md
+  - docs/SMOKE_TEST_RESULTS.md
+  - docs/TEST_LOG_2026-01-21.md
+
+**README Accuracy Fix:**
+- Removed false claim: "for `useBlocker` support"
+- Router description now accurate: uses data router but navigation protection via `beforeunload`/`popstate` handlers in SessionEdit
+- SessionEdit does NOT use useBlocker (uses browser event handlers instead)
+
+**Build verification:**
+- `npm run build` — ✅ Pass
+- `npm run lint` — ✅ Pass (4 pre-existing Fast Refresh warnings)
+
+**Diff size:** 12 files changed (+56 insertions, -196 deletions)
+**Commit:** `fda2457`
+**Tag:** `v0.1.1` — Clean UI, presenter visibility, accurate documentation
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation
