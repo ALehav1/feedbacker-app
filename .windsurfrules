@@ -364,15 +364,14 @@ await supabase.from('presenters').insert({
 ## Route Structure (LOCKED)
 
 ```
-/                           → Login/landing
-/auth/callback              → Magic link handler
-/dashboard                  → Presenter dashboard
-/dashboard/profile          → Profile setup/edit
-/dashboard/create           → Session creation
-/dashboard/session/:id      → Session detail
-/dashboard/session/:id/results → Results view
-/dashboard/archived         → Archived list
-/s/:slug                    → Participant access
+/                                    → Login/landing
+/auth/callback                       → Magic link handler
+/dashboard                           → Presenter dashboard
+/dashboard/profile                   → Profile setup/edit
+/dashboard/sessions/new              → Session creation wizard
+/dashboard/sessions/:sessionId       → Session detail
+/dashboard/sessions/:sessionId/edit  → Session edit
+/s/:slug                             → Participant access
 ```
 
 **Route Invariants:**
@@ -380,6 +379,12 @@ await supabase.from('presenters').insert({
 - `/s/:slug` is public (no auth required)
 - Invalid slug → 404 page
 - Archived session slug → "Session closed" page
+
+**Router Implementation (LOCKED):**
+- Uses React Router v6 **data router** (`createBrowserRouter` + `RouterProvider`)
+- Required for `useBlocker` hook support in SessionEdit and SessionCreateWizard
+- Root layout wraps all routes with `AuthProvider` and common UI
+- Do NOT revert to `BrowserRouter` — will break navigation blocking
 
 ---
 

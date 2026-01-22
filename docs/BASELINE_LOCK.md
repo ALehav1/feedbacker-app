@@ -651,7 +651,58 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Topic parsing produces cleaner, deduplicated lists
 
 **Diff size:** ~300 lines across 4 frozen files
-**Commit:** Pending
+**Commit:** `fc987b1`
+
+### Data Router Migration + Navigation Protection (January 21, 2026)
+
+**Files:** `src/App.tsx`, `src/features/sessions/SessionEdit.tsx`, `src/features/sessions/SessionDetail.tsx`, `src/features/sessions/SessionCreateWizard.tsx`, `src/hooks/useSessions.ts`
+**Change:** Migrate to data router, fix Edit Session crash, add create wizard protection
+**Justification:** Critical bug fixes - useBlocker crashed because app used BrowserRouter instead of data router; response counts inconsistent; create wizard had no navigation protection
+
+**App.tsx changes (frozen file - routing restructure):**
+- Replaced `BrowserRouter` + `Routes` with `createBrowserRouter` + `RouterProvider`
+- Created `RootLayout` component that wraps all routes with `AuthProvider` + `Toaster`
+- Route structure preserved exactly, only implementation changed
+- **Required for useBlocker support** - useBlocker only works with data routers
+- Lines modified: 7-82 (complete restructure, same routes)
+
+**SessionEdit.tsx changes (frozen file):**
+- Fixed setState during render bug in blocker handling
+- Replaced `if (blocker.state === 'blocked') { setState... }` with derived state
+- Added `dialogOpen = isBlockerActive || showUnsavedDialog` for dialog visibility
+- Improved topic fragment detection (more conservative threshold, exempt section names)
+- Lines modified: 246-260 (blocker handling), 560-580 (confirm/cancel), 848 (dialog open prop), 15-33 (fragment detection)
+
+**SessionDetail.tsx changes (frozen file):**
+- Added useEffect to fetch results on mount (not just on tab switch)
+- Fixes "1 response" on dashboard vs "0 responses" in detail until tab switch
+- Lines modified: 163-170 (new effect)
+
+**SessionCreateWizard.tsx changes:**
+- Added full navigation protection matching SessionEdit:
+  - `useBlocker(isDirty)` for in-app navigation
+  - `popstate` interception for iOS back button
+  - `beforeunload` handler for browser close/refresh
+  - Draft restore prompt on reload
+- Changed mount behavior: checks for saved draft instead of clearing
+- Added two dialogs: "Unsaved changes" and "Resume previous session?"
+- Lines modified: 1-11 (imports), 44-147 (protection logic), 937-956 (Exit button), 1000-1042 (dialogs)
+
+**useSessions.ts changes:**
+- Gate data fetches on `authLoading` from useAuth
+- Prevents race condition where user is null during auth bootstrap
+- Fixes first-load spinner requiring retry
+- Lines modified: 37-48 (auth loading check), 117 (dependency)
+
+**Root causes fixed:**
+1. useBlocker requires data router, app was using BrowserRouter
+2. SessionEdit called setState during render (React anti-pattern)
+3. SessionDetail only fetched responses on tab switch, not mount
+4. SessionCreateWizard had no navigation protection, cleared localStorage on mount
+5. useSessions returned loading=false before auth completed
+
+**Diff size:** ~290 lines across 5 files
+**Commit:** `d1151cb`
 
 ---
 

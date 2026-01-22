@@ -200,9 +200,12 @@ npm run preview      # Preview production build
 | `/auth/callback` | AuthCallback | Public |
 | `/dashboard` | Dashboard | Protected |
 | `/dashboard/profile` | ProfileSetup | Protected |
-| `/dashboard/sessions/new` | SessionCreate | Protected |
+| `/dashboard/sessions/new` | SessionCreateWizard | Protected |
 | `/dashboard/sessions/:sessionId` | SessionDetail | Protected |
+| `/dashboard/sessions/:sessionId/edit` | SessionEdit | Protected |
 | `/s/:slug` | FeedbackForm | Public |
+
+**Router:** Uses React Router v6 data router (`createBrowserRouter` + `RouterProvider`) for `useBlocker` support.
 
 ---
 
@@ -259,8 +262,9 @@ npm run preview      # Preview production build
 
 - No real-time updates (manual refresh required)
 - No admin dashboard for usage monitoring
-- Topics currently manually entered (AI generation planned)
-- Outline export planned for future release
+- AI-powered outline export planned for future release
+
+**Navigation Protection:** Both SessionEdit and SessionCreateWizard have full navigation protection (browser back, refresh, in-app navigation) with draft recovery.
 
 ---
 
