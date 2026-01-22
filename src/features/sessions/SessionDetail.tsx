@@ -130,16 +130,11 @@ export function SessionDetail() {
             updatedAt: new Date(data.updated_at),
           })
 
-          // Fetch response count for smart tab default
-          const { count } = await supabase
-            .from('responses')
-            .select('*', { count: 'exact', head: true })
-            .eq('session_id', sessionId)
-          const respCount = count ?? 0
-
-          // Set initial tab: completed → results, active with responses → results, otherwise details
-          if (data.state === 'completed' || (data.state === 'active' && respCount > 0)) {
+          // Always show Audience feedback tab for active/completed sessions
+          if (data.state === 'completed' || data.state === 'active') {
             setActiveTab('results')
+          } else {
+            setActiveTab('details')
           }
         }
       } catch (err) {
@@ -416,7 +411,7 @@ export function SessionDetail() {
         {/* Header card: Title + Badge + Metadata */}
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{session.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{session.title || 'Untitled Presentation'}</h1>
             <span className={`rounded-full px-3 py-1 text-sm font-medium shrink-0 ${stateColors[session.state]}`}>
               {stateLabels[session.state]}
             </span>
@@ -426,125 +421,256 @@ export function SessionDetail() {
           </p>
         </div>
 
-        {/* Primary action block - Draft */}
+        {/* Draft state: Edit and activation blocks */}
         {session.state === 'draft' && (
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <Button
-                className="w-full min-h-[48px]"
-                onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
-              >
-                Edit presentation
-              </Button>
-              <p className="text-sm text-gray-600 text-center">
-                Update welcome text, outline, and topics.
-              </p>
-            </CardContent>
-          </Card>
+          <>
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <Button
+                  className="w-full min-h-[48px]"
+                  onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
+                >
+                  Edit presentation
+                </Button>
+                <p className="text-sm text-gray-600 text-center">
+                  Update welcome text, outline, and topics.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-amber-200 bg-amber-50">
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
+                    Draft — preview only
+                  </span>
+                </div>
+                <p className="text-sm text-amber-900">
+                  Feedback collection starts after you confirm.
+                </p>
+                <Button
+                  onClick={handleOpenSession}
+                  disabled={isTransitioning}
+                  className="w-full min-h-[48px]"
+                >
+                  {isTransitioning ? 'Activating...' : 'Confirm & start collecting feedback'}
+                </Button>
+                <p className="text-xs text-gray-600 text-center">
+                  Participant page becomes interactive.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Participant link for draft */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Participant link</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-mono text-gray-900 flex-1 break-all">
+                    {participantUrl}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyLink}
+                    className="min-h-[40px] shrink-0"
+                  >
+                    Copy
+                  </Button>
+                </div>
+                <a
+                  href={participantUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Preview participant page
+                </a>
+              </CardContent>
+            </Card>
+          </>
         )}
 
-        {/* Draft activation block */}
-        {session.state === 'draft' && (
-          <Card className="border-amber-200 bg-amber-50">
+        {/* Active/Completed: Tabs FIRST (main content) */}
+        {(session.state === 'active' || session.state === 'completed') && (
+          <Tabs value={activeTab} onValueChange={(value) => {
+            setActiveTab(value)
+            if (value === 'results') fetchResults()
+          }} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="results">Audience feedback</TabsTrigger>
+              <TabsTrigger value="details">Presentation details</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="results" className="space-y-6">
+              {resultsLoading ? (
+                <Card>
+                  <CardContent className="flex items-center justify-center py-12">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
+                      <p className="text-gray-600">Loading results...</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : resultsError ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <p className="text-red-600">{resultsError}</p>
+                    <Button onClick={fetchResults} variant="outline" className="mt-4">
+                      Try again
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : themeResults.length === 0 && responses.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-gray-600">No responses yet.</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Share the participant link to start collecting feedback.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Topic Prioritization */}
+                  {themeResults.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Topic Prioritization</CardTitle>
+                        <CardDescription>
+                          Sorted by net interest (more minus less)
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {themeResults.map((theme) => (
+                            <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
+                              <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                                <span className="text-green-600">👍 {theme.more}</span>
+                                <span className="text-red-600">👎 {theme.less}</span>
+                                <span className={`font-medium ${theme.net > 0 ? 'text-green-700' : theme.net < 0 ? 'text-red-700' : 'text-gray-600'}`}>
+                                  Net: {theme.net > 0 ? '+' : ''}{theme.net}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Individual Responses */}
+                  {responses.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Individual Responses</CardTitle>
+                        <CardDescription>{responses.length} responses</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {responses.map((response) => (
+                            <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <span className="text-sm font-medium text-gray-900 break-words min-w-0">
+                                  {response.participantName || 'Anonymous'}
+                                </span>
+                                <span className="text-xs text-gray-500 shrink-0">
+                                  {response.createdAt.toLocaleDateString()}
+                                </span>
+                              </div>
+                              {response.participantEmail && (
+                                <p className="text-xs text-gray-600 mb-2 break-all">
+                                  {response.participantEmail}
+                                </p>
+                              )}
+                              {response.freeFormText && (
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                                  {response.freeFormText}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="details" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Presentation Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-gray-900">Welcome message</h3>
+                      {session.publishedWelcomeMessage !== session.welcomeMessage && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                          {SECTION_INDICATORS.edited}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm text-gray-700">
+                      {session.welcomeMessage || <span className="text-gray-400">No welcome message</span>}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-gray-900">Overview</h3>
+                      {session.publishedSummaryCondensed !== session.summaryCondensed && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                          {SECTION_INDICATORS.edited}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm text-gray-700">
+                      {session.summaryCondensed || <span className="text-gray-400">No overview</span>}
+                    </p>
+                  </div>
+
+                  {session.publishedTopics && session.publishedTopics.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900 mb-2">Topics ({session.publishedTopics.length})</h3>
+                      <ul className="space-y-1">
+                        {session.publishedTopics.map((topic, idx) => (
+                          <li key={topic.themeId || idx} className="text-sm text-gray-700">
+                            {idx + 1}. {topic.text}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {/* Active: Participant link and close voting */}
+        {session.state === 'active' && (
+          <Card>
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
-                  Draft — preview only
-                </span>
-              </div>
-              <p className="text-sm text-amber-900">
-                Feedback collection starts after you confirm.
-              </p>
-              <Button
-                onClick={handleOpenSession}
-                disabled={isTransitioning}
-                className="w-full min-h-[48px]"
-              >
-                {isTransitioning ? 'Activating...' : 'Confirm & start collecting feedback'}
-              </Button>
-              <p className="text-xs text-gray-600 text-center">
-                Participant page becomes interactive.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Primary action block - Active */}
-        {session.state === 'active' && (
-          <Card>
-            <CardContent className="pt-6">
-              <Button
-                className="w-full min-h-[48px]"
-                onClick={handleCopyLink}
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Copy participant link
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Close participant voting - Primary action */}
-        {session.state === 'active' && (
-          <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="pt-6 space-y-4">
-              <Button
-                variant="destructive"
-                className="w-full min-h-[48px]"
-                onClick={() => setShowCloseDialog(true)}
-              >
-                Close participant voting
-              </Button>
-              <p className="text-sm text-gray-700 text-center">
-                Participants can no longer vote once this is closed.
-              </p>
-              <div className="flex items-center justify-between pt-2 border-t border-amber-200">
-                <span className="text-sm font-medium text-amber-900">
-                  Participant voting open
-                </span>
-                <span className="text-sm text-amber-700">{responses.length} responses</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Completed status - Voting closed */}
-        {session.state === 'completed' && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <p className="text-sm font-medium text-blue-900">
-                  Participant voting is closed.
+                <p className="text-sm font-mono text-gray-900 flex-1 break-all min-w-0">
+                  {participantUrl}
                 </p>
-                <p className="text-sm text-blue-700">
-                  Participants can no longer submit feedback.
-                </p>
+                <Button
+                  onClick={handleCopyLink}
+                  className="min-h-[44px] shrink-0"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy link
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Participant link section */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Participant link</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-mono text-gray-900 flex-1 break-all">
-                {participantUrl}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyLink}
-                className="min-h-[40px] shrink-0"
-              >
-                Copy
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {session.state === 'active' && (
+              <div className="flex flex-wrap gap-3">
                 <a
                   href={`${participantUrl}?preview=working`}
                   target="_blank"
@@ -552,9 +678,55 @@ export function SessionDetail() {
                   className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  Preview participant view
+                  Preview working version
                 </a>
-              )}
+                <a
+                  href={participantUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Open participant page
+                </a>
+              </div>
+              <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                <span className="text-sm font-medium text-green-700">
+                  Participant voting open
+                </span>
+                <span className="text-sm text-gray-600">{responses.length} responses</span>
+              </div>
+              <Button
+                variant="destructive"
+                className="w-full min-h-[48px]"
+                onClick={() => setShowCloseDialog(true)}
+              >
+                Close participant voting
+              </Button>
+              <p className="text-xs text-gray-500 text-center">
+                Participants can no longer vote once this is closed.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Completed: Participant link (read-only) */}
+        {session.state === 'completed' && (
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-mono text-gray-900 flex-1 break-all min-w-0">
+                  {participantUrl}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleCopyLink}
+                  className="min-h-[44px] shrink-0"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy link
+                </Button>
+              </div>
               <a
                 href={participantUrl}
                 target="_blank"
@@ -564,11 +736,17 @@ export function SessionDetail() {
                 <ExternalLink className="h-3 w-3" />
                 Open participant page
               </a>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                <span className="text-sm font-medium text-blue-700">
+                  Participant voting closed
+                </span>
+                <span className="text-sm text-gray-600">{responses.length} responses</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* DEV ONLY: Response Generator for testing multi-participant scenarios */}
+        {/* DEV ONLY: Response Generator for testing */}
         {import.meta.env.DEV && session.state === 'active' && (
           <DevResponseGenerator
             sessionId={session.id}
@@ -576,7 +754,7 @@ export function SessionDetail() {
           />
         )}
 
-        {/* Internal reference accordion - outline and technical details */}
+        {/* Internal reference accordion */}
         <details className="group">
           <summary className="flex cursor-pointer items-center justify-between rounded-lg border bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">
             <span>Internal reference</span>
@@ -592,7 +770,7 @@ export function SessionDetail() {
             )}
             <div className="border-t pt-3 space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-500">Session ID</span>
+                <span className="text-gray-500">Presentation ID</span>
                 <span className="font-mono text-gray-700">{session.id.slice(0, 8)}...</span>
               </div>
               <div className="flex justify-between">
@@ -615,164 +793,6 @@ export function SessionDetail() {
           </div>
         </details>
 
-        {/* Tabs - Controlled for programmatic switching */}
-        <Tabs value={activeTab} onValueChange={(value) => {
-          setActiveTab(value)
-          if (value === 'results') fetchResults()
-        }} className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="details">Presentation details</TabsTrigger>
-            <TabsTrigger value="results">Audience feedback</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Presentation Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-gray-900">Welcome message</h3>
-                  {session.publishedWelcomeMessage !== session.welcomeMessage && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                      {SECTION_INDICATORS.edited}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-sm text-gray-700">
-                  {session.welcomeMessage || <span className="text-gray-400">No welcome message</span>}
-                </p>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-gray-900">Overview</h3>
-                  {session.publishedSummaryCondensed !== session.summaryCondensed && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                      {SECTION_INDICATORS.edited}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-sm text-gray-700">
-                  {session.summaryCondensed || <span className="text-gray-400">No overview</span>}
-                </p>
-              </div>
-
-              {/* Topics section - show published topics */}
-              {session.publishedTopics && session.publishedTopics.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900 mb-2">Topics ({session.publishedTopics.length})</h3>
-                  <ul className="space-y-1">
-                    {session.publishedTopics.map((topic, idx) => (
-                      <li key={topic.themeId || idx} className="text-sm text-gray-700">
-                        {idx + 1}. {topic.text}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          </TabsContent>
-
-          <TabsContent value="results" className="space-y-6">
-            {resultsLoading ? (
-              <Card>
-                <CardContent className="flex items-center justify-center py-12">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
-                    <p className="text-gray-600">Loading results...</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : resultsError ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-red-600">{resultsError}</p>
-                  <Button onClick={fetchResults} variant="outline" className="mt-4">
-                    Try again
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : themeResults.length === 0 && responses.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-gray-600">No responses yet.</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Share the participant link to start collecting feedback.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                {/* Theme results */}
-                {themeResults.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Topic Prioritization</CardTitle>
-                      <CardDescription>
-                        Sorted by net interest (more minus less)
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {themeResults.map((theme) => (
-                          <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
-                            <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                              <span className="text-green-600">👍 {theme.more}</span>
-                              <span className="text-red-600">👎 {theme.less}</span>
-                              <span className={`font-medium ${theme.net > 0 ? 'text-green-700' : theme.net < 0 ? 'text-red-700' : 'text-gray-600'}`}>
-                                Net: {theme.net > 0 ? '+' : ''}{theme.net}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Individual responses */}
-                {responses.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Individual Responses</CardTitle>
-                      <CardDescription>{responses.length} responses</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {responses.map((response) => (
-                          <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
-                            <div className="flex items-center justify-between gap-2 mb-2">
-                              <span className="text-sm font-medium text-gray-900 break-words min-w-0">
-                                {response.participantName || 'Anonymous'}
-                              </span>
-                              <span className="text-xs text-gray-500 shrink-0">
-                                {response.createdAt.toLocaleDateString()}
-                              </span>
-                            </div>
-                            {response.participantEmail && (
-                              <p className="text-xs text-gray-600 mb-2 break-all">
-                                {response.participantEmail}
-                              </p>
-                            )}
-                            {response.freeFormText && (
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-                                {response.freeFormText}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
       </main>
 
       {/* Close Participant Voting Dialog */}

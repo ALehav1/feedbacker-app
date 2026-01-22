@@ -436,7 +436,7 @@ export function SessionCreateWizard() {
         .from('sessions')
         .insert({
           presenter_id: user.id,
-          state: 'draft',
+          state: 'active',
           length_minutes: parseInt(wizardData.lengthMinutes, 10),
           title: wizardData.title.trim(),
           welcome_message: wizardData.welcomeMessage.trim() || '',
@@ -447,6 +447,7 @@ export function SessionCreateWizard() {
           published_welcome_message: wizardData.welcomeMessage.trim() || '',
           published_summary_condensed: wizardData.summaryCondensed.trim() || '',
           published_topics: publishedTopics.length > 0 ? publishedTopics : [],
+          published_at: new Date().toISOString(),
           has_unpublished_changes: false,
         })
         .select()
@@ -511,8 +512,8 @@ export function SessionCreateWizard() {
       }
 
       toast({
-        title: 'Presentation created',
-        description: 'Your draft presentation has been created.',
+        title: 'Presentation published',
+        description: 'Your presentation is now live and open for participant voting.',
       })
 
       clearWizardState()
@@ -748,7 +749,7 @@ Case study`}
           )}
         </div>
         <p className="mt-2 text-xs text-gray-500">
-          Add a topic and optional sub-bullets.
+          Format: Title on first line, then sub-bullets with dashes (- Sub 1).
         </p>
       </div>
 
@@ -832,7 +833,7 @@ Case study`}
       <div>
         <h3 className="text-lg font-medium text-gray-900 mb-4">Review Your Presentation</h3>
         <p className="text-sm text-gray-600 mb-6">
-          Review the details below. You can go back to make changes, or create the presentation.
+          Review the details below. You can go back to make changes, or publish to start collecting feedback.
         </p>
       </div>
 
@@ -992,13 +993,13 @@ Case study`}
               {currentStep === 1 && 'Presentation Title, Presenter and Length'}
               {currentStep === 2 && 'Outline & Overview'}
               {currentStep === 3 && 'Topics'}
-              {currentStep === 4 && 'Review & Create'}
+              {currentStep === 4 && 'Review & Publish'}
             </CardTitle>
             <CardDescription>
               {currentStep === 1 && 'Step 1 of 4: Set up a new presentation'}
               {currentStep === 2 && "Add a welcome message, an overview for participants, and your outline. Next, you'll review the topics we organize from it."}
               {currentStep === 3 && 'We organized your outline into topics. Review wording and order, then add or remove topics.'}
-              {currentStep === 4 && 'Review your presentation before creating'}
+              {currentStep === 4 && 'Review your presentation before publishing. Once published, participants can vote.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1028,7 +1029,7 @@ Case study`}
                   disabled={isSubmitting}
                   className="min-h-[56px] w-full sm:flex-1"
                 >
-                  {isSubmitting ? 'Creating...' : 'Confirm & create presentation'}
+                  {isSubmitting ? 'Publishing...' : 'Confirm & Publish'}
                 </Button>
               )}
             </div>
@@ -1042,7 +1043,7 @@ Case study`}
           <DialogHeader>
             <DialogTitle>Unsaved changes</DialogTitle>
             <DialogDescription>
-              Leave without saving? Your session draft will be lost.
+              Leave without saving? Your presentation draft will be lost.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1060,11 +1061,11 @@ Case study`}
       <Dialog open={showRestorePrompt} onOpenChange={setShowRestorePrompt}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Resume previous session?</DialogTitle>
+            <DialogTitle>Resume previous presentation?</DialogTitle>
             <DialogDescription>
               {savedDraft && (
                 <>
-                  You have an unfinished session draft from {new Date(savedDraft.savedAt).toLocaleString()}.
+                  You have an unfinished presentation draft from {new Date(savedDraft.savedAt).toLocaleString()}.
                   Would you like to continue where you left off?
                 </>
               )}

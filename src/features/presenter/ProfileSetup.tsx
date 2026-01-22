@@ -123,8 +123,17 @@ export function ProfileSetup() {
   // Confirm mode: show profile summary with Continue/Edit buttons
   if (mode === 'confirm' && presenter) {
     return (
-      <div className="flex min-h-[100svh] items-center justify-center bg-gray-50 px-4 py-8">
-        <Card className="w-full max-w-md">
+      <div className="min-h-[100svh] bg-gray-50">
+        <header className="border-b bg-white">
+          <div className="mx-auto w-full max-w-screen-sm px-4 py-4">
+            <h1 className="text-2xl font-bold text-gray-900">Presentation Feedbacker</h1>
+            <p className="text-sm text-gray-600">
+              Get feedback on your proposed presentation topics from prospective participants.
+            </p>
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-screen-sm px-4 py-8">
+        <Card className="w-full">
           <CardHeader>
             <div className="flex items-center gap-4 mb-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
@@ -168,14 +177,24 @@ export function ProfileSetup() {
             </div>
           </CardContent>
         </Card>
+        </main>
       </div>
     );
   }
 
   // Edit mode: show form
   return (
-    <div className="flex min-h-[100svh] items-center justify-center bg-gray-50 px-4 py-8">
-      <Card className="w-full max-w-md">
+    <div className="min-h-[100svh] bg-gray-50">
+      <header className="border-b bg-white">
+        <div className="mx-auto w-full max-w-screen-sm px-4 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">Presentation Feedbacker</h1>
+          <p className="text-sm text-gray-600">
+            Get feedback on your proposed presentation topics from prospective participants.
+          </p>
+        </div>
+      </header>
+      <main className="mx-auto w-full max-w-screen-sm px-4 py-8">
+      <Card className="w-full">
         <CardHeader>
           <div className="flex items-center gap-4 mb-4">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
@@ -266,6 +285,7 @@ export function ProfileSetup() {
           </form>
         </CardContent>
       </Card>
+      </main>
     </div>
   );
 }
