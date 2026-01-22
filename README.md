@@ -20,7 +20,7 @@ These rules prevent regressions. Follow them strictly:
 
 | Invariant | Rule |
 |-----------|------|
-| **Session States** | Only 4 states: `draft` → `active` → `completed` → `archived`. No skipping. |
+| **Presentation States** | Only 4 states: `draft` → `active` → `completed` → `archived`. No skipping. |
 | **Theme Selection** | Per participant, per theme: `more`, `less`, or neutral (no row). Never both. |
 | **Presenter Auth** | Magic link via email only. No passwords. |
 | **Participant Access** | Public link, optional email. No verification. No account. |
@@ -74,15 +74,15 @@ npm run dev
 
 1. **Login:** Enter your email at `/` → Check for magic link → Click to authenticate
 2. **Profile:** First-time users complete profile at `/dashboard/profile`
-3. **Create Session:** Click "New Session" → Enter title, length, welcome message, overview summary, and outline
+3. **Create Presentation:** Click "Create New Presentation" → Enter title, presenter, length, welcome message, overview summary, and outline
 4. **Review Topics:** Topics are automatically generated from your outline → Review, edit, reorder, or add new topics
-5. **Confirm & Create:** Review all details → Click "Confirm & create session"
-6. **Activate Session:** From session detail, click "Confirm & start collecting feedback"
+5. **Confirm & Create:** Review all details → Click "Confirm & create presentation"
+6. **Activate Presentation:** From presentation detail, click "Confirm & start collecting feedback"
 7. **Share Link:** Copy participant link → Send to audience
 8. **Collect Feedback:** Participants visit `/s/{slug}` → Select topics (more/less) → Submit
-9. **Edit While Active:** Edit session → Make changes → Save (working version) → Changes remain unpublished until you're ready
+9. **Edit While Active:** Edit presentation → Make changes → Save (working version) → Changes remain unpublished until you're ready
 10. **View Results:** Click "Audience feedback" tab → See topic prioritization + individual responses
-11. **Close Session:** Click overflow menu (⋯) → "Close session" when done collecting
+11. **Close Presentation:** Click overflow menu (⋯) → "Close presentation" when done collecting
 
 ### Outline Format Best Practices
 
@@ -144,7 +144,7 @@ src/
 
 ---
 
-## 📊 Session States & Editing Model
+## 📊 Presentation States & Editing Model
 
 ### Working vs Live Versions
 
@@ -156,14 +156,14 @@ Feedbacker uses a **Working vs Live** model to let presenters edit while collect
 - **Discard changes:** Reverts Working back to Live
 
 **Key behaviors:**
-- Active sessions remain editable without disrupting participants
+- Active presentations remain editable without disrupting participants
 - Participants always see the Live version (last published state)
 - Unpublished changes are clearly indicated with amber "Updates pending" badges
 - Navigate-away guardrail prevents accidental loss of unpublished work
 
 **Canonical copy:** All UX strings defined in `src/lib/copy.ts`
 
-### Session State Flow
+### Presentation State Flow
 
 ```
 DRAFT ──────▶ ACTIVE ──────▶ COMPLETED ──────▶ ARCHIVED
@@ -276,7 +276,7 @@ Topics and their optional sub-bullets are encoded as a single string in the data
 
 1. Enter email → Receive magic link
 2. Click link → Dashboard
-3. Create session → Enter title, summary, themes
+3. Create presentation → Enter title, presenter, summary, themes
 4. Share link with participants
 5. View aggregated feedback results
 

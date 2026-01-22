@@ -24,7 +24,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
@@ -428,22 +427,14 @@ export function SessionDetail() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {(session.state === 'draft' || session.state === 'active') && (
-                  <DropdownMenuItem onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}>
-                    Edit session
-                  </DropdownMenuItem>
-                )}
                 {session.state === 'active' && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setShowCloseDialog(true)}>
-                      Close session
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem onClick={() => setShowCloseDialog(true)}>
+                    Close presentation
+                  </DropdownMenuItem>
                 )}
                 {session.state === 'completed' && (
                   <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
-                    Archive session
+                    Archive presentation
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -474,7 +465,7 @@ export function SessionDetail() {
                 className="w-full min-h-[48px]"
                 onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
               >
-                Edit session
+                Edit presentation
               </Button>
               <p className="text-sm text-gray-600 text-center">
                 Update welcome text, outline, and topics.
@@ -569,7 +560,7 @@ export function SessionDetail() {
                 View audience feedback
               </Button>
               <p className="text-sm text-gray-600 text-center">
-                Session closed. See feedback below.
+                Presentation closed. See feedback below.
               </p>
             </CardContent>
           </Card>
@@ -672,14 +663,14 @@ export function SessionDetail() {
           if (value === 'results') fetchResults()
         }} className="space-y-6">
           <TabsList>
-            <TabsTrigger value="details">Session details</TabsTrigger>
+            <TabsTrigger value="details">Presentation details</TabsTrigger>
             <TabsTrigger value="results">Audience feedback</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Session Information</CardTitle>
+                <CardTitle>Presentation Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
               <div>
@@ -795,12 +786,12 @@ export function SessionDetail() {
                     <CardContent>
                       <div className="space-y-4">
                         {responses.map((response) => (
-                          <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3">
+                          <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-gray-900">
+                              <span className="text-sm font-medium text-gray-900 break-words">
                                 {response.participantName || 'Anonymous'}
                               </span>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-gray-500 shrink-0">
                                 {response.createdAt.toLocaleDateString()}
                               </span>
                             </div>
@@ -810,7 +801,7 @@ export function SessionDetail() {
                               </p>
                             )}
                             {response.freeFormText && (
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
                                 {response.freeFormText}
                               </p>
                             )}

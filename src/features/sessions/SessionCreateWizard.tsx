@@ -574,7 +574,7 @@ export function SessionCreateWizard() {
     <div className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="title">
-          Session Title <span className="text-red-500">*</span>
+          Presentation Title <span className="text-red-500">*</span>
         </Label>
         <Input
           id="title"
@@ -584,12 +584,27 @@ export function SessionCreateWizard() {
           onChange={(e) => setWizardData({ ...wizardData, title: e.target.value })}
           className="min-h-[48px]"
         />
-        <p className="text-xs text-gray-500">Give your session a clear, descriptive title</p>
+        <p className="text-xs text-gray-500">Give your presentation a clear, descriptive title</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="presenterName">
+          Presenter <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="presenterName"
+          type="text"
+          placeholder="Your name"
+          value={presenter?.name || ''}
+          disabled
+          className="min-h-[48px] bg-gray-50"
+        />
+        <p className="text-xs text-gray-500">This name will be shown to participants.</p>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="lengthMinutes">
-          Session Length (minutes) <span className="text-red-500">*</span>
+          Presentation Length (minutes) <span className="text-red-500">*</span>
         </Label>
         <Input
           id="lengthMinutes"
@@ -814,15 +829,15 @@ Case study`}
   const renderStep4 = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Review Your Session</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Review Your Presentation</h3>
         <p className="text-sm text-gray-600 mb-6">
-          Review the details below. You can go back to make changes, or create the session.
+          Review the details below. You can go back to make changes, or create the presentation.
         </p>
       </div>
 
       <div className="space-y-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Title, Presenter and Length</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Presentation Title, Presenter and Length</h4>
           <dl className="space-y-2">
             <div>
               <dt className="text-xs text-gray-500">Title</dt>
@@ -840,20 +855,8 @@ Case study`}
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Outline & Overview</h4>
-          <dl className="space-y-2">
-            <div>
-              <dt className="text-xs text-gray-500">Your outline</dt>
-              <dd className="text-sm text-gray-900 whitespace-pre-wrap">
-                {wizardData.summaryFull || <span className="text-gray-400">Not provided</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-gray-500">Overview summary (shown to participants)</dt>
-              <dd className="text-sm text-gray-900">
-                {wizardData.summaryCondensed || <span className="text-gray-400">Not provided</span>}
-              </dd>
-            </div>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Participant-Visible Content</h4>
+          <dl className="space-y-3">
             {wizardData.welcomeMessage && (
               <div>
                 <dt className="text-xs text-gray-500">Welcome Message</dt>
@@ -862,8 +865,31 @@ Case study`}
                 </dd>
               </div>
             )}
+            <div>
+              <dt className="text-xs text-gray-500">Presentation Overview</dt>
+              <dd className="text-sm text-gray-900">
+                {wizardData.summaryCondensed || <span className="text-gray-400">Not provided</span>}
+              </dd>
+            </div>
           </dl>
         </div>
+
+        {/* Internal reference - collapsed by default */}
+        {wizardData.summaryFull && (
+          <details className="group border rounded-lg">
+            <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">
+              <span>Internal reference (outline)</span>
+              <svg className="h-4 w-4 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div className="px-4 pb-4 pt-2">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                {wizardData.summaryFull}
+              </p>
+            </div>
+          </details>
+        )}
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <h4 className="text-sm font-medium text-gray-900 mb-3">
@@ -933,9 +959,9 @@ Case study`}
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Create Session</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Create Presentation</h1>
               <p className="text-sm text-gray-600">
-                Step {currentStep} of 4: Set up a new feedback session
+                Step {currentStep} of 4
               </p>
             </div>
             <Button
@@ -950,7 +976,7 @@ Case study`}
                 }
               }}
             >
-              Exit
+              Back to dashboard
             </Button>
           </div>
         </div>
@@ -962,16 +988,16 @@ Case study`}
         <Card>
           <CardHeader>
             <CardTitle>
-              {currentStep === 1 && 'Title, Presenter and Length'}
+              {currentStep === 1 && 'Presentation Title, Presenter and Length'}
               {currentStep === 2 && 'Outline & Overview'}
               {currentStep === 3 && 'Topics'}
               {currentStep === 4 && 'Review & Create'}
             </CardTitle>
             <CardDescription>
-              {currentStep === 1 && 'Enter the basic information for your session'}
+              {currentStep === 1 && 'Step 1 of 4: Set up a new presentation'}
               {currentStep === 2 && "Add a welcome message, an overview for participants, and your outline. Next, you'll review the topics we organize from it."}
               {currentStep === 3 && 'We organized your outline into topics. Review wording and order, then add or remove topics.'}
-              {currentStep === 4 && 'Review your session before creating'}
+              {currentStep === 4 && 'Review your presentation before creating'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1001,7 +1027,7 @@ Case study`}
                   disabled={isSubmitting}
                   className="min-h-[56px] w-full sm:flex-1"
                 >
-                  {isSubmitting ? 'Creating...' : 'Confirm & create session'}
+                  {isSubmitting ? 'Creating...' : 'Confirm & create presentation'}
                 </Button>
               )}
             </div>

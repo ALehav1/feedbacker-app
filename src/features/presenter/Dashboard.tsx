@@ -133,7 +133,7 @@ export function Dashboard() {
                 className="h-12 w-full justify-center sm:w-auto"
               >
                 <Plus className="mr-2 h-5 w-5" />
-                Create New Session
+                Create New Presentation
               </Button>
             </div>
 
@@ -290,7 +290,7 @@ function SessionCard({ session }: SessionCardProps) {
             className="h-12 flex-1"
           >
             <ExternalLink className="mr-2 h-4 w-4" />
-            {(session.responseCount || 0) > 0 ? 'Session details' : 'View preview'}
+            {(session.responseCount || 0) > 0 ? 'Presentation details' : 'View preview'}
           </Button>
           {(session.responseCount || 0) > 0 && (
             <Button

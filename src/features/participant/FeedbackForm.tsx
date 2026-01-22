@@ -347,43 +347,44 @@ export function FeedbackForm() {
           </div>
         )}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">{session.title}</CardTitle>
+          <CardContent className="space-y-6 pt-6">
+            {/* 1. Welcome Message (FIRST) */}
             {(isPreviewMode ? session.welcomeMessage : session.publishedWelcomeMessage) && (
-              <CardDescription className="text-base">
-                {isPreviewMode ? session.welcomeMessage : session.publishedWelcomeMessage}
-              </CardDescription>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {(isPreviewMode ? session.summaryCondensed : session.publishedSummaryCondensed) && (
-              <div className="rounded-lg bg-gray-50 p-4">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {isPreviewMode ? session.summaryCondensed : session.publishedSummaryCondensed}
+              <div>
+                <p className="text-base text-gray-900 leading-relaxed">
+                  {isPreviewMode ? session.welcomeMessage : session.publishedWelcomeMessage}
                 </p>
               </div>
             )}
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Instructions</h3>
-              <p className="text-sm text-gray-600">
-                {PARTICIPANT_COPY.instructions}
-              </p>
-              <div className="mt-3 space-y-1">
-                <p className="text-xs text-gray-500">
+            {/* 2. Presentation Metadata (SECOND) */}
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-900">
                   <span className="font-medium">Presentation Title:</span> {session.title}
                 </p>
                 {presenterName && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-gray-900">
                     <span className="font-medium">Presenter:</span> {presenterName}
                   </p>
                 )}
-                <p className="text-xs text-gray-500">
+                <p className="text-sm text-gray-900">
                   <span className="font-medium">Length:</span> {session.lengthMinutes} minutes
                 </p>
               </div>
             </div>
 
+            {/* 3. Presentation Overview */}
+            {(isPreviewMode ? session.summaryCondensed : session.publishedSummaryCondensed) && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 mb-2">Presentation Overview</h3>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {isPreviewMode ? session.summaryCondensed : session.publishedSummaryCondensed}
+                </p>
+              </div>
+            )}
+
+            {/* 4. Proposed Topics */}
             {themes.length === 0 && !isDraft ? (
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
                 <p className="text-sm font-medium text-gray-900 mb-1">
@@ -396,9 +397,12 @@ export function FeedbackForm() {
             ) : themes.length > 0 ? (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">
-                    Topics
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">
+                    Proposed Topics
                   </h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Tell the presenter which topics to spend more time on and which to spend less time on.
+                  </p>
                   <div className="space-y-3">
                     {themes.map((theme) => {
                       const publishedTopic = session.publishedTopics.find(t => t.themeId === theme.id)
