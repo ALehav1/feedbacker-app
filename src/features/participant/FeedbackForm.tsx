@@ -30,6 +30,7 @@ export function FeedbackForm() {
   const previewRequested = searchParams.get('preview') === 'working'
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
+  const [presenterName, setPresenterName] = useState<string>('')
   const [themes, setThemes] = useState<Theme[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +86,17 @@ export function FeedbackForm() {
           }
 
           setSession(mappedSession)
+
+          // Fetch presenter name
+          const { data: presenterData } = await supabase
+            .from('presenters')
+            .select('name')
+            .eq('id', mappedSession.presenterId)
+            .single()
+          
+          if (presenterData) {
+            setPresenterName(presenterData.name)
+          }
 
           // Access control: Only presenter can preview working version
           const canPreview = !!(previewRequested && user && user.id === mappedSession.presenterId)
@@ -357,9 +369,19 @@ export function FeedbackForm() {
               <p className="text-sm text-gray-600">
                 {PARTICIPANT_COPY.instructions}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
-                Session length: {session.lengthMinutes} minutes
-              </p>
+              <div className="mt-3 space-y-1">
+                <p className="text-xs text-gray-500">
+                  <span className="font-medium">Presentation Title:</span> {session.title}
+                </p>
+                {presenterName && (
+                  <p className="text-xs text-gray-500">
+                    <span className="font-medium">Presenter:</span> {presenterName}
+                  </p>
+                )}
+                <p className="text-xs text-gray-500">
+                  <span className="font-medium">Length:</span> {session.lengthMinutes} minutes
+                </p>
+              </div>
             </div>
 
             {themes.length === 0 && !isDraft ? (

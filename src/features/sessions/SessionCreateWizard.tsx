@@ -530,7 +530,7 @@ export function SessionCreateWizard() {
   }
 
   const renderStepIndicator = () => {
-    const steps = ['Title & Length', 'Outline', 'Topics', 'Review']
+    const steps = ['Title, Presenter & Length', 'Outline', 'Topics', 'Review']
     return (
       <div className="mb-8">
         <div className="flex items-center justify-center gap-2">
@@ -822,11 +822,15 @@ Case study`}
 
       <div className="space-y-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Presentation Title and Length</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Title, Presenter and Length</h4>
           <dl className="space-y-2">
             <div>
               <dt className="text-xs text-gray-500">Title</dt>
               <dd className="text-sm text-gray-900">{wizardData.title}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Presenter</dt>
+              <dd className="text-sm text-gray-900">{presenter?.name || 'Not set'}</dd>
             </div>
             <div>
               <dt className="text-xs text-gray-500">Length</dt>
@@ -958,7 +962,7 @@ Case study`}
         <Card>
           <CardHeader>
             <CardTitle>
-              {currentStep === 1 && 'Presentation Title and Length'}
+              {currentStep === 1 && 'Title, Presenter and Length'}
               {currentStep === 2 && 'Outline & Overview'}
               {currentStep === 3 && 'Topics'}
               {currentStep === 4 && 'Review & Create'}

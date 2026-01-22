@@ -210,7 +210,7 @@ npm run preview      # Preview production build
 | `/dashboard/sessions/:sessionId/edit` | SessionEdit | Protected |
 | `/s/:slug` | FeedbackForm | Public |
 
-**Router:** Uses React Router v6 data router (`createBrowserRouter` + `RouterProvider`) for `useBlocker` support.
+**Router:** Uses React Router v6 data router (`createBrowserRouter` + `RouterProvider`).
 
 ---
 
