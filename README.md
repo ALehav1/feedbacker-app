@@ -293,7 +293,6 @@ Topics and their optional sub-bullets are encoded as a single string in the data
 | `docs/SECURITY.md` | Security model & RLS policies |
 | `docs/PROJECT_SETUP_GUIDE.md` | Detailed setup instructions |
 | `docs/SUPABASE_SETUP_GUIDE.md` | Supabase configuration |
-| `docs/SCHEMA_FIXES.md` | Schema migration notes |
 | `docs/SCRAP.md` | Development notes & scratchpad |
 
 **Product and Architecture Canon:** `docs/SPEC.md` and `docs/ARCHITECTURE.md` are the single sources of truth for product requirements and technical architecture, respectively.

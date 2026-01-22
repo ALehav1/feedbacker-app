@@ -72,24 +72,32 @@ The person responding to a session with their interests.
 | State | Description | Participant Link | Presenter Actions |
 |-------|-------------|------------------|-------------------|
 | **Draft** | Setting up, not shared | Shows preview (voting disabled, banner explains) | Edit, Publish initial version to go Active, Delete |
-| **Active** | Link shared, collecting responses | Works (shows Live version) | Edit Working version, Publish updates, View results, Mark as Completed, Delete |
-| **Completed** | Done collecting, reviewing results | Still works (shows Live version) | View results, Move to Archived, Delete |
-| **Archived** | Closed, read-only | Shows "closed" message | View (read-only), Delete, Use as template |
+| **Active** | Link shared, participant voting open | Works (shows Live version) | Edit Working version, Publish updates, View results, Close participant voting, Delete |
+| **Completed** | Participant voting closed, reviewing results | Content visible, voting disabled (banner explains) | View results, Delete |
+| **Archived** | (Not currently used in UI) | Shows "closed" message | View (read-only), Delete, Use as template |
 
 **Rationale:** 
-- Completed keeps the link working because late feedback can still be useful. Only Archived fully closes access.
+- Completed disables voting but keeps content visible — participants can still read the presentation summary and topics, but cannot vote. Banner explains "Participant voting has closed."
+- Terminology clarified: "Participant voting" refers to the time-bounded voting window, distinct from "Presentation" content.
 - Active sessions use Working vs Live model: presenter edits Working version, participants see Live version (last published snapshot).
 - Explicit "Publish updates" action prevents accidental changes to participant experience.
+- Archive state exists in schema but Dashboard currently shows only Active and Completed sections.
 
 ### 3.2 State Transitions
 
 ```
 Draft → Active (presenter clicks "Start collecting feedback" - publishes initial Live version)
-Active → Completed (presenter clicks "Close Session")
-Completed → Archived (presenter clicks "Archive Session")
+Active → Completed (presenter clicks "Close participant voting")
+Completed → Archived (not currently implemented in UI)
 Archived → Draft (use as template - creates new draft with summary/topics, no responses)
-Any state → Deleted (permanent removal)
+Any state → Deleted (permanent removal via Delete button with confirmation)
 ```
+
+**Current Implementation Note:** Dashboard shows two sections:
+- "Active Sessions — Participant Voting Open" (state = 'active')
+- "Closed Sessions — Participant Voting Closed" (state = 'completed')
+
+Archived state exists in schema but is not actively used in current UI.
 
 ### 3.3 Working vs Live Model (Active State Only)
 
@@ -151,16 +159,29 @@ Wipes any test data, keeps summary/topics structure for fresh start.
 
 ### 4.3 Dashboard View
 
-**Primary sections:**
-- Active sessions list (most recent first)
-- "Create New Session" button
-- "Archived" button (separate view)
+**Header:**
+- Title: "Presentation Feedbacker"
+- Subtitle: "Get feedback on your proposed presentation topics from prospective participants."
+- Edit Profile and Sign Out buttons
 
-**Per-session display:**
+**Primary sections:**
+1. **Active Sessions — Participant Voting Open**
+   - Sessions where state = 'active'
+   - "Close voting" button on each tile
+   - Empty state: "No active voting sessions." (always shown)
+
+2. **Closed Sessions — Participant Voting Closed**
+   - Sessions where state = 'completed'
+   - "Delete" button (destructive) on each tile
+   - Only shown when closed sessions exist
+
+**Per-session tile:**
 - Session title
-- State indicator
-- Response count
-- Quick actions based on state
+- State badge ("Voting open" or "Voting closed")
+- Duration and response count
+- Shareable link with copy button
+- Quick actions: "Presentation details" and "Audience feedback"
+- State-specific action (Close voting or Delete)
 
 ### 4.4 Create New Session
 
@@ -253,8 +274,8 @@ Slug is AI-generated, not editable.
 - Response count ("7 people have responded")
 - List of who responded (emails/names)
 - Edit button
-- Mark as Completed button
-- Delete button
+- Close participant voting button (transitions to completed state)
+- Confirmation dialog: "Participants can no longer vote once voting is closed."
 
 **Refresh:** Manual (presenter clicks to update)
 
@@ -308,14 +329,17 @@ Presenter can edit summary and themes even after sharing and receiving responses
 
 **Rationale:** Custom domain requires DNS setup. Default is fine for v1; can upgrade later.
 
-### 4.9 Archive Session
+### 4.9 Delete Session
 
-- Moves session to archived view
-- Link stops working for participants
-- Session becomes read-only for presenter
-- Can still view all results
+**From Closed Sessions (completed state):**
+- Delete button with confirmation dialog
+- Dialog: "This removes the presentation and all audience feedback."
+- Permanent deletion (cascade deletes all responses, themes, selections)
 
-**Archived participant message:** "This session is closed" (simple, no contact info)
+**Archive State:**
+- Exists in database schema but not currently used in UI
+- Future: Could be added for long-term storage without deletion
+- Current approach: Completed state serves as final state before deletion
 
 ### 4.10 Delete Session
 
