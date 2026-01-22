@@ -530,7 +530,7 @@ export function SessionCreateWizard() {
   }
 
   const renderStepIndicator = () => {
-    const steps = ['Basics', 'Outline', 'Topics', 'Review']
+    const steps = ['Title & Length', 'Outline', 'Topics', 'Review']
     return (
       <div className="mb-8">
         <div className="flex items-center justify-center gap-2">
@@ -687,7 +687,7 @@ Case study`}
 
         <div className="flex gap-2">
           <Textarea
-            placeholder="Add a topic… (Enter for newline, Cmd/Ctrl+Enter to add)"
+            placeholder="Add a topic and optional sub-bullets."
             value={themeInputText}
             onChange={(e) => setThemeInputText(e.target.value)}
             onKeyDown={(e) => {
@@ -732,7 +732,7 @@ Case study`}
           )}
         </div>
         <p className="mt-2 text-xs text-gray-500">
-          First line = topic title. Additional lines = subtopics. Cmd/Ctrl+Enter to add.
+          Add a topic and optional sub-bullets.
         </p>
       </div>
 
@@ -822,15 +822,15 @@ Case study`}
 
       <div className="space-y-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Basics</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Presentation Title and Length</h4>
           <dl className="space-y-2">
-            <div>
-              <dt className="text-xs text-gray-500">Length</dt>
-              <dd className="text-sm text-gray-900">{wizardData.lengthMinutes} minutes</dd>
-            </div>
             <div>
               <dt className="text-xs text-gray-500">Title</dt>
               <dd className="text-sm text-gray-900">{wizardData.title}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Length</dt>
+              <dd className="text-sm text-gray-900">{wizardData.lengthMinutes} minutes</dd>
             </div>
           </dl>
         </div>
@@ -958,7 +958,7 @@ Case study`}
         <Card>
           <CardHeader>
             <CardTitle>
-              {currentStep === 1 && 'Session Basics'}
+              {currentStep === 1 && 'Presentation Title and Length'}
               {currentStep === 2 && 'Outline & Overview'}
               {currentStep === 3 && 'Topics'}
               {currentStep === 4 && 'Review & Create'}

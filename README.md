@@ -54,8 +54,12 @@ cp .env.example .env
 # Fill in your keys in .env:
 # - VITE_SUPABASE_URL
 # - VITE_SUPABASE_ANON_KEY
+# - VITE_PUBLIC_BASE_URL (for participant links)
 
-# Run database migrations (see docs/ARCHITECTURE.md for schema)
+# Run database migrations
+# 1. Execute supabase/schema.sql in Supabase SQL Editor
+# 2. Execute supabase/rls-policies.sql
+# 3. Execute any migrations in supabase/migrations/ in order
 
 # Start development server
 npm run dev
@@ -70,14 +74,15 @@ npm run dev
 
 1. **Login:** Enter your email at `/` → Check for magic link → Click to authenticate
 2. **Profile:** First-time users complete profile at `/dashboard/profile`
-3. **Create Session:** Click "New Session" → Enter title, length, outline (use bullet format)
-4. **Extract Topics:** Click "Extract topics from outline" → Review and edit extracted topics
-5. **Start Collecting:** View session detail → Click "Start collecting feedback" to publish initial Live version
-6. **Share Link:** Copy shareable link → Send to participants
-7. **Collect Feedback:** Participants visit `/s/{slug}` → Select topics → Submit
-8. **Edit While Active:** Make changes to working version → Click "Publish updates" when ready (participants continue seeing Live version)
-9. **View Results:** Open Results tab → See aggregated topic interest + individual responses
-10. **Close Session:** Click "Close Session" when done collecting feedback
+3. **Create Session:** Click "New Session" → Enter title, length, welcome message, overview summary, and outline
+4. **Review Topics:** Topics are automatically generated from your outline → Review, edit, reorder, or add new topics
+5. **Confirm & Create:** Review all details → Click "Confirm & create session"
+6. **Activate Session:** From session detail, click "Confirm & start collecting feedback"
+7. **Share Link:** Copy participant link → Send to audience
+8. **Collect Feedback:** Participants visit `/s/{slug}` → Select topics (more/less) → Submit
+9. **Edit While Active:** Edit session → Make changes → Save (working version) → Changes remain unpublished until you're ready
+10. **View Results:** Click "Audience feedback" tab → See topic prioritization + individual responses
+11. **Close Session:** Click overflow menu (⋯) → "Close session" when done collecting
 
 ### Outline Format Best Practices
 
@@ -209,17 +214,43 @@ npm run preview      # Preview production build
 
 ---
 
+## 🏗️ Topic Encoding
+
+Topics and their optional sub-bullets are encoded as a single string in the database to avoid additional migrations:
+
+**Format:** `"Title\n- Sub1\n- Sub2"`
+
+**Example:**
+```
+"Problem framing\n- Quick story\n- Why it matters now"
+```
+
+**Implementation:**
+- Encoding/decoding logic: `src/lib/topicBlocks.ts`
+- Used in: SessionCreateWizard, SessionEdit, FeedbackForm, ThemeSelector
+- Database column: `themes.text` (TEXT)
+- Published snapshot: `sessions.published_topics` (JSONB array with encoded text)
+
+**Benefits:**
+- No schema changes required for subtopic support
+- Simple text storage with clear parsing rules
+- Easy to add/edit in UI with multiline textareas
+
+---
+
 ## 📖 Documentation
 
 | Document | Purpose |
 |----------|---------|
 | `.windsurfrules` | Cascade agent rules (read first) |
-| `agents.md` | Project-specific agent instructions |
 | `docs/contract.md` | Universal + project rules |
-| `docs/ARCHITECTURE.md` | Technical architecture |
+| `docs/ARCHITECTURE.md` | Technical architecture & schema |
 | `docs/SPEC.md` | Product requirements |
-| `docs/TESTING.md` | Manual test checklist + SQL seeds |
+| `docs/TEST_CASES.md` | Manual test checklist |
+| `docs/REGRESSION_CHECKLIST.md` | Smoke test for releases |
+| `docs/TESTING.md` | Testing strategy + SQL seeds |
 | `docs/SECURITY.md` | Security model + RLS policies |
+| `docs/BASELINE_LOCK.md` | Frozen file change log |
 
 ---
 

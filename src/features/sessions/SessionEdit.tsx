@@ -678,7 +678,7 @@ export function SessionEdit() {
               <div className="mb-4">
                 <div className="flex gap-2">
                   <Textarea
-                    placeholder="Add a topic… (Enter for newline, Cmd/Ctrl+Enter to add)"
+                    placeholder="Add a topic and optional sub-bullets."
                     value={newTopicText}
                     onChange={(e) => setNewTopicText(e.target.value)}
                     onKeyDown={(e) => {
@@ -698,7 +698,7 @@ export function SessionEdit() {
                     Add
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">First line = topic title. Additional lines = subtopics. Cmd/Ctrl+Enter to add.</p>
+                <p className="text-xs text-gray-500 mt-1">Add a topic and optional sub-bullets.</p>
               </div>
 
               {/* Topic list */}
@@ -730,7 +730,7 @@ export function SessionEdit() {
                               className="w-full min-h-[60px] resize-none"
                               autoFocus
                             />
-                            <p className="text-xs text-gray-500">First line = title, additional lines = subtopics. Cmd/Ctrl+Enter to save.</p>
+                            <p className="text-xs text-gray-500">Add a topic and optional sub-bullets.</p>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"

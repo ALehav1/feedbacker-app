@@ -123,7 +123,7 @@ export function ProfileSetup() {
   // Confirm mode: show profile summary with Continue/Edit buttons
   if (mode === 'confirm' && presenter) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div className="flex min-h-[100svh] items-center justify-center bg-gray-50 px-4 py-8">
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="flex items-center gap-4 mb-4">
@@ -174,7 +174,7 @@ export function ProfileSetup() {
 
   // Edit mode: show form
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+    <div className="flex min-h-[100svh] items-center justify-center bg-gray-50 px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center gap-4 mb-4">
