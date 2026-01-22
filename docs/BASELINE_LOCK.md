@@ -1058,7 +1058,46 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 **Lines modified:** 87-97 (handleSession), 140-170 (getSessionWithRetry + finally block)
 
-**Commit:** Pending
+**Commit:** `408bd60`
+
+---
+
+### v0.1.4: Documentation & Patterns Milestone (2026-01-22)
+
+**Date:** January 22, 2026
+
+**Scope:** Comprehensive documentation of all patterns learned during development
+
+**Documentation Added:**
+
+1. **Supabase Patterns (contract.md + .windsurfrules):**
+   - Client singleton for Vite HMR safety
+   - Navigator Lock API workaround
+   - Auth listener vs one-time getUser()
+   - Presenter ID = auth.uid() for RLS
+   - Bootstrap retry for AbortError
+   - Magic link callback race condition
+
+2. **Hard-Won Patterns (contract.md + .windsurfrules):**
+   - Mobile overflow prevention (375px)
+   - Navigation protection (4 layers)
+   - Controlled tabs with context-based defaults
+   - Data router requirement for useBlocker
+   - Working vs Live versioning
+   - Topic encoding with subtopics
+
+3. **Bootstrap Loading Pattern:**
+   - Never block loading on secondary fetches
+   - Set loading false after primary data
+
+**Purpose:** Preserve institutional knowledge to prevent recurring bugs and accelerate future development.
+
+**Commits:**
+- `408bd60` — Auth bootstrap fix
+- `2d16906` — Supabase patterns documentation
+- `9451641` — Hard-won patterns documentation
+
+**Tag:** `v0.1.4`
 
 ---
 
