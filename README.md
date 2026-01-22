@@ -1,6 +1,6 @@
 # Feedbacker App
 
-**AI-powered presentation feedback tool that helps presenters tailor their talks to what audiences actually want to hear.**
+**Presentation feedback tool that helps presenters tailor their talks to what audiences actually want to hear.**
 
 **📘 Quick Start:** Product requirements in `docs/SPEC.md` • Technical architecture in `docs/ARCHITECTURE.md`
 
