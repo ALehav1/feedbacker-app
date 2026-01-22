@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,28 +7,65 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
+const LOADING_TIMEOUT_MS = 8000; // Show fallback after 8s
+
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [showStillLoading, setShowStillLoading] = useState(false);
   const { signIn, isAuthenticated, presenter, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Set up loading timeout
+  useEffect(() => {
+    if (!isLoading) {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+    timerRef.current = setTimeout(() => setShowStillLoading(true), LOADING_TIMEOUT_MS);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isLoading]);
 
   // Redirect authenticated users to dashboard
+  // Note: Using push navigation (not replace) to preserve history entry
+  // This ensures browser back doesn't exit the app
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate(presenter ? '/dashboard' : '/dashboard/profile', { replace: true });
+      navigate(presenter ? '/dashboard' : '/dashboard/profile');
     }
   }, [isLoading, isAuthenticated, presenter, navigate]);
 
   // Show loading while checking auth state
   if (isLoading) {
+    const effectiveShowStillLoading = isLoading && showStillLoading;
     return (
-      <div className="flex min-h-[100svh] items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-4">
+      <div className="flex min-h-[100svh] items-center justify-center bg-gray-50 p-4">
+        <div className="flex flex-col items-center gap-4 text-center">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
           <p className="text-gray-600">Loading...</p>
+          {effectiveShowStillLoading && (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-gray-500">Still loading? This is taking longer than expected.</p>
+              <Button
+                variant="outline"
+                onClick={() => window.location.reload()}
+                className="min-h-[44px]"
+              >
+                Retry
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -784,33 +784,42 @@ export function SessionDetail() {
           </CardContent>
         </Card>
 
-        {/* Details accordion */}
+        {/* Internal reference accordion - outline and technical details */}
         <details className="group">
-          <summary className="flex cursor-pointer items-center justify-between rounded-lg border bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <span>Details</span>
+          <summary className="flex cursor-pointer items-center justify-between rounded-lg border bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">
+            <span>Internal reference</span>
             <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
           </summary>
-          <div className="mt-2 rounded-lg border bg-white p-4 space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Session ID</span>
-              <span className="font-mono text-gray-700">{session.id.slice(0, 8)}...</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Slug</span>
-              <span className="font-mono text-gray-700">{session.slug}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Edits</span>
-              <span className="text-gray-700">
-                {session.hasUnpublishedChanges ? 'Unpublished changes' : 'Up to date'}
-              </span>
-            </div>
-            {session.publishedAt && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">Last published</span>
-                <span className="text-gray-700">{session.publishedAt.toLocaleDateString()}</span>
+          <div className="mt-2 rounded-lg border bg-white p-4 space-y-4 text-sm">
+            {session.summaryFull && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-1">Your outline</h4>
+                <p className="text-xs text-gray-500 mb-2">Not shown to participants</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{session.summaryFull}</p>
               </div>
             )}
+            <div className="border-t pt-3 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Session ID</span>
+                <span className="font-mono text-gray-700">{session.id.slice(0, 8)}...</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Slug</span>
+                <span className="font-mono text-gray-700">{session.slug}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Edits</span>
+                <span className="text-gray-700">
+                  {session.hasUnpublishedChanges ? 'Unpublished changes' : 'Up to date'}
+                </span>
+              </div>
+              {session.publishedAt && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Last published</span>
+                  <span className="text-gray-700">{session.publishedAt.toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
           </div>
         </details>
 
@@ -832,47 +841,39 @@ export function SessionDetail() {
               <CardContent className="space-y-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-gray-700">Welcome message (Live)</h3>
+                  <h3 className="text-sm font-medium text-gray-900">Welcome message</h3>
                   {session.publishedWelcomeMessage !== session.welcomeMessage && (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                       {SECTION_INDICATORS.edited}
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-sm text-gray-900">
+                <p className="mt-1 text-sm text-gray-700">
                   {session.welcomeMessage || <span className="text-gray-400">No welcome message</span>}
                 </p>
               </div>
 
               <div>
-                <h3 className="text-sm font-medium text-gray-700">Your outline</h3>
-                <p className="text-xs text-gray-500 mb-1">For your reference only — not shown to participants</p>
-                <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
-                  {session.summaryFull || <span className="text-gray-400">No outline</span>}
-                </p>
-              </div>
-
-              <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-gray-700">Overview summary (Live)</h3>
+                  <h3 className="text-sm font-medium text-gray-900">Overview</h3>
                   {session.publishedSummaryCondensed !== session.summaryCondensed && (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                       {SECTION_INDICATORS.edited}
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-sm text-gray-900">
-                  {session.summaryCondensed || <span className="text-gray-400">No condensed summary</span>}
+                <p className="mt-1 text-sm text-gray-700">
+                  {session.summaryCondensed || <span className="text-gray-400">No overview</span>}
                 </p>
               </div>
 
               {/* Topics section - show published topics */}
               {session.publishedTopics && session.publishedTopics.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Topics ({session.publishedTopics.length})</h3>
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">Topics ({session.publishedTopics.length})</h3>
                   <ul className="space-y-1">
                     {session.publishedTopics.map((topic, idx) => (
-                      <li key={topic.themeId || idx} className="text-sm text-gray-900">
+                      <li key={topic.themeId || idx} className="text-sm text-gray-700">
                         {idx + 1}. {topic.text}
                       </li>
                     ))}

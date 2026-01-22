@@ -738,7 +738,7 @@ Case study`}
 
       {wizardData.themes.length > 0 ? (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Topics ({wizardData.themes.length})</h4>
+          <h4 className="text-sm font-medium text-gray-900">Topics ({wizardData.themes.length})</h4>
           <div className="space-y-2">
             {wizardData.themes.map((theme, index) => {
               const decoded = decodeTopicBlock(theme.text)
@@ -822,7 +822,7 @@ Case study`}
 
       <div className="space-y-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Basics</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Basics</h4>
           <dl className="space-y-2">
             <div>
               <dt className="text-xs text-gray-500">Length</dt>
@@ -836,7 +836,7 @@ Case study`}
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Outline & Overview</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Outline & Overview</h4>
           <dl className="space-y-2">
             <div>
               <dt className="text-xs text-gray-500">Your outline</dt>
@@ -862,7 +862,7 @@ Case study`}
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">
             Topics ({wizardData.themes.length})
           </h4>
           {wizardData.themes.length > 0 ? (

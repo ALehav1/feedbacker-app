@@ -153,7 +153,7 @@ export function ProfileSetup() {
             </div>
             <div className="flex flex-col gap-3">
               <Button
-                onClick={() => navigate('/dashboard', { replace: true })}
+                onClick={() => navigate('/dashboard')}
                 className="w-full min-h-[56px]"
               >
                 Continue to dashboard

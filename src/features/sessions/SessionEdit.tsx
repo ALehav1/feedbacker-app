@@ -586,7 +586,7 @@ export function SessionEdit() {
                 onClick={() => handleNavigate(`/dashboard/sessions/${sessionId}`)}
                 className="w-full sm:w-auto min-h-[48px]"
               >
-                Cancel
+                Continue without changes
               </Button>
               <Button
                 variant="outline"
@@ -635,24 +635,32 @@ export function SessionEdit() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="summaryFull">Your outline</Label>
-              <Textarea
-                id="summaryFull"
-                value={summaryFull}
-                onChange={(e) => setSummaryFull(e.target.value)}
-                rows={8}
-                className="resize-none"
-              />
-              <p className="text-xs text-gray-500">
-                Your full outline for reference.
-              </p>
-            </div>
+            {/* Outline - internal reference, collapsed by default */}
+            <details className="group border rounded-lg">
+              <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">
+                <span>Your outline (internal reference)</span>
+                <svg className="h-4 w-4 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </summary>
+              <div className="px-4 pb-4 space-y-2">
+                <Textarea
+                  id="summaryFull"
+                  value={summaryFull}
+                  onChange={(e) => setSummaryFull(e.target.value)}
+                  rows={8}
+                  className="resize-none"
+                />
+                <p className="text-xs text-gray-500">
+                  For your reference only. Not shown to participants.
+                </p>
+              </div>
+            </details>
 
             {/* Topics editing section */}
             <div className="border-t pt-6">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-700">Topics</h3>
+                <h3 className="text-sm font-medium text-gray-900">Topics</h3>
                 {summaryFull.trim() && (
                   <Button
                     variant="outline"
@@ -791,7 +799,7 @@ export function SessionEdit() {
               )}
             </div>
 
-            {/* Save/Cancel buttons */}
+            {/* Save/Continue buttons */}
             <div className="flex flex-col gap-3 pt-4 sm:flex-row">
               <Button
                 onClick={handleSave}
@@ -806,7 +814,7 @@ export function SessionEdit() {
                 disabled={saving}
                 className="min-h-[48px] w-full sm:w-auto"
               >
-                Cancel
+                Continue without changes
               </Button>
             </div>
           </CardContent>

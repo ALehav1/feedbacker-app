@@ -409,7 +409,7 @@ export function FeedbackForm() {
                 </div>
 
                 <div className="border-t pt-6 space-y-4">
-                  <h3 className="text-sm font-medium text-gray-700">Optional: Tell us more</h3>
+                  <h3 className="text-sm font-medium text-gray-900">Optional: Tell us more</h3>
 
                   <div className="space-y-2">
                     <Label htmlFor="participantName">Your Name</Label>

@@ -13,7 +13,7 @@ interface ProtectedRouteProps {
   children: ReactNode;
 }
 
-const LOADING_TIMEOUT_MS = 6000; // Show "still loading" fallback after 6s
+const LOADING_TIMEOUT_MS = 8000; // Show "still loading" fallback after 8s
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const navigate = useNavigate();

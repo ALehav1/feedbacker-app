@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSessions } from '@/hooks/useSessions';
@@ -12,6 +13,23 @@ export function Dashboard() {
   const navigate = useNavigate();
   const { presenter, signOut } = useAuth();
   const { activeSessions, archivedSessions, loading, error } = useSessions();
+  // Prevent browser back from exiting the app when on Dashboard
+  // Uses a simple sentinel approach: push an extra history entry so first back stays in app
+  useEffect(() => {
+    // Only set up the guard once per session to avoid duplicate entries
+    const guardKey = 'dashboard-back-guard-set';
+    if (sessionStorage.getItem(guardKey)) return;
+
+    // Push a sentinel entry - user's first back press will land here, still on dashboard
+    window.history.pushState({ sentinel: true }, '', '/dashboard');
+    sessionStorage.setItem(guardKey, 'true');
+
+    // Clear the guard flag when session ends (tab close, navigate away)
+    const clearGuard = () => sessionStorage.removeItem(guardKey);
+    window.addEventListener('beforeunload', clearGuard);
+
+    return () => window.removeEventListener('beforeunload', clearGuard);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -272,7 +290,7 @@ function SessionCard({ session }: SessionCardProps) {
             className="h-12 flex-1"
           >
             <ExternalLink className="mr-2 h-4 w-4" />
-            Open
+            {(session.responseCount || 0) > 0 ? 'Session details' : 'View preview'}
           </Button>
           {(session.responseCount || 0) > 0 && (
             <Button
@@ -284,7 +302,7 @@ function SessionCard({ session }: SessionCardProps) {
               className="h-12 flex-1"
             >
               <BarChart3 className="mr-2 h-4 w-4" />
-              Results
+              Audience feedback
             </Button>
           )}
         </div>
