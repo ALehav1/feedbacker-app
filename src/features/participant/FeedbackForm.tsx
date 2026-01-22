@@ -175,23 +175,8 @@ export function FeedbackForm() {
     )
   }
 
-  // Draft sessions now render full preview (voting disabled, banner shown)
-  // See isDraft variable and conditional rendering below
-
-  if (session.state === 'completed' || session.state === 'archived') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Session Closed</CardTitle>
-            <CardDescription>
-              This session is no longer accepting feedback. Thank you for your interest!
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
+  // Draft and closed voting sessions render full content
+  // Voting interactions are disabled via banner and disabled controls
 
   if (submitted) {
     return (
@@ -226,8 +211,8 @@ export function FeedbackForm() {
     if (session.state !== 'active') {
       toast({
         variant: 'destructive',
-        title: 'Session not active',
-        description: 'This session is not currently accepting feedback.',
+        title: 'Voting not available',
+        description: 'Participant voting is not currently open.',
       })
       return
     }
@@ -326,6 +311,7 @@ export function FeedbackForm() {
 
   const hasSelections = Object.values(selections).some((s) => s !== null)
   const isDraft = (session.state as string) === 'draft'
+  const isVotingClosed = (session.state as string) === 'completed' || (session.state as string) === 'archived'
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -343,6 +329,14 @@ export function FeedbackForm() {
             <h3 className="text-sm font-semibold text-gray-900 mb-1">Session draft</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
               Preview only. Feedback collection starts after the presenter confirms and saves.
+            </p>
+          </div>
+        )}
+        {isVotingClosed && !isPreviewMode && (
+          <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-blue-900 mb-1">Participant voting is closed.</h3>
+            <p className="text-sm text-blue-700 leading-relaxed">
+              You can still review the presentation below, but feedback can no longer be submitted.
             </p>
           </div>
         )}
@@ -412,7 +406,7 @@ export function FeedbackForm() {
                             text={theme.text}
                             selection={selections[theme.id] || null}
                             onSelect={(selection) => handleSelectionChange(theme.id, selection)}
-                            disabled={isSubmitting || isDraft}
+                            disabled={isSubmitting || isDraft || isVotingClosed}
                           />
                           {publishedTopic?.details && publishedTopic.details.length > 0 && (
                             <ul className="mt-1 ml-4 space-y-0.5">
@@ -429,7 +423,12 @@ export function FeedbackForm() {
                   </div>
                   {isDraft && (
                     <p className="text-xs text-gray-500 mt-3">
-                      Topics are visible while this is a draft. Responses unlock when the session is active.
+                      Topics are visible while this is a draft. Voting opens when the presenter activates this presentation.
+                    </p>
+                  )}
+                  {isVotingClosed && (
+                    <p className="text-xs text-blue-700 mt-3">
+                      Voting is closed. Topics are shown for reference only.
                     </p>
                   )}
                 </div>
@@ -479,14 +478,19 @@ export function FeedbackForm() {
 
                 <Button
                   type="submit"
-                  disabled={!hasSelections || isSubmitting || isDraft}
+                  disabled={!hasSelections || isSubmitting || isDraft || isVotingClosed}
                   className="w-full min-h-[56px]"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
                 </Button>
                 {isDraft && (
                   <p className="text-xs text-gray-500 text-center">
-                    This session is not collecting feedback yet.
+                    Participant voting has not been opened yet.
+                  </p>
+                )}
+                {isVotingClosed && (
+                  <p className="text-xs text-blue-700 text-center">
+                    Voting is closed.
                   </p>
                 )}
               </form>
