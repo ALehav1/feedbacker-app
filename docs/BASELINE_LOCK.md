@@ -895,6 +895,38 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ---
 
+### Documentation Consolidation & Freeze (2026-01-22)
+
+**Changes:**
+- Moved 4 non-essential markdown files from root to `docs/`
+- Moved 4 secondary/scratch docs to `docs/archive/` (extraction tests, mobile audit, smoke test results, test logs)
+- Updated README documentation table to match `docs/` directory (12 canonical files)
+- Added product/architecture canon pointers: `docs/SPEC.md` + `docs/ARCHITECTURE.md`
+- Verified all links and file counts match
+
+**Canon sources of truth:**
+- Product requirements: `docs/SPEC.md`
+- Technical architecture: `docs/ARCHITECTURE.md`
+
+**Files in `docs/`:**
+1. contract.md — Universal + project rules
+2. SPEC.md — Product requirements
+3. ARCHITECTURE.md — Technical architecture & schema
+4. BASELINE_LOCK.md — Frozen file change log
+5. TEST_CASES.md — Manual test checklist
+6. REGRESSION_CHECKLIST.md — Smoke test for releases
+7. TESTING.md — Testing strategy
+8. SECURITY.md — Security model & RLS policies
+9. PROJECT_SETUP_GUIDE.md — Detailed setup instructions
+10. SUPABASE_SETUP_GUIDE.md — Supabase configuration
+11. SCHEMA_FIXES.md — Schema migration notes
+12. SCRAP.md — Development notes & scratchpad
+
+**Commit:** `0750bfb` — Documentation table completeness fix
+**Doc-freeze point:** Ready for v0.1.2 tag
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation
