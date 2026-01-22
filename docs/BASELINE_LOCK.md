@@ -858,6 +858,38 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ---
 
+### Post-Freeze: Dashboard UX Polish (2026-01-22)
+
+**Changes:**
+1. Dashboard title/subtitle: "Presentation Feedbacker" with descriptive subtitle
+2. Two sections with clear terminology:
+   - "Active Sessions — Participant Voting Open" (with empty state message)
+   - "Closed Sessions — Participant Voting Closed" (only shown when items exist)
+3. Close voting action: Direct from active tile with confirmation dialog
+4. Delete action: On closed tiles with confirmation dialog
+5. Button alignment fix: "Add topic" button aligns to top of textarea (items-start)
+
+**Implementation:**
+- Dashboard sections filter by `state === 'active'` vs `state === 'completed'`
+- Delete uses DB cascade (already configured in schema)
+- Close voting transitions `active → completed` (same as detail page)
+- Terminology consistent: "participant voting" not "session" or "presentation"
+
+**Files Changed:**
+- `src/features/presenter/Dashboard.tsx` — Sections, actions, dialogs
+- `src/features/sessions/SessionEdit.tsx` — Button alignment
+- `src/features/sessions/SessionCreateWizard.tsx` — Button alignment
+- `README.md` — Updated user flows and architectural notes
+
+**Build verification:**
+- `npm run build` — ✅ Pass (2.24s)
+- `npm run lint` — ✅ Pass (4 pre-existing Fast Refresh warnings)
+
+**Diff size:** 4 files changed
+**Commit:** [pending]
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation

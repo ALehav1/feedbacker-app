@@ -676,7 +676,7 @@ export function SessionEdit() {
 
               {/* Add new topic */}
               <div className="mb-4">
-                <div className="flex gap-2">
+                <div className="flex items-start gap-2">
                   <Textarea
                     placeholder="Add a topic and optional sub-bullets."
                     value={newTopicText}
@@ -692,7 +692,7 @@ export function SessionEdit() {
                   />
                   <Button
                     onClick={handleAddTopic}
-                    className="shrink-0 min-h-[48px] self-end"
+                    className="shrink-0 h-[48px]"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add

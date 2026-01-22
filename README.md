@@ -20,7 +20,7 @@ These rules prevent regressions. Follow them strictly:
 
 | Invariant | Rule |
 |-----------|------|
-| **Presentation States** | Only 4 states: `draft` → `active` → `completed` → `archived`. No skipping. |
+| **Presentation States** | Only 4 states: `draft` → `active` → `completed` → `archived`. No skipping. State reflects **participant voting** lifecycle, not presentation content. |
 | **Theme Selection** | Per participant, per theme: `more`, `less`, or neutral (no row). Never both. |
 | **Presenter Auth** | Magic link via email only. No passwords. |
 | **Participant Access** | Public link, optional email. No verification. No account. |
@@ -275,17 +275,22 @@ Topics and their optional sub-bullets are encoded as a single string in the data
 ### Presenter
 
 1. Enter email → Receive magic link
-2. Click link → Dashboard
+2. Click link → Dashboard with two sections:
+   - **Active Sessions — Participant Voting Open:** Close voting directly from tile
+   - **Closed Sessions — Participant Voting Closed:** Delete presentations with confirmation
 3. Create presentation → Enter title, presenter, summary, themes
 4. Share link with participants
-5. View aggregated feedback results
+5. Close participant voting when ready (from Dashboard or detail page)
+6. View aggregated feedback results
+7. Delete closed presentations when no longer needed
 
 ### Participant
 
 1. Open shared link
-2. Read summary, select theme interests (👍/👎)
-3. Optionally enter name, email, and free-form thoughts
-4. Submit → Done
+2. If voting open: Read summary, select theme interests (👍/👎)
+3. If voting closed: Read summary (voting interactions disabled)
+4. Optionally enter name, email, and free-form thoughts (only when voting open)
+5. Submit → Done
 
 ---
 

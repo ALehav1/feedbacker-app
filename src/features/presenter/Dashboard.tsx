@@ -1,18 +1,29 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSessions } from '@/hooks/useSessions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, LogOut, Copy, ExternalLink, BarChart3 } from 'lucide-react';
+import { Plus, LogOut, Copy, ExternalLink, BarChart3, Trash2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { DASHBOARD_BADGES } from '@/lib/copy';
 import type { Session, SessionState } from '@/types';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { presenter, signOut } = useAuth();
-  const { activeSessions, archivedSessions, loading, error } = useSessions();
+  const { signOut } = useAuth();
+  const { activeSessions, archivedSessions, loading, error, refetch } = useSessions();
   // Prevent browser back from exiting the app when on Dashboard
   // Uses a simple sentinel approach: push an extra history entry so first back stays in app
   useEffect(() => {
@@ -66,6 +77,8 @@ export function Dashboard() {
   }
 
   const hasNoSessions = activeSessions.length === 0 && archivedSessions.length === 0;
+  const activeVotingSessions = activeSessions.filter((s) => s.state === 'active');
+  const closedVotingSessions = activeSessions.filter((s) => s.state === 'completed');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -73,9 +86,9 @@ export function Dashboard() {
         <div className="mx-auto w-full max-w-screen-sm px-4 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Presentation Feedbacker</h1>
               <p className="text-sm text-gray-600">
-                Welcome back, {presenter?.name || 'there'}
+                Get feedback on your proposed presentation topics from prospective participants.
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -122,12 +135,6 @@ export function Dashboard() {
         ) : (
           <div className="space-y-6">
             <div className="flex flex-col gap-3">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Your Sessions</h2>
-                <p className="text-sm text-gray-600">
-                  {activeSessions.length} active • {archivedSessions.length} archived
-                </p>
-              </div>
               <Button
                 onClick={() => navigate('/dashboard/sessions/new')}
                 className="h-12 w-full justify-center sm:w-auto"
@@ -137,23 +144,29 @@ export function Dashboard() {
               </Button>
             </div>
 
-            {activeSessions.length > 0 && (
+            {activeVotingSessions.length > 0 && (
               <div>
-                <h3 className="mb-3 text-lg font-medium text-gray-900">Active Sessions</h3>
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Active Sessions — Participant Voting Open</h3>
                 <div className="space-y-3">
-                  {activeSessions.map((session) => (
-                    <SessionCard key={session.id} session={session} />
+                  {activeVotingSessions.map((session) => (
+                    <SessionCard key={session.id} session={session} onSessionChange={refetch} />
                   ))}
                 </div>
               </div>
             )}
-
-            {archivedSessions.length > 0 && (
+            {activeVotingSessions.length === 0 && (
               <div>
-                <h3 className="mb-3 text-lg font-medium text-gray-900">Archived Sessions</h3>
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Active Sessions — Participant Voting Open</h3>
+                <p className="text-sm text-gray-500">No active voting sessions.</p>
+              </div>
+            )}
+
+            {closedVotingSessions.length > 0 && (
+              <div>
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Closed Sessions — Participant Voting Closed</h3>
                 <div className="space-y-3">
-                  {archivedSessions.map((session) => (
-                    <SessionCard key={session.id} session={session} />
+                  {closedVotingSessions.map((session) => (
+                    <SessionCard key={session.id} session={session} onSessionChange={refetch} />
                   ))}
                 </div>
               </div>
@@ -167,11 +180,15 @@ export function Dashboard() {
 
 interface SessionCardProps {
   session: Session;
+  onSessionChange: () => Promise<void>;
 }
 
-function SessionCard({ session }: SessionCardProps) {
+function SessionCard({ session, onSessionChange }: SessionCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
 
@@ -222,6 +239,80 @@ function SessionCard({ session }: SessionCardProps) {
   const handleViewFeedback = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigate(`/dashboard/sessions/${session.id}`);
+  };
+
+  const handleCloseVoting = async () => {
+    setIsTransitioning(true);
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ state: 'completed' })
+        .eq('id', session.id);
+
+      if (error) {
+        console.error('Error closing voting:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Failed to close voting',
+          description: 'Please try again.',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Voting closed',
+        description: 'Participants can no longer vote.',
+      });
+
+      await onSessionChange();
+    } catch (err) {
+      console.error('Unexpected error closing voting:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Something went wrong.',
+      });
+    } finally {
+      setIsTransitioning(false);
+      setShowCloseDialog(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsTransitioning(true);
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .delete()
+        .eq('id', session.id);
+
+      if (error) {
+        console.error('Error deleting session:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Failed to delete',
+          description: 'Please try again.',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Presentation deleted',
+        description: 'The presentation and all feedback have been removed.',
+      });
+
+      await onSessionChange();
+    } catch (err) {
+      console.error('Unexpected error deleting session:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Something went wrong.',
+      });
+    } finally {
+      setIsTransitioning(false);
+      setShowDeleteDialog(false);
+    }
   };
 
   return (
@@ -306,7 +397,70 @@ function SessionCard({ session }: SessionCardProps) {
             </Button>
           )}
         </div>
+
+        {/* Action buttons based on state */}
+        {session.state === 'active' && (
+          <Button
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowCloseDialog(true);
+            }}
+            className="h-12 w-full"
+          >
+            Close voting
+          </Button>
+        )}
+        {session.state === 'completed' && (
+          <Button
+            variant="destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDeleteDialog(true);
+            }}
+            className="h-12 w-full"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
+        )}
       </div>
+
+      {/* Close Voting Dialog */}
+      <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Close participant voting?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Participants can no longer vote once voting is closed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCloseVoting} disabled={isTransitioning}>
+              {isTransitioning ? 'Closing...' : 'Close voting'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete presentation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the presentation and all audience feedback.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isTransitioning}>
+              {isTransitioning ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

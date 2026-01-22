@@ -700,8 +700,9 @@ Case study`}
       <div>
         <h3 className="text-sm font-medium text-gray-900 mb-3">Add or edit topics</h3>
 
-        <div className="flex gap-2">
+        <div className="flex items-start gap-2">
           <Textarea
+            id="theme-input"
             placeholder="Add a topic and optional sub-bullets."
             value={themeInputText}
             onChange={(e) => setThemeInputText(e.target.value)}
@@ -726,7 +727,7 @@ Case study`}
           />
           {editingThemeId ? (
             <>
-              <Button onClick={handleSaveTheme} className="min-h-[48px] shrink-0 self-end">
+              <Button onClick={handleSaveTheme} className="h-[48px] shrink-0">
                 Save
               </Button>
               <Button
@@ -735,13 +736,13 @@ Case study`}
                   setEditingThemeId(null)
                   setThemeInputText('')
                 }}
-                className="min-h-[48px] shrink-0 self-end"
+                className="h-[48px] shrink-0"
               >
                 Cancel
               </Button>
             </>
           ) : (
-            <Button onClick={handleAddTheme} className="min-h-[48px] shrink-0 self-end">
+            <Button onClick={handleAddTheme} className="h-[48px] shrink-0">
               Add
             </Button>
           )}
