@@ -194,8 +194,8 @@ function SessionCard({ session }: SessionCardProps) {
 
   const stateLabels: Record<SessionState, string> = {
     draft: 'Draft',
-    active: 'Active',
-    completed: 'Completed',
+    active: 'Voting open',
+    completed: 'Voting closed',
     archived: 'Archived',
   };
 
@@ -272,10 +272,10 @@ function SessionCard({ session }: SessionCardProps) {
               <span className="font-medium text-amber-700">Draft — preview only</span>
             )}
             {session.state === 'active' && (
-              <span className="font-medium text-green-700">Active — collecting feedback</span>
+              <span className="font-medium text-green-700">Participant voting open</span>
             )}
             {session.state === 'completed' && (
-              <span className="font-medium text-gray-700">Completed — feedback closed</span>
+              <span className="font-medium text-blue-700">Participant voting closed</span>
             )}
             {session.state === 'archived' && (
               <span className="font-medium text-gray-500">Archived</span>

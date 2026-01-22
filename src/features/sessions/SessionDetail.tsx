@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, MoreVertical, ExternalLink, ChevronDown, Copy } from 'lucide-react'
+import { ArrowLeft, ExternalLink, ChevronDown, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -20,12 +20,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
@@ -87,7 +81,6 @@ export function SessionDetail() {
   const [resultsError, setResultsError] = useState<string | null>(null)
 
   const [showCloseDialog, setShowCloseDialog] = useState(false)
-  const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showNavigateAwayDialog, setShowNavigateAwayDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
@@ -212,14 +205,9 @@ export function SessionDetail() {
     transitionState('active')
   }
 
-  const handleCloseSession = () => {
+  const handleCloseVoting = () => {
     setShowCloseDialog(false)
     transitionState('completed')
-  }
-
-  const handleArchiveSession = () => {
-    setShowArchiveDialog(false)
-    transitionState('archived')
   }
 
   const handleCopyLink = async () => {
@@ -420,25 +408,6 @@ export function SessionDetail() {
               <ArrowLeft className="h-4 w-4" />
               <span>Dashboard</span>
             </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px]">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {session.state === 'active' && (
-                  <DropdownMenuItem onClick={() => setShowCloseDialog(true)}>
-                    Close presentation
-                  </DropdownMenuItem>
-                )}
-                {session.state === 'completed' && (
-                  <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
-                    Archive presentation
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -523,32 +492,47 @@ export function SessionDetail() {
           </Card>
         )}
 
-        {/* Live status block - Active */}
+        {/* Close participant voting - Primary action */}
         {session.state === 'active' && (
-          <Card className="border-green-200 bg-green-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
-                    Collecting feedback
-                  </span>
-                </div>
-                <span className="text-sm text-gray-600">{responses.length} responses</span>
+          <Card className="border-amber-200 bg-amber-50">
+            <CardContent className="pt-6 space-y-4">
+              <Button
+                variant="destructive"
+                className="w-full min-h-[48px]"
+                onClick={() => setShowCloseDialog(true)}
+              >
+                Close participant voting
+              </Button>
+              <p className="text-sm text-gray-700 text-center">
+                Participants can no longer vote once this is closed.
+              </p>
+              <div className="flex items-center justify-between pt-2 border-t border-amber-200">
+                <span className="text-sm font-medium text-amber-900">
+                  Participant voting open
+                </span>
+                <span className="text-sm text-amber-700">{responses.length} responses</span>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Completed status block - links to Audience feedback tab */}
+        {/* Completed status - Voting closed */}
         {session.state === 'completed' && (
-          <Card>
+          <Card className="border-blue-200 bg-blue-50">
             <CardContent className="pt-6 space-y-4">
+              <div className="text-center space-y-2">
+                <p className="text-sm font-medium text-blue-900">
+                  Participant voting is closed.
+                </p>
+                <p className="text-sm text-blue-700">
+                  Participants can no longer submit feedback.
+                </p>
+              </div>
               <Button
                 className="w-full min-h-[48px]"
                 onClick={() => {
                   setActiveTab('results')
                   fetchResults()
-                  // Scroll to tabs
                   setTimeout(() => {
                     const tabsEl = document.querySelector('[role="tablist"]')
                     if (tabsEl) {
@@ -559,9 +543,6 @@ export function SessionDetail() {
               >
                 View audience feedback
               </Button>
-              <p className="text-sm text-gray-600 text-center">
-                Presentation closed. See feedback below.
-              </p>
             </CardContent>
           </Card>
         )}
@@ -817,42 +798,26 @@ export function SessionDetail() {
         </Tabs>
       </main>
 
-      {/* Close Session Dialog */}
+      {/* Close Participant Voting Dialog */}
       <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Close this session?</AlertDialogTitle>
+            <AlertDialogTitle>Close participant voting?</AlertDialogTitle>
             <AlertDialogDescription>
-              The participant link will remain active, but you can move to reviewing results.
+              Participants will no longer be able to vote on topics.
+              You can still view results and edit the presentation.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCloseSession} disabled={isTransitioning}>
-              {isTransitioning ? 'Closing...' : 'Close session'}
+            <AlertDialogAction onClick={handleCloseVoting} disabled={isTransitioning}>
+              {isTransitioning ? 'Closing...' : 'Close participant voting'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Archive Session Dialog */}
-      <AlertDialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Archive this session?</AlertDialogTitle>
-            <AlertDialogDescription>
-              The participant link will show "session closed" and no more responses will be accepted.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleArchiveSession} disabled={isTransitioning}>
-              {isTransitioning ? 'Archiving...' : 'Archive session'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
+      {/* Navigate Away Dialog */}
       <AlertDialog open={showNavigateAwayDialog} onOpenChange={setShowNavigateAwayDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
