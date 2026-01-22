@@ -756,8 +756,46 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ---
 
+### Cosmetic Polish + Documentation Sync (January 21, 2026)
+
+**Files:** `src/features/presenter/ProfileSetup.tsx`, `src/features/sessions/SessionCreateWizard.tsx`, `src/features/sessions/SessionEdit.tsx`, `src/components/UnpublishedChangesBar.tsx`, `README.md`
+
+**Change:** Final cosmetic pass on UI stability and comprehensive documentation synchronization
+
+**Justification:** Cosmetic fixes to improve mobile UX and ensure all documentation accurately reflects current application state, schema, and architecture
+
+**UI Changes:**
+- ProfileSetup welcome back screen: Changed `min-h-screen` to `min-h-[100svh]` with `px-4 py-8` for stable centering on iOS
+- SessionCreateWizard: Renamed "Basics" tile to "Presentation Title and Length" throughout
+- SessionCreateWizard review: Reordered fields to show Title before Length
+- UnpublishedChangesBar: Reduced from large amber block to minimal non-blocking actions row with preview links only
+- Helper text: Unified to "Add a topic and optional sub-bullets." across create wizard and session edit
+
+**Documentation Changes:**
+- README.md: Updated setup instructions with migration steps
+- README.md: Updated end-to-end demo to reflect current workflow
+- README.md: Added Topic Encoding section explaining subtopic format
+- README.md: Updated documentation table with current file references
+- Archived 8 outdated docs to `archive/old-docs/`: PROJECT_SETUP_GUIDE.md, SCHEMA_FIXES.md, SCRAP.md, SUPABASE_SETUP_GUIDE.md, EXTRACTION_TESTS.md, MOBILE_AUDIT.md, SMOKE_TEST_RESULTS.md, TEST_LOG_2026-01-21.md
+
+**Behavioral changes:**
+- Welcome back screen no longer floats on iOS Safari/Chrome
+- Yellow publish bar no longer blocks participant link after confirm
+- All topic input fields use consistent helper text
+- Documentation now serves as accurate operator's manual
+
+**Build verification:**
+- `npm run build` — ✅ Pass
+- `npm run lint` — ✅ Pass (4 pre-existing Fast Refresh warnings)
+
+**Diff size:** ~90 lines across 5 files, 8 docs archived
+**Commit:** `023bf10`
+**Tag:** `v0.1.0` — Stable release with cosmetic polish complete
+
+---
+
 ## Next Build Phase
 
-**Focus:** Session Creation Wizard (multi-step, save at end)
+**Focus:** Application feature development on stable foundation
 
 **Constraint:** Must not modify frozen baseline unless absolutely necessary.
