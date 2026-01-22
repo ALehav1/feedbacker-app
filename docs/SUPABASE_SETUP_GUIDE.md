@@ -164,8 +164,8 @@ Replace the placeholder values with your actual credentials from Step 2:
 VITE_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-# App Configuration
-VITE_APP_URL=http://localhost:5173
+# Public URL for participant links (Required)
+VITE_PUBLIC_BASE_URL=http://localhost:5173
 ```
 
 > **Note:** OpenAI and Resend integrations are planned for future versions and will use server-side/Edge Functions (not client-side env vars).
