@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams, useBlocker } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
@@ -12,55 +11,65 @@ import { supabase } from '@/lib/supabase'
 import { Pencil, Trash2, Plus, RefreshCw, ArrowLeft } from 'lucide-react'
 import type { Session, Theme } from '@/types'
 
-// Helper: check if a topic text is a "fragment" (very short, likely incomplete)
-// Conservative: only merge truly fragmentary entries like "Why", "Because", "How"
-// Preserve legitimate single-word topics like "Introduction", "Conclusion", "Overview"
-function isFragmentTopic(text: string): boolean {
-  const VERY_SHORT_THRESHOLD = 12
-  const hasDelimiter = /[:—\-•*]/.test(text)
-  const wordCount = text.split(/\s+/).length
-
-  // Not a fragment if it has structural delimiters
-  if (hasDelimiter) return false
-
-  // Not a fragment if it has 3+ words (likely a complete thought)
-  if (wordCount >= 3) return false
-
-  // Common standalone section names should NOT be fragments
-  const standalonePatterns = /^(introduction|conclusion|overview|summary|background|methodology|methods|results|discussion|references|appendix|agenda|objectives|goals|takeaways|questions|q&a)$/i
-  if (standalonePatterns.test(text.trim())) return false
-
-  // Fragments: very short (1-2 words) that aren't standalone section names
-  return text.length <= VERY_SHORT_THRESHOLD && wordCount <= 2
-}
-
 // Helper: normalize text for deduplication (lowercase, strip punctuation)
 function normalizeForDedup(text: string): string {
   return text.toLowerCase().replace(/[?!.,;:'"]+/g, '').trim()
 }
 
-// Helper function to regenerate topics from outline
-function createTopicsFromOutline(outline: string): Theme[] {
+// Helper: check if a line looks like a bullet/sub-item
+function isBulletLine(line: string): boolean {
+  const trimmed = line.trim()
+  return /^[-•*—]/.test(trimmed)
+}
+
+// Helper: check if a line is short enough to be a continuation/subtopic
+function isShortLine(text: string): boolean {
+  return text.length <= 25 && text.split(/\s+/).length <= 4
+}
+
+// Helper: check if a line looks like a header (standalone topic)
+function isHeaderLine(text: string): boolean {
+  // Headers are typically: not bullets, not too short to stand alone
+  // Common section names are definitely headers
+  const standalonePatterns = /^(introduction|conclusion|overview|summary|background|methodology|methods|results|discussion|references|appendix|agenda|objectives|goals|takeaways|questions|q&a|new|fresh|update|demo|example|case study)$/i
+  if (standalonePatterns.test(text.trim())) return true
+
+  // Lines with 3+ words are likely headers
+  if (text.split(/\s+/).length >= 3) return true
+
+  // Lines ending with colon are headers
+  if (text.trim().endsWith(':')) return true
+
+  return false
+}
+
+interface TopicBlock {
+  title: string
+  subtopics: string[]
+}
+
+// Parse outline into topic blocks: each block has a title and optional subtopics
+function parseOutlineToTopicBlocks(outline: string): TopicBlock[] {
   const MAX_TOPICS = 12
+  const MAX_SUBTOPICS = 6
   const MAX_TOPIC_LENGTH = 120
-  const MAX_DETAILS_PER_TOPIC = 6
+
   const lines = outline.split('\n')
+  const blocks: TopicBlock[] = []
+  let currentBlock: TopicBlock | null = null
+  let lastLineWasBlank = true // Start as if there was a blank line before
 
-  interface ParsedTopic {
-    text: string
-    details: string[]
-  }
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i]
+    const trimmed = rawLine.trim()
 
-  const topics: ParsedTopic[] = []
-  let currentTopic: ParsedTopic | null = null
+    // Track blank lines
+    if (!trimmed) {
+      lastLineWasBlank = true
+      continue
+    }
 
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed) continue
-
-    const isIndented = line.startsWith('  ') || line.startsWith('\t')
-    const startsWithDash = trimmed.startsWith('—') || trimmed.startsWith('-')
-
+    // Normalize the text (strip bullets, numbers, prefixes)
     const normalized = trimmed
       .replace(/^[-*•—]\s*/, '')
       .replace(/^\d+[.)]\s*/, '')
@@ -69,72 +78,67 @@ function createTopicsFromOutline(outline: string): Theme[] {
       .replace(/[.,;:]$/, '')
       .trim()
 
-    if (!normalized || normalized.length > MAX_TOPIC_LENGTH) continue
+    if (!normalized || normalized.length > MAX_TOPIC_LENGTH) {
+      lastLineWasBlank = false
+      continue
+    }
 
-    const isDetail = currentTopic && (isIndented || (startsWithDash && currentTopic.details.length === 0))
+    const isIndented = rawLine.startsWith('  ') || rawLine.startsWith('\t')
+    const isBullet = isBulletLine(rawLine)
+    const isShort = isShortLine(normalized)
+    const isHeader = isHeaderLine(normalized)
 
-    if (isDetail && currentTopic) {
-      if (currentTopic.details.length < MAX_DETAILS_PER_TOPIC) {
-        const lowerDetail = normalized.toLowerCase()
-        if (!currentTopic.details.some(d => d.toLowerCase() === lowerDetail)) {
-          currentTopic.details.push(normalized)
+    // Determine if this line should attach to current block as a subtopic
+    const shouldAttachAsSubtopic = currentBlock && (
+      // Indented lines are always subtopics
+      isIndented ||
+      // Bullet lines (-, •, *, —) are subtopics
+      isBullet ||
+      // Short lines immediately after a header (no blank line) are subtopics
+      (!lastLineWasBlank && isShort && !isHeader)
+    )
+
+    if (shouldAttachAsSubtopic && currentBlock) {
+      // Attach as subtopic
+      if (currentBlock.subtopics.length < MAX_SUBTOPICS) {
+        const lowerSubtopic = normalized.toLowerCase()
+        if (!currentBlock.subtopics.some(s => s.toLowerCase() === lowerSubtopic)) {
+          currentBlock.subtopics.push(normalized)
         }
       }
     } else {
-      currentTopic = { text: normalized, details: [] }
-      topics.push(currentTopic)
+      // Start a new block
+      currentBlock = { title: normalized, subtopics: [] }
+      blocks.push(currentBlock)
     }
+
+    lastLineWasBlank = false
   }
 
-  // Phase 2: Collapse consecutive "fragment" topics into one
-  const collapsedTopics: ParsedTopic[] = []
-  let fragmentBuffer: string[] = []
-
-  for (const topic of topics) {
-    if (isFragmentTopic(topic.text)) {
-      fragmentBuffer.push(topic.text)
-      // Also preserve any details from fragment topics
-      if (topic.details.length > 0 && collapsedTopics.length > 0) {
-        collapsedTopics[collapsedTopics.length - 1].details.push(...topic.details)
-      }
-    } else {
-      // Flush fragment buffer if non-empty
-      if (fragmentBuffer.length > 1) {
-        // Merge fragments into one topic
-        const merged = fragmentBuffer.join(' ')
-        collapsedTopics.push({ text: merged, details: [] })
-      } else if (fragmentBuffer.length === 1) {
-        // Single fragment, keep as-is
-        collapsedTopics.push({ text: fragmentBuffer[0], details: [] })
-      }
-      fragmentBuffer = []
-      collapsedTopics.push(topic)
-    }
-  }
-  // Flush remaining fragments
-  if (fragmentBuffer.length > 1) {
-    collapsedTopics.push({ text: fragmentBuffer.join(' '), details: [] })
-  } else if (fragmentBuffer.length === 1) {
-    collapsedTopics.push({ text: fragmentBuffer[0], details: [] })
-  }
-
-  // Phase 3: Dedupe using normalized text (handles "why?" vs "Why")
-  const uniqueTopics: ParsedTopic[] = []
+  // Dedupe blocks by title
+  const uniqueBlocks: TopicBlock[] = []
   const seen = new Set<string>()
 
-  for (const topic of collapsedTopics) {
-    const normalizedText = normalizeForDedup(topic.text)
-    if (!seen.has(normalizedText) && uniqueTopics.length < MAX_TOPICS) {
-      seen.add(normalizedText)
-      uniqueTopics.push(topic)
+  for (const block of blocks) {
+    const normalizedTitle = normalizeForDedup(block.title)
+    if (!seen.has(normalizedTitle) && uniqueBlocks.length < MAX_TOPICS) {
+      seen.add(normalizedTitle)
+      uniqueBlocks.push(block)
     }
   }
 
-  return uniqueTopics.map((topic, index) => ({
+  return uniqueBlocks
+}
+
+// Helper function to regenerate topics from outline
+function createTopicsFromOutline(outline: string): Theme[] {
+  const blocks = parseOutlineToTopicBlocks(outline)
+
+  return blocks.map((block, index) => ({
     id: crypto.randomUUID(),
-    text: topic.text,
+    text: block.title,
     sortOrder: index + 1,
-    details: topic.details.length > 0 ? topic.details : undefined,
+    details: block.subtopics.length > 0 ? block.subtopics : undefined,
   }))
 }
 
@@ -160,7 +164,7 @@ export function SessionEdit() {
   const [saving, setSaving] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
   const [themes, setThemes] = useState<Theme[]>([])
-  
+
   // Form state
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [summaryCondensed, setSummaryCondensed] = useState('')
@@ -256,13 +260,8 @@ export function SessionEdit() {
     savedAt: string
   } | null>(null)
 
-  // React Router navigation blocker
-  const blocker = useBlocker(isDirty)
-
-  // Derive dialog visibility: show when blocker is blocking OR manual dialog is open
-  // This avoids calling setState during render or in effect (which causes cascading renders)
-  const isBlockerActive = blocker.state === 'blocked'
-  const dialogOpen = isBlockerActive || showUnsavedDialog
+  // Dialog visibility for unsaved changes warning
+  const dialogOpen = showUnsavedDialog
 
   useEffect(() => {
     if (!sessionId) return
@@ -446,11 +445,16 @@ export function SessionEdit() {
         }
       }
 
-      // Reset dirty state
+      // Reset dirty state to match saved values
       setInitialWelcome(welcomeMessage)
       setInitialSummaryCondensed(summaryCondensed)
       setInitialSummaryFull(summaryFull)
       setInitialThemes(themes)
+
+      // Clear localStorage draft
+      if (draftKey) {
+        localStorage.removeItem(draftKey)
+      }
 
       toast({
         title: 'Changes saved',
@@ -472,10 +476,20 @@ export function SessionEdit() {
   const handleAddTopic = () => {
     if (!newTopicText.trim()) return
 
+    // Parse input: first line is title, remaining lines are subtopics
+    const lines = newTopicText.split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length === 0) return
+
+    const title = lines[0]
+    const subtopics = lines.slice(1).map(l =>
+      l.replace(/^[-*•—]\s*/, '').trim()
+    ).filter(Boolean)
+
     const newTopic: Theme = {
       id: crypto.randomUUID(),
-      text: newTopicText.trim(),
+      text: title,
       sortOrder: themes.length + 1,
+      details: subtopics.length > 0 ? subtopics : undefined,
     }
 
     setThemes([...themes, newTopic])
@@ -497,15 +511,31 @@ export function SessionEdit() {
     const topic = themes.find(t => t.id === topicId)
     if (topic) {
       setEditingTopicId(topicId)
-      setEditingText(topic.text)
+      // Serialize topic as text: title on first line, subtopics on subsequent lines
+      const lines = [topic.text]
+      if (topic.details && topic.details.length > 0) {
+        lines.push(...topic.details.map(d => `- ${d}`))
+      }
+      setEditingText(lines.join('\n'))
     }
   }
 
   const handleSaveTopic = () => {
     if (!editingTopicId || !editingText.trim()) return
 
-    setThemes(themes.map(t => 
-      t.id === editingTopicId ? { ...t, text: editingText.trim() } : t
+    // Parse input: first line is title, remaining lines are subtopics
+    const lines = editingText.split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length === 0) return
+
+    const title = lines[0]
+    const subtopics = lines.slice(1).map(l =>
+      l.replace(/^[-*•—]\s*/, '').trim()
+    ).filter(Boolean)
+
+    setThemes(themes.map(t =>
+      t.id === editingTopicId
+        ? { ...t, text: title, details: subtopics.length > 0 ? subtopics : undefined }
+        : t
     ))
     setEditingTopicId(null)
     setEditingText('')
@@ -575,11 +605,11 @@ export function SessionEdit() {
   }
 
   const confirmLeave = () => {
-    // Handle blocker-based navigation (browser back, link clicks)
-    if (blocker.state === 'blocked') {
-      blocker.proceed()
-    } else if (pendingNavigation) {
-      // Handle manual navigation via handleNavigate()
+    // Clear draft before navigating
+    if (draftKey) {
+      localStorage.removeItem(draftKey)
+    }
+    if (pendingNavigation) {
       navigate(pendingNavigation)
     }
     setShowUnsavedDialog(false)
@@ -587,10 +617,6 @@ export function SessionEdit() {
   }
 
   const cancelLeave = () => {
-    // Reset blocker if active
-    if (blocker.state === 'blocked') {
-      blocker.reset()
-    }
     setShowUnsavedDialog(false)
     setPendingNavigation(null)
   }
@@ -717,26 +743,32 @@ export function SessionEdit() {
               </div>
 
               {/* Add new topic */}
-              <div className="flex gap-2 mb-4">
-                <Input
-                  placeholder="Add a topic…"
-                  value={newTopicText}
-                  onChange={(e) => setNewTopicText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      handleAddTopic()
-                    }
-                  }}
-                  className="flex-1 min-w-0 min-h-[48px]"
-                />
-                <Button
-                  onClick={handleAddTopic}
-                  className="shrink-0 min-h-[48px]"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
-                </Button>
+              <div className="mb-4">
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder="Add a topic… (Enter for new line, first line = title, rest = subtopics)"
+                    value={newTopicText}
+                    onChange={(e) => setNewTopicText(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Cmd/Ctrl+Enter triggers Add
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault()
+                        handleAddTopic()
+                      }
+                      // Plain Enter inserts newline (default behavior)
+                    }}
+                    rows={2}
+                    className="flex-1 min-w-0 min-h-[48px] resize-none"
+                  />
+                  <Button
+                    onClick={handleAddTopic}
+                    className="shrink-0 min-h-[48px] self-end"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">First line becomes the topic title. Additional lines become subtopics.</p>
               </div>
 
               {/* Topic list */}
@@ -748,12 +780,12 @@ export function SessionEdit() {
                       className="rounded-lg border border-gray-200 bg-white p-3"
                     >
                       {editingTopicId === theme.id ? (
-                        <div className="flex gap-2">
-                          <Input
+                        <div className="space-y-2">
+                          <Textarea
                             value={editingText}
                             onChange={(e) => setEditingText(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
+                              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                                 e.preventDefault()
                                 handleSaveTopic()
                               }
@@ -762,49 +794,67 @@ export function SessionEdit() {
                                 setEditingText('')
                               }
                             }}
-                            className="flex-1 min-h-[40px]"
+                            rows={3}
+                            className="w-full min-h-[60px] resize-none"
                             autoFocus
                           />
-                          <Button
-                            size="sm"
-                            onClick={handleSaveTopic}
-                            className="min-h-[40px]"
-                          >
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setEditingTopicId(null)
-                              setEditingText('')
-                            }}
-                            className="min-h-[40px]"
-                          >
-                            Cancel
-                          </Button>
+                          <p className="text-xs text-gray-500">First line = title, additional lines = subtopics. Cmd/Ctrl+Enter to save.</p>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={handleSaveTopic}
+                              className="min-h-[40px]"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingTopicId(null)
+                                setEditingText('')
+                              }}
+                              className="min-h-[40px]"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500 shrink-0">{theme.sortOrder}.</span>
-                          <p className="text-sm text-gray-900 flex-1 min-w-0 break-words">{theme.text}</p>
-                          <div className="flex gap-1 shrink-0">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditTopic(theme.id)}
-                              className="min-h-[40px] min-w-[40px] p-2"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDeleteTopic(theme.id)}
-                              className="min-h-[40px] min-w-[40px] p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                        <div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-xs text-gray-500 shrink-0 pt-0.5">{theme.sortOrder}.</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 break-words">{theme.text}</p>
+                              {theme.details && theme.details.length > 0 && (
+                                <ul className="mt-1 space-y-0.5">
+                                  {theme.details.map((detail, idx) => (
+                                    <li key={idx} className="text-xs text-gray-600 pl-2 flex items-start gap-1">
+                                      <span className="text-gray-400">—</span>
+                                      <span className="break-words">{detail}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditTopic(theme.id)}
+                                className="min-h-[40px] min-w-[40px] p-2"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteTopic(theme.id)}
+                                className="min-h-[40px] min-w-[40px] p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useBlocker } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -35,6 +35,109 @@ const emptyWizardData: WizardData = {
   summaryFull: '',
   summaryCondensed: '',
   themes: [],
+}
+
+// Helper: normalize text for deduplication (lowercase, strip punctuation)
+function normalizeForDedup(text: string): string {
+  return text.toLowerCase().replace(/[?!.,;:'"]+/g, '').trim()
+}
+
+// Helper: check if a line looks like a bullet/sub-item
+function isBulletLine(line: string): boolean {
+  const trimmed = line.trim()
+  return /^[-•*—]/.test(trimmed)
+}
+
+// Helper: check if a line is short enough to be a continuation/subtopic
+function isShortLine(text: string): boolean {
+  return text.length <= 25 && text.split(/\s+/).length <= 4
+}
+
+// Helper: check if a line looks like a header (standalone topic)
+function isHeaderLine(text: string): boolean {
+  const standalonePatterns = /^(introduction|conclusion|overview|summary|background|methodology|methods|results|discussion|references|appendix|agenda|objectives|goals|takeaways|questions|q&a|new|fresh|update|demo|example|case study)$/i
+  if (standalonePatterns.test(text.trim())) return true
+  if (text.split(/\s+/).length >= 3) return true
+  if (text.trim().endsWith(':')) return true
+  return false
+}
+
+interface TopicBlock {
+  title: string
+  subtopics: string[]
+}
+
+// Parse outline into topic blocks: each block has a title and optional subtopics
+function parseOutlineToTopicBlocks(outline: string): TopicBlock[] {
+  const MAX_TOPICS = 12
+  const MAX_SUBTOPICS = 6
+  const MAX_TOPIC_LENGTH = 120
+
+  const lines = outline.split('\n')
+  const blocks: TopicBlock[] = []
+  let currentBlock: TopicBlock | null = null
+  let lastLineWasBlank = true
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i]
+    const trimmed = rawLine.trim()
+
+    if (!trimmed) {
+      lastLineWasBlank = true
+      continue
+    }
+
+    const normalized = trimmed
+      .replace(/^[-*•—]\s*/, '')
+      .replace(/^\d+[.)]\s*/, '')
+      .replace(/^Topic:\s*/i, '')
+      .trim()
+      .replace(/[.,;:]$/, '')
+      .trim()
+
+    if (!normalized || normalized.length > MAX_TOPIC_LENGTH) {
+      lastLineWasBlank = false
+      continue
+    }
+
+    const isIndented = rawLine.startsWith('  ') || rawLine.startsWith('\t')
+    const isBullet = isBulletLine(rawLine)
+    const isShort = isShortLine(normalized)
+    const isHeader = isHeaderLine(normalized)
+
+    const shouldAttachAsSubtopic = currentBlock && (
+      isIndented ||
+      isBullet ||
+      (!lastLineWasBlank && isShort && !isHeader)
+    )
+
+    if (shouldAttachAsSubtopic && currentBlock) {
+      if (currentBlock.subtopics.length < MAX_SUBTOPICS) {
+        const lowerSubtopic = normalized.toLowerCase()
+        if (!currentBlock.subtopics.some(s => s.toLowerCase() === lowerSubtopic)) {
+          currentBlock.subtopics.push(normalized)
+        }
+      }
+    } else {
+      currentBlock = { title: normalized, subtopics: [] }
+      blocks.push(currentBlock)
+    }
+
+    lastLineWasBlank = false
+  }
+
+  const uniqueBlocks: TopicBlock[] = []
+  const seen = new Set<string>()
+
+  for (const block of blocks) {
+    const normalizedTitle = normalizeForDedup(block.title)
+    if (!seen.has(normalizedTitle) && uniqueBlocks.length < MAX_TOPICS) {
+      seen.add(normalizedTitle)
+      uniqueBlocks.push(block)
+    }
+  }
+
+  return uniqueBlocks
 }
 
 export function SessionCreateWizard() {
@@ -129,16 +232,12 @@ export function SessionCreateWizard() {
     return () => window.removeEventListener('popstate', handlePopstate)
   }, [isDirty])
 
-  // React Router navigation blocker
-  const blocker = useBlocker(isDirty)
-  const isBlockerActive = blocker.state === 'blocked'
-  const dialogOpen = isBlockerActive || showUnsavedDialog
+  // Dialog visibility for unsaved changes warning
+  const dialogOpen = showUnsavedDialog
 
   const confirmLeave = () => {
     clearWizardState()
-    if (blocker.state === 'blocked') {
-      blocker.proceed()
-    } else if (pendingNavigation) {
+    if (pendingNavigation) {
       navigate(pendingNavigation)
     }
     setShowUnsavedDialog(false)
@@ -146,9 +245,6 @@ export function SessionCreateWizard() {
   }
 
   const cancelLeave = () => {
-    if (blocker.state === 'blocked') {
-      blocker.reset()
-    }
     setShowUnsavedDialog(false)
     setPendingNavigation(null)
   }
@@ -306,75 +402,14 @@ export function SessionCreateWizard() {
       return
     }
 
-    const MAX_TOPICS = 12
-    const MAX_TOPIC_LENGTH = 120
-    const MAX_DETAILS_PER_TOPIC = 6
-    const lines = outline.split('\n')
+    const blocks = parseOutlineToTopicBlocks(outline)
 
-    interface ParsedTopic {
-      text: string
-      details: string[]
-    }
-
-    const topics: ParsedTopic[] = []
-    let currentTopic: ParsedTopic | null = null
-
-    for (const line of lines) {
-      const trimmed = line.trim()
-      if (!trimmed) continue
-
-      // Check if this line is indented (detail line)
-      const isIndented = line.startsWith('  ') || line.startsWith('\t')
-      const startsWithDash = trimmed.startsWith('—') || trimmed.startsWith('-')
-
-      // Normalize the text (strip bullets, numbers, prefixes)
-      const normalized = trimmed
-        .replace(/^[-*•—]\s*/, '')
-        .replace(/^\d+[.)]\s*/, '')
-        .replace(/^Topic:\s*/i, '')
-        .trim()
-        .replace(/[.,;:]$/, '')
-        .trim()
-
-      if (!normalized || normalized.length > MAX_TOPIC_LENGTH) continue
-
-      // Determine if this is a topic or detail
-      const isDetail = currentTopic && (isIndented || (startsWithDash && currentTopic.details.length === 0))
-
-      if (isDetail && currentTopic) {
-        // Attach as detail to current topic
-        if (currentTopic.details.length < MAX_DETAILS_PER_TOPIC) {
-          // Dedupe within topic details
-          const lowerDetail = normalized.toLowerCase()
-          if (!currentTopic.details.some(d => d.toLowerCase() === lowerDetail)) {
-            currentTopic.details.push(normalized)
-          }
-        }
-      } else {
-        // Start new topic
-        currentTopic = { text: normalized, details: [] }
-        topics.push(currentTopic)
-      }
-    }
-
-    // Deduplicate topics by text (case-insensitive), cap at MAX_TOPICS
-    const uniqueTopics: ParsedTopic[] = []
-    const seen = new Set<string>()
-
-    for (const topic of topics) {
-      const lowerText = topic.text.toLowerCase()
-      if (!seen.has(lowerText) && uniqueTopics.length < MAX_TOPICS) {
-        seen.add(lowerText)
-        uniqueTopics.push(topic)
-      }
-    }
-
-    if (uniqueTopics.length > 0) {
-      const newThemes: Theme[] = uniqueTopics.map((topic, index) => ({
+    if (blocks.length > 0) {
+      const newThemes: Theme[] = blocks.map((block, index) => ({
         id: crypto.randomUUID(),
-        text: topic.text,
+        text: block.title,
         sortOrder: index + 1,
-        details: topic.details.length > 0 ? topic.details : undefined,
+        details: block.subtopics.length > 0 ? block.subtopics : undefined,
       }))
 
       setWizardData({
@@ -519,9 +554,10 @@ export function SessionCreateWizard() {
         title: 'Session created',
         description: 'Your draft session has been created.',
       })
-      
+
       // Clear wizard state on successful creation
       clearWizardState()
+
       navigate(`/dashboard/sessions/${sessionData.id}`)
     } catch (err) {
       console.error('Unexpected error:', err)
