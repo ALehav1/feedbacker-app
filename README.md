@@ -82,7 +82,7 @@ npm run dev
 8. **Collect Feedback:** Participants visit `/s/{slug}` → Select topics (more/less) → Submit
 9. **Edit While Active:** Edit presentation → Make changes → Save (working version) → Changes remain unpublished until you're ready
 10. **View Results:** Click "Audience feedback" tab → See topic prioritization + individual responses
-11. **Close Presentation:** Click overflow menu (⋯) → "Close presentation" when done collecting
+11. **Close Participant Voting:** Click "Close participant voting" button (Dashboard or detail page) when done collecting
 
 ### Outline Format Best Practices
 
@@ -246,11 +246,11 @@ Topics and their optional sub-bullets are encoded as a single string in the data
 | `docs/contract.md` | Universal + project rules |
 | `docs/ARCHITECTURE.md` | Technical architecture & schema |
 | `docs/SPEC.md` | Product requirements |
-| `docs/TEST_CASES.md` | Manual test checklist |
-| `docs/REGRESSION_CHECKLIST.md` | Smoke test for releases |
-| `docs/TESTING.md` | Testing strategy + SQL seeds |
-| `docs/SECURITY.md` | Security model + RLS policies |
 | `docs/BASELINE_LOCK.md` | Frozen file change log |
+| `docs/PROJECT_SETUP_GUIDE.md` | Detailed setup instructions |
+| `docs/SUPABASE_SETUP_GUIDE.md` | Supabase configuration |
+| `docs/SCHEMA_FIXES.md` | Schema migration notes |
+| `docs/SCRAP.md` | Development notes & scratchpad |
 
 ---
 
@@ -326,8 +326,8 @@ MIT
 
 **MUST READ BEFORE WORKING:**
 
-1. `.windsurfrules` — Agent rules
-2. `agents.md` — Project instructions
-3. `docs/contract.md` — Universal contract
+1. `.windsurfrules` — Agent rules (project-specific)
+2. `docs/contract.md` — Universal contract + project rules
+3. `docs/BASELINE_LOCK.md` — Frozen baseline & exceptions
 
 **When in doubt, ASK — don't guess.**
