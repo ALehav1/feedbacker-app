@@ -144,22 +144,18 @@ export function Dashboard() {
               </Button>
             </div>
 
-            {activeVotingSessions.length > 0 && (
-              <div>
-                <h3 className="mb-3 text-lg font-medium text-gray-900">Active Sessions — Participant Voting Open</h3>
+            <div>
+              <h3 className="mb-3 text-lg font-medium text-gray-900">Active Sessions — Participant Voting Open</h3>
+              {activeVotingSessions.length > 0 ? (
                 <div className="space-y-3">
                   {activeVotingSessions.map((session) => (
                     <SessionCard key={session.id} session={session} onSessionChange={refetch} />
                   ))}
                 </div>
-              </div>
-            )}
-            {activeVotingSessions.length === 0 && (
-              <div>
-                <h3 className="mb-3 text-lg font-medium text-gray-900">Active Sessions — Participant Voting Open</h3>
+              ) : (
                 <p className="text-sm text-gray-500">No active voting sessions.</p>
-              </div>
-            )}
+              )}
+            </div>
 
             {closedVotingSessions.length > 0 && (
               <div>
