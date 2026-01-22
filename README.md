@@ -70,7 +70,7 @@ npm run dev
 ### Access
 
 - **Local dev:** http://localhost:5173
-- **Production:** [deployment URL]
+- **Production:** https://feedbacker-app-aqim.vercel.app
 
 ### End-to-End Demo
 
@@ -196,6 +196,44 @@ npm run preview      # Preview production build
 - [ ] `npm run lint` passes
 - [ ] Tested at 375px
 - [ ] Zero console errors
+
+---
+
+## 🚀 Deployment
+
+### Production
+
+**Live URL:** https://feedbacker-app-aqim.vercel.app
+
+**Hosting:** Vercel (auto-deploys from `main` branch)
+
+### Deploy to Vercel
+
+1. **Fork/clone repository** to your GitHub account
+
+2. **Import to Vercel:**
+   - Go to [vercel.com](https://vercel.com)
+   - Import your repository
+   - Framework: Vite
+   - Build command: `npm run build`
+   - Output directory: `dist`
+
+3. **Set environment variables** in Vercel dashboard:
+   ```
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   VITE_PUBLIC_BASE_URL=https://your-app.vercel.app
+   ```
+
+4. **Configure Supabase redirect URLs:**
+   - Add `https://your-app.vercel.app/auth/callback` to allowed URLs
+   - Supabase Dashboard → Authentication → URL Configuration
+
+5. **Deploy:** Push to `main` branch or click "Deploy" in Vercel
+
+### Domain Setup
+
+The `vercel.json` file includes redirect configuration from `feedbacker-app.vercel.app` to the primary domain.
 
 ---
 
