@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,137 +9,17 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/features/auth/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Pencil, Trash2, Plus, RefreshCw, ArrowLeft } from 'lucide-react'
-import type { Session, Theme } from '@/types'
+import {
+  encodeTopicBlock,
+  decodeTopicBlock,
+  parseOutlineToTopicBlocks,
+} from '@/lib/topicBlocks'
+import type { Session } from '@/types'
 
-// Helper: normalize text for deduplication (lowercase, strip punctuation)
-function normalizeForDedup(text: string): string {
-  return text.toLowerCase().replace(/[?!.,;:'"]+/g, '').trim()
-}
-
-// Helper: check if a line looks like a bullet/sub-item
-function isBulletLine(line: string): boolean {
-  const trimmed = line.trim()
-  return /^[-•*—]/.test(trimmed)
-}
-
-// Helper: check if a line is short enough to be a continuation/subtopic
-function isShortLine(text: string): boolean {
-  return text.length <= 25 && text.split(/\s+/).length <= 4
-}
-
-// Helper: check if a line looks like a header (standalone topic)
-function isHeaderLine(text: string): boolean {
-  // Headers are typically: not bullets, not too short to stand alone
-  // Common section names are definitely headers
-  const standalonePatterns = /^(introduction|conclusion|overview|summary|background|methodology|methods|results|discussion|references|appendix|agenda|objectives|goals|takeaways|questions|q&a|new|fresh|update|demo|example|case study)$/i
-  if (standalonePatterns.test(text.trim())) return true
-
-  // Lines with 3+ words are likely headers
-  if (text.split(/\s+/).length >= 3) return true
-
-  // Lines ending with colon are headers
-  if (text.trim().endsWith(':')) return true
-
-  return false
-}
-
-interface TopicBlock {
-  title: string
-  subtopics: string[]
-}
-
-// Parse outline into topic blocks: each block has a title and optional subtopics
-function parseOutlineToTopicBlocks(outline: string): TopicBlock[] {
-  const MAX_TOPICS = 12
-  const MAX_SUBTOPICS = 6
-  const MAX_TOPIC_LENGTH = 120
-
-  const lines = outline.split('\n')
-  const blocks: TopicBlock[] = []
-  let currentBlock: TopicBlock | null = null
-  let lastLineWasBlank = true // Start as if there was a blank line before
-
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i]
-    const trimmed = rawLine.trim()
-
-    // Track blank lines
-    if (!trimmed) {
-      lastLineWasBlank = true
-      continue
-    }
-
-    // Normalize the text (strip bullets, numbers, prefixes)
-    const normalized = trimmed
-      .replace(/^[-*•—]\s*/, '')
-      .replace(/^\d+[.)]\s*/, '')
-      .replace(/^Topic:\s*/i, '')
-      .trim()
-      .replace(/[.,;:]$/, '')
-      .trim()
-
-    if (!normalized || normalized.length > MAX_TOPIC_LENGTH) {
-      lastLineWasBlank = false
-      continue
-    }
-
-    const isIndented = rawLine.startsWith('  ') || rawLine.startsWith('\t')
-    const isBullet = isBulletLine(rawLine)
-    const isShort = isShortLine(normalized)
-    const isHeader = isHeaderLine(normalized)
-
-    // Determine if this line should attach to current block as a subtopic
-    const shouldAttachAsSubtopic = currentBlock && (
-      // Indented lines are always subtopics
-      isIndented ||
-      // Bullet lines (-, •, *, —) are subtopics
-      isBullet ||
-      // Short lines immediately after a header (no blank line) are subtopics
-      (!lastLineWasBlank && isShort && !isHeader)
-    )
-
-    if (shouldAttachAsSubtopic && currentBlock) {
-      // Attach as subtopic
-      if (currentBlock.subtopics.length < MAX_SUBTOPICS) {
-        const lowerSubtopic = normalized.toLowerCase()
-        if (!currentBlock.subtopics.some(s => s.toLowerCase() === lowerSubtopic)) {
-          currentBlock.subtopics.push(normalized)
-        }
-      }
-    } else {
-      // Start a new block
-      currentBlock = { title: normalized, subtopics: [] }
-      blocks.push(currentBlock)
-    }
-
-    lastLineWasBlank = false
-  }
-
-  // Dedupe blocks by title
-  const uniqueBlocks: TopicBlock[] = []
-  const seen = new Set<string>()
-
-  for (const block of blocks) {
-    const normalizedTitle = normalizeForDedup(block.title)
-    if (!seen.has(normalizedTitle) && uniqueBlocks.length < MAX_TOPICS) {
-      seen.add(normalizedTitle)
-      uniqueBlocks.push(block)
-    }
-  }
-
-  return uniqueBlocks
-}
-
-// Helper function to regenerate topics from outline
-function createTopicsFromOutline(outline: string): Theme[] {
-  const blocks = parseOutlineToTopicBlocks(outline)
-
-  return blocks.map((block, index) => ({
-    id: crypto.randomUUID(),
-    text: block.title,
-    sortOrder: index + 1,
-    details: block.subtopics.length > 0 ? block.subtopics : undefined,
-  }))
+interface Theme {
+  id: string
+  text: string // Encoded block: "Title\n- Sub1\n- Sub2"
+  sortOrder: number
 }
 
 export function SessionEdit() {
@@ -169,13 +49,13 @@ export function SessionEdit() {
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [summaryCondensed, setSummaryCondensed] = useState('')
   const [summaryFull, setSummaryFull] = useState('')
-  
+
   // Initial values for dirty checking
   const [initialWelcome, setInitialWelcome] = useState('')
   const [initialSummaryCondensed, setInitialSummaryCondensed] = useState('')
   const [initialSummaryFull, setInitialSummaryFull] = useState('')
   const [initialThemes, setInitialThemes] = useState<Theme[]>([])
-  
+
   // Topic editing state
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState('')
@@ -185,11 +65,27 @@ export function SessionEdit() {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
 
   // Dirty state detection
-  const isDirty = 
+  const isDirty =
     welcomeMessage !== initialWelcome ||
     summaryCondensed !== initialSummaryCondensed ||
     summaryFull !== initialSummaryFull ||
     JSON.stringify(themes) !== JSON.stringify(initialThemes)
+
+  // Local draft persistence key
+  const draftKey = sessionId ? `feedbacker-draft-${sessionId}` : null
+
+  // Debounced save to localStorage
+  const saveDraftToStorage = useCallback(() => {
+    if (!draftKey || !isDirty) return
+    const draft = {
+      welcomeMessage,
+      summaryCondensed,
+      summaryFull,
+      themes,
+      savedAt: new Date().toISOString(),
+    }
+    localStorage.setItem(draftKey, JSON.stringify(draft))
+  }, [draftKey, isDirty, welcomeMessage, summaryCondensed, summaryFull, themes])
 
   // Browser beforeunload handler
   useEffect(() => {
@@ -204,19 +100,15 @@ export function SessionEdit() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
 
-  // Popstate interception for iOS Chrome back button
-  // iOS Safari/Chrome don't always trigger beforeunload on back swipe
+  // Popstate interception for browser back button
   useEffect(() => {
     if (!isDirty) return
 
-    // Push a state so we can detect back navigation
     window.history.pushState({ sessionEditGuard: true }, '')
 
     const handlePopstate = (_e: PopStateEvent) => {
       if (isDirty) {
-        // Re-push state to prevent navigation
         window.history.pushState({ sessionEditGuard: true }, '')
-        // Show the dialog
         setShowUnsavedDialog(true)
         setPendingNavigation('/dashboard')
       }
@@ -226,29 +118,12 @@ export function SessionEdit() {
     return () => window.removeEventListener('popstate', handlePopstate)
   }, [isDirty])
 
-  // Local draft persistence for recovery after crash/refresh
-  const draftKey = sessionId ? `feedbacker-draft-${sessionId}` : null
-
-  // Save draft to localStorage when dirty
+  // Save draft to localStorage when dirty (debounced)
   useEffect(() => {
-    if (!draftKey || !isDirty) return
-
-    const draft = {
-      welcomeMessage,
-      summaryCondensed,
-      summaryFull,
-      themes,
-      savedAt: new Date().toISOString(),
-    }
-    localStorage.setItem(draftKey, JSON.stringify(draft))
-  }, [draftKey, isDirty, welcomeMessage, summaryCondensed, summaryFull, themes])
-
-  // Clear draft after successful save (isDirty becomes false)
-  useEffect(() => {
-    if (draftKey && !isDirty) {
-      localStorage.removeItem(draftKey)
-    }
-  }, [draftKey, isDirty])
+    if (!isDirty) return
+    const timeout = setTimeout(saveDraftToStorage, 300)
+    return () => clearTimeout(timeout)
+  }, [saveDraftToStorage, isDirty])
 
   // State for restore prompt
   const [showRestorePrompt, setShowRestorePrompt] = useState(false)
@@ -259,6 +134,51 @@ export function SessionEdit() {
     themes: Theme[]
     savedAt: string
   } | null>(null)
+
+  // Clear draft after successful save (isDirty becomes false)
+  useEffect(() => {
+    if (draftKey && !isDirty) {
+      localStorage.removeItem(draftKey)
+    }
+  }, [draftKey, isDirty])
+
+  // iOS back-forward cache handling (pagehide/pageshow)
+  useEffect(() => {
+    const handlePageHide = () => {
+      if (isDirty && draftKey) {
+        const draft = {
+          welcomeMessage,
+          summaryCondensed,
+          summaryFull,
+          themes,
+          savedAt: new Date().toISOString(),
+        }
+        localStorage.setItem(draftKey, JSON.stringify(draft))
+      }
+    }
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted && draftKey && !showRestorePrompt) {
+        const savedDraftStr = localStorage.getItem(draftKey)
+        if (savedDraftStr) {
+          try {
+            const draft = JSON.parse(savedDraftStr)
+            setSavedDraft(draft)
+            setShowRestorePrompt(true)
+          } catch {
+            // Invalid draft
+          }
+        }
+      }
+    }
+
+    window.addEventListener('pagehide', handlePageHide)
+    window.addEventListener('pageshow', handlePageShow)
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide)
+      window.removeEventListener('pageshow', handlePageShow)
+    }
+  }, [isDirty, draftKey, welcomeMessage, summaryCondensed, summaryFull, themes, showRestorePrompt])
 
   // Dialog visibility for unsaved changes warning
   const dialogOpen = showUnsavedDialog
@@ -284,7 +204,7 @@ export function SessionEdit() {
         return
       }
 
-      // Debug snapshot (dev only): log raw payload shape
+      // Debug snapshot (dev only)
       if (import.meta.env.DEV) {
         console.log('[SessionEdit] Session payload snapshot:', {
           id: data.id,
@@ -292,51 +212,49 @@ export function SessionEdit() {
           hasWelcome: !!data.welcome_message,
           hasSummaryFull: !!data.summary_full,
           hasSummaryCondensed: !!data.summary_condensed,
-          topicsSource: data.topics_source,
-          publishedTopicsCount: Array.isArray(data.published_topics) ? data.published_topics.length : 'not array',
-          publishedTopicsType: typeof data.published_topics,
+          welcomeMessageValue: data.welcome_message,
+          summaryCondensedValue: data.summary_condensed,
         })
       }
 
-      // Normalize payload defensively
-      const normalizedData = {
-        ...data,
-        welcome_message: data.welcome_message ?? '',
-        summary_full: data.summary_full ?? '',
-        summary_condensed: data.summary_condensed ?? '',
-        topics_source: data.topics_source ?? 'generated',
-        published_topics: Array.isArray(data.published_topics) ? data.published_topics : [],
-      }
+      // Normalize payload defensively - ensure we use actual values
+      const welcomeVal = data.welcome_message ?? ''
+      const summaryFullVal = data.summary_full ?? ''
+      const summaryCondensedVal = data.summary_condensed ?? ''
 
       const mappedSession: Session = {
-        id: normalizedData.id,
-        presenterId: normalizedData.presenter_id,
-        state: normalizedData.state as Session['state'],
-        lengthMinutes: normalizedData.length_minutes,
-        title: normalizedData.title,
-        welcomeMessage: normalizedData.welcome_message,
-        summaryFull: normalizedData.summary_full,
-        summaryCondensed: normalizedData.summary_condensed,
-        slug: normalizedData.slug,
-        topicsSource: normalizedData.topics_source as 'generated' | 'manual',
-        publishedWelcomeMessage: normalizedData.published_welcome_message,
-        publishedSummaryCondensed: normalizedData.published_summary_condensed,
-        publishedTopics: normalizedData.published_topics,
-        publishedAt: normalizedData.published_at ? new Date(normalizedData.published_at) : undefined,
-        hasUnpublishedChanges: normalizedData.has_unpublished_changes || false,
-        createdAt: new Date(normalizedData.created_at),
-        updatedAt: new Date(normalizedData.updated_at),
+        id: data.id,
+        presenterId: data.presenter_id,
+        state: data.state as Session['state'],
+        lengthMinutes: data.length_minutes,
+        title: data.title,
+        welcomeMessage: welcomeVal,
+        summaryFull: summaryFullVal,
+        summaryCondensed: summaryCondensedVal,
+        slug: data.slug,
+        topicsSource: (data.topics_source as 'generated' | 'manual') || 'generated',
+        publishedWelcomeMessage: data.published_welcome_message,
+        publishedSummaryCondensed: data.published_summary_condensed,
+        publishedTopics: Array.isArray(data.published_topics) ? data.published_topics : [],
+        publishedAt: data.published_at ? new Date(data.published_at) : undefined,
+        hasUnpublishedChanges: data.has_unpublished_changes || false,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
       }
 
       setSession(mappedSession)
-      setWelcomeMessage(mappedSession.welcomeMessage)
-      setSummaryCondensed(mappedSession.summaryCondensed)
-      setSummaryFull(mappedSession.summaryFull)
-      
-      setInitialWelcome(mappedSession.welcomeMessage)
-      setInitialSummaryCondensed(mappedSession.summaryCondensed)
-      setInitialSummaryFull(mappedSession.summaryFull)
 
+      // Set form state AFTER session is loaded, using actual DB values
+      setWelcomeMessage(welcomeVal)
+      setSummaryCondensed(summaryCondensedVal)
+      setSummaryFull(summaryFullVal)
+
+      // Set initial values for dirty checking
+      setInitialWelcome(welcomeVal)
+      setInitialSummaryCondensed(summaryCondensedVal)
+      setInitialSummaryFull(summaryFullVal)
+
+      // Fetch themes
       const { data: themesData } = await supabase
         .from('themes')
         .select('*')
@@ -344,10 +262,9 @@ export function SessionEdit() {
         .order('sort_order', { ascending: true })
 
       if (themesData) {
-        const loadedThemes: Theme[] = themesData.map((t: { id: string; session_id: string; text: string; sort_order: number }) => ({
+        const loadedThemes: Theme[] = themesData.map((t: { id: string; text: string; sort_order: number }) => ({
           id: t.id,
-          sessionId: t.session_id,
-          text: t.text,
+          text: t.text, // Already encoded from DB
           sortOrder: t.sort_order,
         }))
         setThemes(loadedThemes)
@@ -355,16 +272,15 @@ export function SessionEdit() {
       }
 
       // Check for saved draft to restore
-      const draftKey = `feedbacker-draft-${sessionId}`
-      const savedDraftStr = localStorage.getItem(draftKey)
+      const savedDraftStr = localStorage.getItem(`feedbacker-draft-${sessionId}`)
       if (savedDraftStr) {
         try {
           const draft = JSON.parse(savedDraftStr)
           // Only offer restore if draft differs from current server state
           const hasDraftChanges =
-            draft.welcomeMessage !== mappedSession.welcomeMessage ||
-            draft.summaryCondensed !== mappedSession.summaryCondensed ||
-            draft.summaryFull !== mappedSession.summaryFull ||
+            draft.welcomeMessage !== welcomeVal ||
+            draft.summaryCondensed !== summaryCondensedVal ||
+            draft.summaryFull !== summaryFullVal ||
             JSON.stringify(draft.themes) !== JSON.stringify(themesData?.map((t: { id: string; text: string; sort_order: number }) => ({
               id: t.id,
               text: t.text,
@@ -375,12 +291,10 @@ export function SessionEdit() {
             setSavedDraft(draft)
             setShowRestorePrompt(true)
           } else {
-            // Draft matches server state, clean it up
-            localStorage.removeItem(draftKey)
+            localStorage.removeItem(`feedbacker-draft-${sessionId}`)
           }
         } catch {
-          // Invalid draft, remove it
-          localStorage.removeItem(draftKey)
+          localStorage.removeItem(`feedbacker-draft-${sessionId}`)
         }
       }
 
@@ -428,7 +342,7 @@ export function SessionEdit() {
             themes.map((theme) => ({
               id: theme.id,
               session_id: sessionId,
-              text: theme.text,
+              text: theme.text, // Already encoded
               sort_order: theme.sortOrder,
             }))
           )
@@ -485,11 +399,13 @@ export function SessionEdit() {
       l.replace(/^[-*•—]\s*/, '').trim()
     ).filter(Boolean)
 
+    // Encode into single text field
+    const encodedText = encodeTopicBlock(title, subtopics)
+
     const newTopic: Theme = {
       id: crypto.randomUUID(),
-      text: title,
+      text: encodedText,
       sortOrder: themes.length + 1,
-      details: subtopics.length > 0 ? subtopics : undefined,
     }
 
     setThemes([...themes, newTopic])
@@ -511,10 +427,11 @@ export function SessionEdit() {
     const topic = themes.find(t => t.id === topicId)
     if (topic) {
       setEditingTopicId(topicId)
-      // Serialize topic as text: title on first line, subtopics on subsequent lines
-      const lines = [topic.text]
-      if (topic.details && topic.details.length > 0) {
-        lines.push(...topic.details.map(d => `- ${d}`))
+      // Decode for editing: show as multiline text
+      const decoded = decodeTopicBlock(topic.text)
+      const lines = [decoded.title]
+      if (decoded.subtopics.length > 0) {
+        lines.push(...decoded.subtopics.map(s => `- ${s}`))
       }
       setEditingText(lines.join('\n'))
     }
@@ -523,7 +440,7 @@ export function SessionEdit() {
   const handleSaveTopic = () => {
     if (!editingTopicId || !editingText.trim()) return
 
-    // Parse input: first line is title, remaining lines are subtopics
+    // Parse and re-encode
     const lines = editingText.split('\n').map(l => l.trim()).filter(Boolean)
     if (lines.length === 0) return
 
@@ -532,9 +449,11 @@ export function SessionEdit() {
       l.replace(/^[-*•—]\s*/, '').trim()
     ).filter(Boolean)
 
+    const encodedText = encodeTopicBlock(title, subtopics)
+
     setThemes(themes.map(t =>
       t.id === editingTopicId
-        ? { ...t, text: title, details: subtopics.length > 0 ? subtopics : undefined }
+        ? { ...t, text: encodedText }
         : t
     ))
     setEditingTopicId(null)
@@ -554,7 +473,6 @@ export function SessionEdit() {
 
   const handleDeleteTopic = (topicId: string) => {
     const updated = themes.filter(t => t.id !== topicId)
-    // Renumber sort order
     const renumbered = updated.map((t, i) => ({ ...t, sortOrder: i + 1 }))
     setThemes(renumbered)
 
@@ -575,7 +493,15 @@ export function SessionEdit() {
   }
 
   const confirmRegenerateTopics = async () => {
-    const newTopics = createTopicsFromOutline(summaryFull)
+    // Use current outline textarea value, not stale state
+    const encodedBlocks = parseOutlineToTopicBlocks(summaryFull)
+
+    const newTopics: Theme[] = encodedBlocks.map((encodedText, index) => ({
+      id: crypto.randomUUID(),
+      text: encodedText,
+      sortOrder: index + 1,
+    }))
+
     setThemes(newTopics)
     setShowRegenerateDialog(false)
 
@@ -585,7 +511,7 @@ export function SessionEdit() {
         .from('sessions')
         .update({ topics_source: 'generated' })
         .eq('id', sessionId)
-      
+
       setSession({ ...session, topicsSource: 'generated' })
     }
 
@@ -605,7 +531,6 @@ export function SessionEdit() {
   }
 
   const confirmLeave = () => {
-    // Clear draft before navigating
     if (draftKey) {
       localStorage.removeItem(draftKey)
     }
@@ -622,7 +547,6 @@ export function SessionEdit() {
   }
 
   // Crash test for ErrorBoundary verification (dev only)
-  // Usage: Add ?crash=1 to URL to trigger controlled crash
   if (import.meta.env.DEV) {
     const params = new URLSearchParams(window.location.search)
     if (params.get('crash') === '1') {
@@ -746,16 +670,14 @@ export function SessionEdit() {
               <div className="mb-4">
                 <div className="flex gap-2">
                   <Textarea
-                    placeholder="Add a topic… (Enter for new line, first line = title, rest = subtopics)"
+                    placeholder="Add a topic… (Enter for newline, Cmd/Ctrl+Enter to add)"
                     value={newTopicText}
                     onChange={(e) => setNewTopicText(e.target.value)}
                     onKeyDown={(e) => {
-                      // Cmd/Ctrl+Enter triggers Add
                       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                         e.preventDefault()
                         handleAddTopic()
                       }
-                      // Plain Enter inserts newline (default behavior)
                     }}
                     rows={2}
                     className="flex-1 min-w-0 min-h-[48px] resize-none"
@@ -768,98 +690,101 @@ export function SessionEdit() {
                     Add
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">First line becomes the topic title. Additional lines become subtopics.</p>
+                <p className="text-xs text-gray-500 mt-1">First line = topic title. Additional lines = subtopics. Cmd/Ctrl+Enter to add.</p>
               </div>
 
               {/* Topic list */}
               {themes.length > 0 ? (
                 <div className="space-y-2">
-                  {themes.map((theme) => (
-                    <div
-                      key={theme.id}
-                      className="rounded-lg border border-gray-200 bg-white p-3"
-                    >
-                      {editingTopicId === theme.id ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                                e.preventDefault()
-                                handleSaveTopic()
-                              }
-                              if (e.key === 'Escape') {
-                                setEditingTopicId(null)
-                                setEditingText('')
-                              }
-                            }}
-                            rows={3}
-                            className="w-full min-h-[60px] resize-none"
-                            autoFocus
-                          />
-                          <p className="text-xs text-gray-500">First line = title, additional lines = subtopics. Cmd/Ctrl+Enter to save.</p>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={handleSaveTopic}
-                              className="min-h-[40px]"
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingTopicId(null)
-                                setEditingText('')
+                  {themes.map((theme) => {
+                    const decoded = decodeTopicBlock(theme.text)
+                    return (
+                      <div
+                        key={theme.id}
+                        className="rounded-lg border border-gray-200 bg-white p-3"
+                      >
+                        {editingTopicId === theme.id ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                  e.preventDefault()
+                                  handleSaveTopic()
+                                }
+                                if (e.key === 'Escape') {
+                                  setEditingTopicId(null)
+                                  setEditingText('')
+                                }
                               }}
-                              className="min-h-[40px]"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="flex items-start gap-2">
-                            <span className="text-xs text-gray-500 shrink-0 pt-0.5">{theme.sortOrder}.</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 break-words">{theme.text}</p>
-                              {theme.details && theme.details.length > 0 && (
-                                <ul className="mt-1 space-y-0.5">
-                                  {theme.details.map((detail, idx) => (
-                                    <li key={idx} className="text-xs text-gray-600 pl-2 flex items-start gap-1">
-                                      <span className="text-gray-400">—</span>
-                                      <span className="break-words">{detail}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                            <div className="flex gap-1 shrink-0">
+                              rows={3}
+                              className="w-full min-h-[60px] resize-none"
+                              autoFocus
+                            />
+                            <p className="text-xs text-gray-500">First line = title, additional lines = subtopics. Cmd/Ctrl+Enter to save.</p>
+                            <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                onClick={() => handleEditTopic(theme.id)}
-                                className="min-h-[40px] min-w-[40px] p-2"
+                                onClick={handleSaveTopic}
+                                className="min-h-[40px]"
                               >
-                                <Pencil className="h-4 w-4" />
+                                Save
                               </Button>
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                onClick={() => handleDeleteTopic(theme.id)}
-                                className="min-h-[40px] min-w-[40px] p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingTopicId(null)
+                                  setEditingText('')
+                                }}
+                                className="min-h-[40px]"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                Cancel
                               </Button>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        ) : (
+                          <div>
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs text-gray-500 shrink-0 pt-0.5">{theme.sortOrder}.</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 break-words">{decoded.title}</p>
+                                {decoded.subtopics.length > 0 && (
+                                  <ul className="mt-1 space-y-0.5">
+                                    {decoded.subtopics.map((sub, idx) => (
+                                      <li key={idx} className="text-xs text-gray-600 pl-2 flex items-start gap-1">
+                                        <span className="text-gray-400">—</span>
+                                        <span className="break-words">{sub}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                              <div className="flex gap-1 shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditTopic(theme.id)}
+                                  className="min-h-[40px] min-w-[40px] p-2"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteTopic(theme.id)}
+                                  className="min-h-[40px] min-w-[40px] p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500">No topics yet. Add one above or regenerate from your outline.</p>
@@ -946,7 +871,6 @@ export function SessionEdit() {
             <Button
               variant="outline"
               onClick={() => {
-                // Discard draft
                 if (draftKey) localStorage.removeItem(draftKey)
                 setSavedDraft(null)
                 setShowRestorePrompt(false)
@@ -956,7 +880,6 @@ export function SessionEdit() {
             </Button>
             <Button
               onClick={() => {
-                // Restore draft
                 if (savedDraft) {
                   setWelcomeMessage(savedDraft.welcomeMessage)
                   setSummaryCondensed(savedDraft.summaryCondensed)

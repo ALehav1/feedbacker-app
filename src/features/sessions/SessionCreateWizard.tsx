@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,14 +9,18 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/features/auth/AuthContext'
 import { supabase } from '@/lib/supabase'
+import {
+  encodeTopicBlock,
+  decodeTopicBlock,
+  parseOutlineToTopicBlocks,
+} from '@/lib/topicBlocks'
 
 const WIZARD_STORAGE_KEY = 'feedbacker-wizard-state'
 
 interface Theme {
   id: string
-  text: string
+  text: string // Encoded block: "Title\n- Sub1\n- Sub2"
   sortOrder: number
-  details?: string[]
 }
 
 interface WizardData {
@@ -37,114 +41,11 @@ const emptyWizardData: WizardData = {
   themes: [],
 }
 
-// Helper: normalize text for deduplication (lowercase, strip punctuation)
-function normalizeForDedup(text: string): string {
-  return text.toLowerCase().replace(/[?!.,;:'"]+/g, '').trim()
-}
-
-// Helper: check if a line looks like a bullet/sub-item
-function isBulletLine(line: string): boolean {
-  const trimmed = line.trim()
-  return /^[-•*—]/.test(trimmed)
-}
-
-// Helper: check if a line is short enough to be a continuation/subtopic
-function isShortLine(text: string): boolean {
-  return text.length <= 25 && text.split(/\s+/).length <= 4
-}
-
-// Helper: check if a line looks like a header (standalone topic)
-function isHeaderLine(text: string): boolean {
-  const standalonePatterns = /^(introduction|conclusion|overview|summary|background|methodology|methods|results|discussion|references|appendix|agenda|objectives|goals|takeaways|questions|q&a|new|fresh|update|demo|example|case study)$/i
-  if (standalonePatterns.test(text.trim())) return true
-  if (text.split(/\s+/).length >= 3) return true
-  if (text.trim().endsWith(':')) return true
-  return false
-}
-
-interface TopicBlock {
-  title: string
-  subtopics: string[]
-}
-
-// Parse outline into topic blocks: each block has a title and optional subtopics
-function parseOutlineToTopicBlocks(outline: string): TopicBlock[] {
-  const MAX_TOPICS = 12
-  const MAX_SUBTOPICS = 6
-  const MAX_TOPIC_LENGTH = 120
-
-  const lines = outline.split('\n')
-  const blocks: TopicBlock[] = []
-  let currentBlock: TopicBlock | null = null
-  let lastLineWasBlank = true
-
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i]
-    const trimmed = rawLine.trim()
-
-    if (!trimmed) {
-      lastLineWasBlank = true
-      continue
-    }
-
-    const normalized = trimmed
-      .replace(/^[-*•—]\s*/, '')
-      .replace(/^\d+[.)]\s*/, '')
-      .replace(/^Topic:\s*/i, '')
-      .trim()
-      .replace(/[.,;:]$/, '')
-      .trim()
-
-    if (!normalized || normalized.length > MAX_TOPIC_LENGTH) {
-      lastLineWasBlank = false
-      continue
-    }
-
-    const isIndented = rawLine.startsWith('  ') || rawLine.startsWith('\t')
-    const isBullet = isBulletLine(rawLine)
-    const isShort = isShortLine(normalized)
-    const isHeader = isHeaderLine(normalized)
-
-    const shouldAttachAsSubtopic = currentBlock && (
-      isIndented ||
-      isBullet ||
-      (!lastLineWasBlank && isShort && !isHeader)
-    )
-
-    if (shouldAttachAsSubtopic && currentBlock) {
-      if (currentBlock.subtopics.length < MAX_SUBTOPICS) {
-        const lowerSubtopic = normalized.toLowerCase()
-        if (!currentBlock.subtopics.some(s => s.toLowerCase() === lowerSubtopic)) {
-          currentBlock.subtopics.push(normalized)
-        }
-      }
-    } else {
-      currentBlock = { title: normalized, subtopics: [] }
-      blocks.push(currentBlock)
-    }
-
-    lastLineWasBlank = false
-  }
-
-  const uniqueBlocks: TopicBlock[] = []
-  const seen = new Set<string>()
-
-  for (const block of blocks) {
-    const normalizedTitle = normalizeForDedup(block.title)
-    if (!seen.has(normalizedTitle) && uniqueBlocks.length < MAX_TOPICS) {
-      seen.add(normalizedTitle)
-      uniqueBlocks.push(block)
-    }
-  }
-
-  return uniqueBlocks
-}
-
 export function SessionCreateWizard() {
   const navigate = useNavigate()
   const { user, presenter, isLoading } = useAuth()
   const { toast } = useToast()
-  
+
   const [currentStep, setCurrentStep] = useState(1)
   const [wizardData, setWizardData] = useState<WizardData>(emptyWizardData)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -168,13 +69,20 @@ export function SessionCreateWizard() {
     wizardData.summaryCondensed.trim() !== '' ||
     wizardData.themes.length > 0
 
+  // Debounced save to localStorage
+  const saveDraftToStorage = useCallback(() => {
+    if (isDirty) {
+      const dataToSave = { ...wizardData, savedAt: new Date().toISOString() }
+      localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave))
+    }
+  }, [wizardData, isDirty])
+
   // Check for saved draft on mount and offer restore
   useEffect(() => {
     const savedStr = localStorage.getItem(WIZARD_STORAGE_KEY)
     if (savedStr) {
       try {
         const parsed = JSON.parse(savedStr)
-        // Check if it has actual content (not empty state)
         const hasContent =
           parsed.title?.trim() ||
           parsed.lengthMinutes ||
@@ -185,7 +93,6 @@ export function SessionCreateWizard() {
           setSavedDraft({ data: parsed, savedAt: parsed.savedAt || new Date().toISOString() })
           setShowRestorePrompt(true)
         } else {
-          // Empty draft, clear it
           localStorage.removeItem(WIZARD_STORAGE_KEY)
         }
       } catch {
@@ -194,13 +101,12 @@ export function SessionCreateWizard() {
     }
   }, [])
 
-  // Save wizard state to localStorage when dirty
+  // Save wizard state to localStorage when dirty (debounced)
   useEffect(() => {
-    if (isDirty) {
-      const dataToSave = { ...wizardData, savedAt: new Date().toISOString() }
-      localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave))
-    }
-  }, [wizardData, isDirty])
+    if (!isDirty) return
+    const timeout = setTimeout(saveDraftToStorage, 300)
+    return () => clearTimeout(timeout)
+  }, [saveDraftToStorage, isDirty])
 
   // Browser beforeunload handler
   useEffect(() => {
@@ -214,7 +120,7 @@ export function SessionCreateWizard() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
 
-  // Popstate interception for iOS Chrome back button
+  // Popstate interception for browser back button
   useEffect(() => {
     if (!isDirty) return
 
@@ -232,7 +138,48 @@ export function SessionCreateWizard() {
     return () => window.removeEventListener('popstate', handlePopstate)
   }, [isDirty])
 
-  // Dialog visibility for unsaved changes warning
+  // iOS back-forward cache handling (pagehide/pageshow)
+  useEffect(() => {
+    const handlePageHide = () => {
+      // Persist immediately when page is being hidden (iOS bfcache)
+      if (isDirty) {
+        const dataToSave = { ...wizardData, savedAt: new Date().toISOString() }
+        localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave))
+      }
+    }
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      // If page was restored from bfcache, check for draft
+      if (e.persisted) {
+        const savedStr = localStorage.getItem(WIZARD_STORAGE_KEY)
+        if (savedStr) {
+          try {
+            const parsed = JSON.parse(savedStr)
+            const hasContent =
+              parsed.title?.trim() ||
+              parsed.lengthMinutes ||
+              parsed.summaryFull?.trim() ||
+              (parsed.themes && parsed.themes.length > 0)
+
+            if (hasContent && !showRestorePrompt) {
+              setSavedDraft({ data: parsed, savedAt: parsed.savedAt || new Date().toISOString() })
+              setShowRestorePrompt(true)
+            }
+          } catch {
+            // Invalid draft
+          }
+        }
+      }
+    }
+
+    window.addEventListener('pagehide', handlePageHide)
+    window.addEventListener('pageshow', handlePageShow)
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide)
+      window.removeEventListener('pageshow', handlePageShow)
+    }
+  }, [isDirty, wizardData, showRestorePrompt])
+
   const dialogOpen = showUnsavedDialog
 
   const confirmLeave = () => {
@@ -302,7 +249,7 @@ export function SessionCreateWizard() {
         })
         return
       }
-      
+
       createTopicsFromOutline()
     }
 
@@ -323,9 +270,21 @@ export function SessionCreateWizard() {
       return
     }
 
+    // Parse textarea: first line = title, rest = subtopics
+    const lines = themeInputText.split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length === 0) return
+
+    const title = lines[0]
+    const subtopics = lines.slice(1).map(l =>
+      l.replace(/^[-*•—]\s*/, '').trim()
+    ).filter(Boolean)
+
+    // Encode into single text field
+    const encodedText = encodeTopicBlock(title, subtopics)
+
     const newTheme: Theme = {
       id: crypto.randomUUID(),
-      text: themeInputText.trim(),
+      text: encodedText,
       sortOrder: wizardData.themes.length + 1,
     }
 
@@ -340,7 +299,13 @@ export function SessionCreateWizard() {
     const theme = wizardData.themes.find((t) => t.id === themeId)
     if (theme) {
       setEditingThemeId(themeId)
-      setThemeInputText(theme.text)
+      // Decode for editing: show as multiline text
+      const decoded = decodeTopicBlock(theme.text)
+      const lines = [decoded.title]
+      if (decoded.subtopics.length > 0) {
+        lines.push(...decoded.subtopics.map(s => `- ${s}`))
+      }
+      setThemeInputText(lines.join('\n'))
     }
   }
 
@@ -356,10 +321,21 @@ export function SessionCreateWizard() {
       return
     }
 
+    // Parse and re-encode
+    const lines = themeInputText.split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length === 0) return
+
+    const title = lines[0]
+    const subtopics = lines.slice(1).map(l =>
+      l.replace(/^[-*•—]\s*/, '').trim()
+    ).filter(Boolean)
+
+    const encodedText = encodeTopicBlock(title, subtopics)
+
     setWizardData({
       ...wizardData,
       themes: wizardData.themes.map((t) =>
-        t.id === editingThemeId ? { ...t, text: themeInputText.trim() } : t
+        t.id === editingThemeId ? { ...t, text: encodedText } : t
       ),
     })
     setEditingThemeId(null)
@@ -402,14 +378,14 @@ export function SessionCreateWizard() {
       return
     }
 
-    const blocks = parseOutlineToTopicBlocks(outline)
+    // Use shared parser that returns encoded blocks
+    const encodedBlocks = parseOutlineToTopicBlocks(outline)
 
-    if (blocks.length > 0) {
-      const newThemes: Theme[] = blocks.map((block, index) => ({
+    if (encodedBlocks.length > 0) {
+      const newThemes: Theme[] = encodedBlocks.map((encodedText, index) => ({
         id: crypto.randomUUID(),
-        text: block.title,
+        text: encodedText,
         sortOrder: index + 1,
-        details: block.subtopics.length > 0 ? block.subtopics : undefined,
       }))
 
       setWizardData({
@@ -444,16 +420,17 @@ export function SessionCreateWizard() {
     try {
       const slug = generateSlug()
 
-      // Note: welcome_message, summary_full, summary_condensed are NOT NULL DEFAULT ''
-      // in schema.sql, so we must pass empty string (not null) for empty values
-      
-      // Build published topics snapshot with details
-      const publishedTopics = wizardData.themes.map((theme) => ({
-        themeId: theme.id,
-        text: theme.text,
-        sortOrder: theme.sortOrder,
-        details: theme.details,
-      }))
+      // Build published topics snapshot (decode for display info)
+      const publishedTopics = wizardData.themes.map((theme) => {
+        const decoded = decodeTopicBlock(theme.text)
+        return {
+          themeId: theme.id,
+          text: theme.text, // Keep encoded for persistence
+          sortOrder: theme.sortOrder,
+          title: decoded.title,
+          subtopics: decoded.subtopics,
+        }
+      })
 
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
@@ -482,14 +459,6 @@ export function SessionCreateWizard() {
           message: sessionError.message,
           details: sessionError.details,
           hint: sessionError.hint,
-          wizardData: {
-            title: wizardData.title,
-            lengthMinutes: wizardData.lengthMinutes,
-            welcomeMessageLength: wizardData.welcomeMessage.length,
-            summaryFullLength: wizardData.summaryFull.length,
-            summaryCondensedLength: wizardData.summaryCondensed.length,
-            themesCount: wizardData.themes.length,
-          },
         })
 
         if (sessionError.code === '23505') {
@@ -499,7 +468,6 @@ export function SessionCreateWizard() {
             description: 'Please try again.',
           })
         } else if (sessionError.code === '23503') {
-          // FK constraint failure - presenter record doesn't exist
           toast({
             variant: 'destructive',
             title: 'Profile required',
@@ -507,7 +475,6 @@ export function SessionCreateWizard() {
           })
           navigate('/dashboard/profile')
         } else if (sessionError.code === '42501' || sessionError.message?.includes('policy')) {
-          // RLS policy violation
           toast({
             variant: 'destructive',
             title: 'Permission denied',
@@ -527,21 +494,14 @@ export function SessionCreateWizard() {
         const themesInsert = wizardData.themes.map((theme) => ({
           id: theme.id,
           session_id: sessionData.id,
-          text: theme.text,
+          text: theme.text, // Already encoded
           sort_order: theme.sortOrder,
         }))
 
         const { error: themesError } = await supabase.from('themes').insert(themesInsert)
 
         if (themesError) {
-          console.error('[SessionCreateWizard] Themes insert failed:', {
-            error: themesError,
-            code: themesError.code,
-            message: themesError.message,
-            details: themesError.details,
-            themesCount: themesInsert.length,
-            sessionId: sessionData.id,
-          })
+          console.error('[SessionCreateWizard] Themes insert failed:', themesError)
           toast({
             variant: 'destructive',
             title: 'Topics creation failed',
@@ -555,9 +515,7 @@ export function SessionCreateWizard() {
         description: 'Your draft session has been created.',
       })
 
-      // Clear wizard state on successful creation
       clearWizardState()
-
       navigate(`/dashboard/sessions/${sessionData.id}`)
     } catch (err) {
       console.error('Unexpected error:', err)
@@ -728,12 +686,13 @@ Case study`}
         <h3 className="text-sm font-medium text-gray-900 mb-3">Add or edit topics</h3>
 
         <div className="flex gap-2">
-          <Input
-            placeholder="Add a topic…"
+          <Textarea
+            placeholder="Add a topic… (Enter for newline, Cmd/Ctrl+Enter to add)"
             value={themeInputText}
             onChange={(e) => setThemeInputText(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              // Cmd/Ctrl+Enter submits
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault()
                 if (editingThemeId) {
                   handleSaveTheme()
@@ -741,16 +700,18 @@ Case study`}
                   handleAddTheme()
                 }
               }
+              // Plain Enter inserts newline (default behavior)
               if (e.key === 'Escape') {
                 setEditingThemeId(null)
                 setThemeInputText('')
               }
             }}
-            className="min-h-[48px] flex-1 min-w-0"
+            rows={2}
+            className="min-h-[48px] flex-1 min-w-0 resize-none"
           />
           {editingThemeId ? (
             <>
-              <Button onClick={handleSaveTheme} className="min-h-[48px] shrink-0">
+              <Button onClick={handleSaveTheme} className="min-h-[48px] shrink-0 self-end">
                 Save
               </Button>
               <Button
@@ -759,19 +720,19 @@ Case study`}
                   setEditingThemeId(null)
                   setThemeInputText('')
                 }}
-                className="min-h-[48px] shrink-0"
+                className="min-h-[48px] shrink-0 self-end"
               >
                 Cancel
               </Button>
             </>
           ) : (
-            <Button onClick={handleAddTheme} className="min-h-[48px] shrink-0">
+            <Button onClick={handleAddTheme} className="min-h-[48px] shrink-0 self-end">
               Add
             </Button>
           )}
         </div>
         <p className="mt-2 text-xs text-gray-500">
-          Type a topic name, then tap Add or press Return.
+          First line = topic title. Additional lines = subtopics. Cmd/Ctrl+Enter to add.
         </p>
       </div>
 
@@ -779,64 +740,67 @@ Case study`}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">Topics ({wizardData.themes.length})</h4>
           <div className="space-y-2">
-            {wizardData.themes.map((theme, index) => (
-              <div
-                key={theme.id}
-                className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white p-3"
-              >
-                <div className="flex flex-col gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleMoveTheme(theme.id, 'up')}
-                    disabled={index === 0}
-                    className="h-10 w-10 p-0"
-                  >
-                    ↑
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleMoveTheme(theme.id, 'down')}
-                    disabled={index === wizardData.themes.length - 1}
-                    className="h-10 w-10 p-0"
-                  >
-                    ↓
-                  </Button>
+            {wizardData.themes.map((theme, index) => {
+              const decoded = decodeTopicBlock(theme.text)
+              return (
+                <div
+                  key={theme.id}
+                  className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white p-3"
+                >
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleMoveTheme(theme.id, 'up')}
+                      disabled={index === 0}
+                      className="h-10 w-10 p-0"
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleMoveTheme(theme.id, 'down')}
+                      disabled={index === wizardData.themes.length - 1}
+                      className="h-10 w-10 p-0"
+                    >
+                      ↓
+                    </Button>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900">{decoded.title}</p>
+                    {decoded.subtopics.length > 0 && (
+                      <ul className="mt-1 space-y-0.5">
+                        {decoded.subtopics.map((sub, idx) => (
+                          <li key={idx} className="text-xs text-gray-600">
+                            — {sub}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">Order: {theme.sortOrder}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditTheme(theme.id)}
+                      className="min-h-[48px]"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteTheme(theme.id)}
+                      className="min-h-[48px]"
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">{theme.text}</p>
-                  {theme.details && theme.details.length > 0 && (
-                    <ul className="mt-1 space-y-0.5">
-                      {theme.details.map((detail, idx) => (
-                        <li key={idx} className="text-xs text-gray-600">
-                          — {detail}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">Order: {theme.sortOrder}</p>
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditTheme(theme.id)}
-                    className="min-h-[48px]"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteTheme(theme.id)}
-                    className="min-h-[48px]"
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       ) : (
@@ -903,22 +867,25 @@ Case study`}
           </h4>
           {wizardData.themes.length > 0 ? (
             <div className="space-y-3">
-              {wizardData.themes.map((theme) => (
-                <div key={theme.id}>
-                  <p className="text-sm font-medium text-gray-900">
-                    {theme.sortOrder}. {theme.text}
-                  </p>
-                  {theme.details && theme.details.length > 0 && (
-                    <ul className="mt-1 ml-6 space-y-0.5">
-                      {theme.details.map((detail, idx) => (
-                        <li key={idx} className="text-xs text-gray-600">
-                          — {detail}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
+              {wizardData.themes.map((theme) => {
+                const decoded = decodeTopicBlock(theme.text)
+                return (
+                  <div key={theme.id}>
+                    <p className="text-sm font-medium text-gray-900">
+                      {theme.sortOrder}. {decoded.title}
+                    </p>
+                    {decoded.subtopics.length > 0 && (
+                      <ul className="mt-1 ml-6 space-y-0.5">
+                        {decoded.subtopics.map((sub, idx) => (
+                          <li key={idx} className="text-xs text-gray-600">
+                            — {sub}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <p className="text-sm text-gray-400">No topics added</p>
