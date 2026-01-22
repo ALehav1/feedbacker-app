@@ -886,7 +886,12 @@ Application enforces active-only submission; RLS policies are currently permissi
 - `npm run lint` — ✅ Pass (4 pre-existing Fast Refresh warnings)
 
 **Diff size:** 4 files changed
-**Commit:** [pending]
+**Commit:** `6e3ba3d`
+
+**Follow-up fix (2026-01-22):**
+- Active empty state now conditional (message only shows when no active sessions)
+- Removed archived counter from dashboard
+- **Commit:** `700787c` — Final freeze-worthy baseline
 
 ---
 
