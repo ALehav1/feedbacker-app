@@ -34,12 +34,18 @@ interface UseSessionsReturn {
 }
 
 export function useSessions(): UseSessionsReturn {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSessions = useCallback(async () => {
+    // Wait for auth to complete before determining if user is logged in
+    if (authLoading) {
+      // Still loading auth - keep loading state true
+      return;
+    }
+
     if (!user) {
       setSessions([]);
       setLoading(false);
@@ -109,7 +115,7 @@ export function useSessions(): UseSessionsReturn {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     fetchSessions();

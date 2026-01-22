@@ -162,6 +162,16 @@ export function SessionDetail() {
     fetchSession()
   }, [sessionId])
 
+  // Fetch results on mount after session loads (for consistent response counts)
+  // This ensures the "X responses" shown in the active status block is accurate
+  useEffect(() => {
+    if (session && !loading && sessionId) {
+      fetchResults()
+    }
+    // Only run once when session first loads, not on every session change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, sessionId])
+
   const transitionState = async (newState: SessionState) => {
     if (!sessionId || !session) return
 

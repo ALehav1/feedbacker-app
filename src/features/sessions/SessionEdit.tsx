@@ -12,12 +12,26 @@ import { supabase } from '@/lib/supabase'
 import { Pencil, Trash2, Plus, RefreshCw, ArrowLeft } from 'lucide-react'
 import type { Session, Theme } from '@/types'
 
-// Helper: check if a topic text is a "fragment" (short, no structural delimiters)
+// Helper: check if a topic text is a "fragment" (very short, likely incomplete)
+// Conservative: only merge truly fragmentary entries like "Why", "Because", "How"
+// Preserve legitimate single-word topics like "Introduction", "Conclusion", "Overview"
 function isFragmentTopic(text: string): boolean {
-  const SHORT_THRESHOLD = 20
+  const VERY_SHORT_THRESHOLD = 12
   const hasDelimiter = /[:—\-•*]/.test(text)
-  const isSingleWord = !text.includes(' ')
-  return (text.length <= SHORT_THRESHOLD || isSingleWord) && !hasDelimiter
+  const wordCount = text.split(/\s+/).length
+
+  // Not a fragment if it has structural delimiters
+  if (hasDelimiter) return false
+
+  // Not a fragment if it has 3+ words (likely a complete thought)
+  if (wordCount >= 3) return false
+
+  // Common standalone section names should NOT be fragments
+  const standalonePatterns = /^(introduction|conclusion|overview|summary|background|methodology|methods|results|discussion|references|appendix|agenda|objectives|goals|takeaways|questions|q&a)$/i
+  if (standalonePatterns.test(text.trim())) return false
+
+  // Fragments: very short (1-2 words) that aren't standalone section names
+  return text.length <= VERY_SHORT_THRESHOLD && wordCount <= 2
 }
 
 // Helper: normalize text for deduplication (lowercase, strip punctuation)
@@ -245,11 +259,10 @@ export function SessionEdit() {
   // React Router navigation blocker
   const blocker = useBlocker(isDirty)
 
-  // Handle blocked navigation by showing dialog
-  if (blocker.state === 'blocked' && !showUnsavedDialog) {
-    setShowUnsavedDialog(true)
-    setPendingNavigation(blocker.location.pathname)
-  }
+  // Derive dialog visibility: show when blocker is blocking OR manual dialog is open
+  // This avoids calling setState during render or in effect (which causes cascading renders)
+  const isBlockerActive = blocker.state === 'blocked'
+  const dialogOpen = isBlockerActive || showUnsavedDialog
 
   useEffect(() => {
     if (!sessionId) return
@@ -562,22 +575,24 @@ export function SessionEdit() {
   }
 
   const confirmLeave = () => {
-    setShowUnsavedDialog(false)
-    if (pendingNavigation) {
-      if (blocker.state === 'blocked') {
-        blocker.proceed()
-      } else {
-        navigate(pendingNavigation)
-      }
+    // Handle blocker-based navigation (browser back, link clicks)
+    if (blocker.state === 'blocked') {
+      blocker.proceed()
+    } else if (pendingNavigation) {
+      // Handle manual navigation via handleNavigate()
+      navigate(pendingNavigation)
     }
+    setShowUnsavedDialog(false)
+    setPendingNavigation(null)
   }
 
   const cancelLeave = () => {
-    setShowUnsavedDialog(false)
-    setPendingNavigation(null)
+    // Reset blocker if active
     if (blocker.state === 'blocked') {
       blocker.reset()
     }
+    setShowUnsavedDialog(false)
+    setPendingNavigation(null)
   }
 
   // Crash test for ErrorBoundary verification (dev only)
@@ -844,7 +859,7 @@ export function SessionEdit() {
       </Dialog>
 
       {/* Unsaved changes dialog */}
-      <Dialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) cancelLeave() }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Unsaved changes</DialogTitle>

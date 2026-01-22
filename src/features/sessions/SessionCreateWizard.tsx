@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useBlocker } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -49,16 +50,122 @@ export function SessionCreateWizard() {
   const [editingThemeId, setEditingThemeId] = useState<string | null>(null)
   const [themeInputText, setThemeInputText] = useState('')
 
-  // Clear wizard state on mount to ensure fresh start
+  // Navigation protection state
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false)
+  const [savedDraft, setSavedDraft] = useState<{ data: WizardData; savedAt: string } | null>(null)
+
+  // Detect if user has entered any data (dirty state)
+  const isDirty =
+    wizardData.title.trim() !== '' ||
+    wizardData.lengthMinutes !== '' ||
+    wizardData.welcomeMessage.trim() !== '' ||
+    wizardData.summaryFull.trim() !== '' ||
+    wizardData.summaryCondensed.trim() !== '' ||
+    wizardData.themes.length > 0
+
+  // Check for saved draft on mount and offer restore
   useEffect(() => {
-    localStorage.removeItem(WIZARD_STORAGE_KEY)
-    setWizardData(emptyWizardData)
+    const savedStr = localStorage.getItem(WIZARD_STORAGE_KEY)
+    if (savedStr) {
+      try {
+        const parsed = JSON.parse(savedStr)
+        // Check if it has actual content (not empty state)
+        const hasContent =
+          parsed.title?.trim() ||
+          parsed.lengthMinutes ||
+          parsed.summaryFull?.trim() ||
+          (parsed.themes && parsed.themes.length > 0)
+
+        if (hasContent) {
+          setSavedDraft({ data: parsed, savedAt: parsed.savedAt || new Date().toISOString() })
+          setShowRestorePrompt(true)
+        } else {
+          // Empty draft, clear it
+          localStorage.removeItem(WIZARD_STORAGE_KEY)
+        }
+      } catch {
+        localStorage.removeItem(WIZARD_STORAGE_KEY)
+      }
+    }
   }, [])
 
-  // Save wizard state to localStorage on change
+  // Save wizard state to localStorage when dirty
   useEffect(() => {
-    localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(wizardData))
-  }, [wizardData])
+    if (isDirty) {
+      const dataToSave = { ...wizardData, savedAt: new Date().toISOString() }
+      localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(dataToSave))
+    }
+  }, [wizardData, isDirty])
+
+  // Browser beforeunload handler
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
+
+  // Popstate interception for iOS Chrome back button
+  useEffect(() => {
+    if (!isDirty) return
+
+    window.history.pushState({ wizardGuard: true }, '')
+
+    const handlePopstate = () => {
+      if (isDirty) {
+        window.history.pushState({ wizardGuard: true }, '')
+        setShowUnsavedDialog(true)
+        setPendingNavigation('/dashboard')
+      }
+    }
+
+    window.addEventListener('popstate', handlePopstate)
+    return () => window.removeEventListener('popstate', handlePopstate)
+  }, [isDirty])
+
+  // React Router navigation blocker
+  const blocker = useBlocker(isDirty)
+  const isBlockerActive = blocker.state === 'blocked'
+  const dialogOpen = isBlockerActive || showUnsavedDialog
+
+  const confirmLeave = () => {
+    clearWizardState()
+    if (blocker.state === 'blocked') {
+      blocker.proceed()
+    } else if (pendingNavigation) {
+      navigate(pendingNavigation)
+    }
+    setShowUnsavedDialog(false)
+    setPendingNavigation(null)
+  }
+
+  const cancelLeave = () => {
+    if (blocker.state === 'blocked') {
+      blocker.reset()
+    }
+    setShowUnsavedDialog(false)
+    setPendingNavigation(null)
+  }
+
+  const handleRestoreDraft = () => {
+    if (savedDraft) {
+      setWizardData(savedDraft.data)
+    }
+    setSavedDraft(null)
+    setShowRestorePrompt(false)
+  }
+
+  const handleDiscardDraft = () => {
+    localStorage.removeItem(WIZARD_STORAGE_KEY)
+    setSavedDraft(null)
+    setShowRestorePrompt(false)
+  }
 
   const clearWizardState = () => {
     localStorage.removeItem(WIZARD_STORAGE_KEY)
@@ -828,8 +935,10 @@ Case study`}
               variant="outline"
               className="min-h-[48px]"
               onClick={() => {
-                if (confirm('Exit wizard? Your progress will be lost.')) {
-                  clearWizardState()
+                if (isDirty) {
+                  setShowUnsavedDialog(true)
+                  setPendingNavigation('/dashboard')
+                } else {
                   navigate('/dashboard')
                 }
               }}
@@ -892,6 +1001,51 @@ Case study`}
           </CardContent>
         </Card>
       </main>
+
+      {/* Unsaved changes dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) cancelLeave() }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unsaved changes</DialogTitle>
+            <DialogDescription>
+              Leave without saving? Your session draft will be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={cancelLeave}>
+              Stay
+            </Button>
+            <Button variant="destructive" onClick={confirmLeave}>
+              Leave
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Restore draft dialog */}
+      <Dialog open={showRestorePrompt} onOpenChange={setShowRestorePrompt}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resume previous session?</DialogTitle>
+            <DialogDescription>
+              {savedDraft && (
+                <>
+                  You have an unfinished session draft from {new Date(savedDraft.savedAt).toLocaleString()}.
+                  Would you like to continue where you left off?
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleDiscardDraft}>
+              Start fresh
+            </Button>
+            <Button onClick={handleRestoreDraft}>
+              Resume
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
