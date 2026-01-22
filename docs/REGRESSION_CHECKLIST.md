@@ -79,6 +79,14 @@ npm run lint
 - [ ] Verify: **Zero errors** during smoke test
 - [ ] Warnings are acceptable if pre-existing
 
+### 12. Multi-Participant Count Consistency
+- [ ] Two participants submit to same active session
+- [ ] Dashboard shows updated response count
+- [ ] SessionDetail shows same count on first load (no tab toggle needed)
+- [ ] Audience feedback tab shows all responses immediately
+
+> **Quick method:** Use the DEV-only "Response Generator" panel in SessionDetail (only visible in dev mode for active sessions) to generate 2-3 responses, then verify counts are consistent.
+
 ---
 
 ## Pass Criteria

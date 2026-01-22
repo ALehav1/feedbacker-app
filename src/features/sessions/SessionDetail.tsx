@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
 import { SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
+import { DevResponseGenerator } from './DevResponseGenerator'
 import type { Session, SessionState } from '@/types'
 
 interface ThemeResult {
@@ -783,6 +784,14 @@ export function SessionDetail() {
             </a>
           </CardContent>
         </Card>
+
+        {/* DEV ONLY: Response Generator for testing multi-participant scenarios */}
+        {import.meta.env.DEV && session.state === 'active' && (
+          <DevResponseGenerator
+            sessionId={session.id}
+            onResponsesGenerated={fetchResults}
+          />
+        )}
 
         {/* Internal reference accordion - outline and technical details */}
         <details className="group">

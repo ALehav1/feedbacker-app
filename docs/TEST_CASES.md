@@ -426,3 +426,157 @@ Q&A
 - [ ] Working vs Live model intact
 - [ ] Publish/Discard flow works
 - [ ] Participant always sees published version until publish
+
+---
+
+## Multi-Participant Test (Manual)
+
+**Purpose:** Verify that the app correctly handles 2+ participant responses with consistent counts across views.
+
+### Setup
+1. Create or use an existing **active** session with topics
+2. Note the participant link (`/s/<slug>`)
+
+### Manual Test Steps
+
+1. **Open two browser windows/tabs (or use incognito)**
+   - Window A: Participant view
+   - Window B: Participant view
+
+2. **Participant A submits response:**
+   - [ ] Navigate to participant link
+   - [ ] Select at least one topic (Cover more/less)
+   - [ ] Optionally fill name/email
+   - [ ] Submit feedback
+   - [ ] Verify "Thank You!" confirmation
+
+3. **Participant B submits response (different selections):**
+   - [ ] Navigate to participant link (different browser/incognito)
+   - [ ] Select different topics
+   - [ ] Submit feedback
+   - [ ] Verify "Thank You!" confirmation
+
+4. **Presenter verifies in SessionDetail:**
+   - [ ] Navigate to Dashboard
+   - [ ] Check session card shows updated response count
+   - [ ] Click "Session details" or "Audience feedback"
+   - [ ] Verify response count matches dashboard
+   - [ ] Click "Audience feedback" tab
+   - [ ] **CRITICAL:** Both responses visible on first load (no tab switching needed)
+   - [ ] Topic Prioritization shows aggregated votes from both
+
+5. **Refresh stability:**
+   - [ ] Hard refresh SessionDetail page
+   - [ ] Count remains the same
+   - [ ] Both responses still visible
+   - [ ] No duplicates appear
+
+6. **Tab stability:**
+   - [ ] Switch to "Session details" tab
+   - [ ] Switch back to "Audience feedback" tab
+   - [ ] Responses still visible (not "fixed" by tab switch)
+
+### Success Criteria
+- [ ] Dashboard count == SessionDetail count == Audience feedback count
+- [ ] All responses visible on first load
+- [ ] Refresh does not change counts or drop responses
+- [ ] No duplicates after any operation
+
+---
+
+## Multi-Participant Test (Dev Seed Button)
+
+**Purpose:** Quickly generate test responses using the dev-only panel in SessionDetail.
+
+### Availability
+- **DEV ONLY:** Only visible when `import.meta.env.DEV === true`
+- Location: SessionDetail page, below "Participant link" section
+- Only shown for **active** sessions
+
+### Usage
+
+1. **Navigate to an active session's SessionDetail page**
+
+2. **Find the "DEV Response Generator" panel:**
+   - Yellow/amber border indicates dev-only feature
+   - Contains number input and "Generate N responses" button
+
+3. **Generate test responses:**
+   - [ ] Set count (1-10)
+   - [ ] Click "Generate responses"
+   - [ ] Wait for toast confirmation
+
+4. **Verify results immediately:**
+   - [ ] Response count updates in status block
+   - [ ] Click "Audience feedback" tab
+   - [ ] All generated responses appear in list
+   - [ ] Topic Prioritization shows aggregated votes
+
+5. **Clear generated responses (optional):**
+   - [ ] Click "Clear generated" to remove test data
+   - [ ] Verify counts decrease
+
+### Seed Data Patterns
+The generator uses 6 varied seed responses that differ in:
+- Topic selections (some overlap to test aggregation)
+- Name/email (including anonymous)
+- Free-text feedback
+
+---
+
+## Multi-Participant Playwright E2E Test
+
+**Purpose:** Automated regression test for multi-participant behavior.
+
+### Prerequisites
+1. Dev server running: `npm run dev`
+2. An active session with topics exists
+3. Environment variable: `TEST_SESSION_SLUG=<your-session-slug>`
+
+### Running the Test
+
+```bash
+# Basic run
+TEST_SESSION_SLUG=abc123 npm run test:e2e
+
+# With UI (for debugging)
+TEST_SESSION_SLUG=abc123 npm run test:e2e:ui
+
+# Run specific test
+TEST_SESSION_SLUG=abc123 npx playwright test multi-participant
+```
+
+### Test Coverage
+The E2E test validates:
+1. **Two participants submit independently** (separate browser contexts)
+2. **Presenter sees both responses immediately**
+3. **Count consistency** (dashboard == detail page)
+4. **Refresh stability** (counts persist)
+5. **Tab stability** (no hidden fetch bugs)
+
+### Test File Location
+- `e2e/multi-participant.spec.ts`
+
+### Limitations
+- Requires manual presenter login (Supabase magic link auth)
+- Session must be pre-created and active
+- Test artifacts tagged with timestamps for cleanup
+
+---
+
+## Regression Trap: Count Mismatch Bug
+
+**Historical Bug:**
+> "Dashboard shows 1 response but SessionDetail shows 0 until you click tabs."
+
+**Root Cause:** Fetch ordering/timing between Dashboard and SessionDetail.
+
+**How the tests prevent regression:**
+1. **Dev seed button:** Immediately refreshes results after generating
+2. **E2E test:** Explicitly asserts `dashboardCount === detailCount` on first load
+3. **Manual checklist:** Includes "visible on first load" criterion
+
+If this bug returns, at least one of:
+- E2E test will fail with count mismatch assertion
+- Manual test will catch "need to click tabs" behavior
+- Dev seed button's immediate refresh will expose stale data
