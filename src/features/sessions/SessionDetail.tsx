@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
 import { DevResponseGenerator } from './DevResponseGenerator'
+import { DeckBuilderPanel } from './DeckBuilderPanel'
 import type { Session, SessionState } from '@/types'
 
 interface ThemeResult {
@@ -598,6 +599,15 @@ export function SessionDetail() {
                       </CardContent>
                     </Card>
                   )}
+
+                  {/* Deck Builder - AI outline + PPTX export */}
+                  <DeckBuilderPanel
+                    sessionTitle={session.title}
+                    sessionSummary={session.summaryFull || session.summaryCondensed || ''}
+                    lengthMinutes={session.lengthMinutes}
+                    themeResults={themeResults}
+                    responses={responses}
+                  />
                 </>
               )}
             </TabsContent>

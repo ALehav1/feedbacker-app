@@ -1101,6 +1101,38 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ---
 
+### Deck Builder Feature (2026-02-01)
+
+**File:** `src/features/sessions/SessionDetail.tsx`
+
+**Change:** Add DeckBuilderPanel component to Results tab for AI outline generation + PPTX export
+
+**Justification:** Feature addition - presenter can generate AI-powered presentation outline from audience feedback and export to PowerPoint
+
+**Scope:** Minimal frozen file change
+- Line 27: Added import for DeckBuilderPanel
+- Lines 601-610: Added single component render in Results tab (after Individual Responses)
+
+**New files created (not frozen):**
+- `api/generate-outline.ts` — Vercel serverless function calling OpenAI GPT-4o
+- `src/lib/generatePptx.ts` — PPTX generation utility using pptxgenjs
+- `src/features/sessions/DeckBuilderPanel.tsx` — UI component for outline editing + export
+
+**New dependency:** `pptxgenjs` (PowerPoint generation library)
+
+**Environment requirement:** `OPENAI_API_KEY` in Vercel environment variables
+
+**Behavioral changes:**
+- Results tab shows "Deck Builder" card below Individual Responses
+- Presenter can click "Analyze Responses" to generate AI outline
+- Outline is editable (add/remove slides, bullets, sub-bullets)
+- "Generate PowerPoint" exports .pptx file to browser downloads
+
+**Diff size:** 2 lines in frozen file (import + render)
+**Commit:** Pending
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation
