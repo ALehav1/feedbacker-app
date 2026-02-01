@@ -36,16 +36,19 @@ interface DeckOutline {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Always set JSON content type
+  res.setHeader('Content-Type', 'application/json');
+
   // Only allow POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: { code: 'method_not_allowed', message: 'Method not allowed' } });
   }
 
   // Check for API key
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     console.error('OPENAI_API_KEY not configured');
-    return res.status(500).json({ error: 'AI service not configured' });
+    return res.status(500).json({ error: { code: 'missing_openai_key', message: 'OPENAI_API_KEY is not set for this environment.' } });
   }
 
   try {
@@ -54,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Validate required fields
     if (!sessionTitle || !themeResults) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: { code: 'missing_fields', message: 'Missing required fields' } });
     }
 
     // Build context for AI
@@ -150,6 +153,17 @@ Respond with ONLY valid JSON matching this exact structure:
   } catch (error) {
     console.error('Generate outline error:', error);
     const message = error instanceof Error ? error.message : 'Failed to generate outline';
-    return res.status(500).json({ error: message });
+    // Detect OpenAI-specific errors
+    const isOpenAIError = error instanceof Error && (
+      error.message.includes('API key') ||
+      error.message.includes('rate limit') ||
+      error.message.includes('quota')
+    );
+    return res.status(500).json({
+      error: {
+        code: isOpenAIError ? 'openai_error' : 'generation_failed',
+        message,
+      },
+    });
   }
 }

@@ -165,7 +165,7 @@ export function ProfileSetup() {
                 onClick={() => navigate('/dashboard')}
                 className="w-full min-h-[56px]"
               >
-                Continue to dashboard
+                Continue
               </Button>
               <Button
                 variant="outline"

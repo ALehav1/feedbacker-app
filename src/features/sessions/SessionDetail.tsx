@@ -536,6 +536,14 @@ export function SessionDetail() {
                 </Card>
               ) : (
                 <>
+                  {/* DEV ONLY: Response Generator for testing */}
+                  {import.meta.env.DEV && session.state === 'active' && (
+                    <DevResponseGenerator
+                      sessionId={session.id}
+                      onResponsesGenerated={fetchResults}
+                    />
+                  )}
+
                   {/* Topic Prioritization */}
                   {themeResults.length > 0 && (
                     <Card>
@@ -664,7 +672,7 @@ export function SessionDetail() {
           </Tabs>
         )}
 
-        {/* Active: Participant link and close voting */}
+        {/* Active: Participant link and close feedback */}
         {session.state === 'active' && (
           <Card>
             <CardContent className="pt-6 space-y-4">
@@ -702,7 +710,7 @@ export function SessionDetail() {
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                 <span className="text-sm font-medium text-green-700">
-                  Participant voting open
+                  Participant feedback open
                 </span>
                 <span className="text-sm text-gray-600">{responses.length} responses</span>
               </div>
@@ -711,10 +719,10 @@ export function SessionDetail() {
                 className="w-full min-h-[48px]"
                 onClick={() => setShowCloseDialog(true)}
               >
-                Close participant voting
+                Close participant feedback
               </Button>
               <p className="text-xs text-gray-500 text-center">
-                Participants can no longer vote once this is closed.
+                Participants can no longer submit feedback once this is closed.
               </p>
             </CardContent>
           </Card>
@@ -748,20 +756,12 @@ export function SessionDetail() {
               </a>
               <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                 <span className="text-sm font-medium text-blue-700">
-                  Participant voting closed
+                  Participant feedback closed
                 </span>
                 <span className="text-sm text-gray-600">{responses.length} responses</span>
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* DEV ONLY: Response Generator for testing */}
-        {import.meta.env.DEV && session.state === 'active' && (
-          <DevResponseGenerator
-            sessionId={session.id}
-            onResponsesGenerated={fetchResults}
-          />
         )}
 
         {/* Internal reference accordion */}
@@ -805,20 +805,20 @@ export function SessionDetail() {
 
       </main>
 
-      {/* Close Participant Voting Dialog */}
+      {/* Close Participant Feedback Dialog */}
       <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Close participant voting?</AlertDialogTitle>
+            <AlertDialogTitle>Close participant feedback?</AlertDialogTitle>
             <AlertDialogDescription>
-              Participants will no longer be able to vote on topics.
+              Participants will no longer be able to submit feedback.
               You can still view results and edit the presentation.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleCloseVoting} disabled={isTransitioning}>
-              {isTransitioning ? 'Closing...' : 'Close participant voting'}
+              {isTransitioning ? 'Closing...' : 'Close participant feedback'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

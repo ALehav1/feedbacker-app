@@ -85,19 +85,42 @@ export function DeckBuilderPanel({
         }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to analyze responses');
+      // Get response details for better error handling
+      const contentType = response.headers.get('content-type') || '';
+      const responseText = await response.text();
+
+      // Check if response is JSON
+      if (!contentType.includes('application/json')) {
+        console.error('Non-JSON response:', response.status, responseText.slice(0, 200));
+        throw new Error('AI analysis is unavailable. The server returned an unexpected response.');
       }
 
-      const data: DeckOutline = await response.json();
-      setOutline(data);
+      // Try to parse JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        console.error('JSON parse failed:', responseText.slice(0, 200));
+        throw new Error('AI analysis is unavailable. Server returned invalid data.');
+      }
+
+      // Check for error response
+      if (!response.ok) {
+        const errorMsg = data.error?.message || data.error || 'Failed to analyze responses';
+        // Provide helpful message for missing API key
+        if (data.error?.code === 'missing_openai_key') {
+          throw new Error('AI analysis requires OPENAI_API_KEY to be configured in environment variables.');
+        }
+        throw new Error(errorMsg);
+      }
+
+      setOutline(data as DeckOutline);
       // Expand all slides by default
-      setExpandedSlides(new Set(data.slides.map((_, i) => i)));
+      setExpandedSlides(new Set((data as DeckOutline).slides.map((_, i) => i)));
 
       toast({
         title: 'Outline generated',
-        description: `Created ${data.slides.length} slides based on audience feedback.`,
+        description: `Created ${(data as DeckOutline).slides.length} slides based on audience feedback.`,
       });
     } catch (err) {
       console.error('Analyze error:', err);
@@ -245,6 +268,7 @@ export function DeckBuilderPanel({
         </CardTitle>
         <CardDescription>
           Generate a presentation outline from audience feedback, then export to PowerPoint.
+          Your outline should represent what you could cover — participants will help prioritize.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -271,13 +295,18 @@ export function DeckBuilderPanel({
 
             {!hasResponses && (
               <p className="text-sm text-gray-500 text-center">
-                Collect responses first to generate an outline.
+                Waiting for participant feedback. Generate test responses above or share the link.
               </p>
             )}
 
             {analyzeError && (
               <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                 <p className="text-sm text-red-700">{analyzeError}</p>
+                {analyzeError.includes('OPENAI_API_KEY') && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Set the OPENAI_API_KEY environment variable in your deployment settings.
+                  </p>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
