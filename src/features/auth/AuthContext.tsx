@@ -98,13 +98,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (nextUserId === lastUserId) {
           setUser(session?.user ?? null);
-          // Still need to clear loading on initial boot even if user hasn't changed
-          if (isInitialBoot && isMounted) {
-            setIsLoading(false);
-            if (import.meta.env.DEV) {
-              console.log('[Auth] Bootstrap complete (same user). Elapsed:', Date.now() - bootStart, 'ms');
-            }
-          }
           return;
         }
 
