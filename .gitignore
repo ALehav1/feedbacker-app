@@ -92,3 +92,6 @@ supabase/.temp
 .tmp
 temp/
 test-results/
+
+# Playwright auth state (contains credentials)
+playwright/.auth/state.json

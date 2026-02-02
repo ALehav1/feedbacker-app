@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test'
+import * as fs from 'fs'
+import * as path from 'path'
 
 /**
  * UI Screenshot Test Suite - Golden Path
@@ -6,19 +8,28 @@ import { test, expect } from '@playwright/test'
  * Captures screenshots at mobile (375px) and desktop (1024px) viewports
  * for visual verification of UI consistency.
  *
+ * Configuration:
+ *   Use the dedicated config: npx playwright test --config playwright.screenshots.config.ts
+ *
+ * Authentication:
+ *   If playwright/.auth/state.json exists, authenticated tests will run.
+ *   To create auth state:
+ *   1. npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json
+ *   2. Log in via magic link
+ *   3. Close codegen
+ *
  * Environment variables:
  *   TEST_SESSION_SLUG - Slug of an existing active session for participant page tests
- *   TEST_CLOSED_SESSION_ID - ID of a closed session for closed state tests
- *
- * Run with:
- *   TEST_SESSION_SLUG=your-slug npx playwright test e2e/ui-screenshots.spec.ts
  *
  * Screenshots are saved to: ./artifacts/screenshots/
  */
 
 const SCREENSHOT_DIR = './artifacts/screenshots'
-const BASE_URL = 'http://localhost:5173'
 const SESSION_SLUG = process.env.TEST_SESSION_SLUG || ''
+
+// Check if auth state file exists for authenticated tests
+const AUTH_STATE_PATH = path.join(__dirname, '..', 'playwright', '.auth', 'state.json')
+const HAS_AUTH_STATE = fs.existsSync(AUTH_STATE_PATH)
 
 /**
  * Assertion: No horizontal overflow at 375px
@@ -139,17 +150,30 @@ test.describe('Golden Path - Public Pages', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 test.describe('Golden Path - Dashboard (requires auth)', () => {
+  test.beforeAll(() => {
+    if (!HAS_AUTH_STATE) {
+      console.log('\n⚠️  Auth state not found at playwright/.auth/state.json')
+      console.log('   To enable authenticated tests, run:')
+      console.log('   npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json\n')
+    }
+  })
+
   test.describe('Mobile (375px)', () => {
     test.beforeEach(async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 812 })
     })
 
     test('dashboard - no overflow, single copy link', async ({ page }) => {
+      if (!HAS_AUTH_STATE) {
+        test.skip(true, 'No auth state - run: npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json')
+        return
+      }
+
       await page.goto('/dashboard')
 
       const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
       if (isLogin) {
-        test.skip(true, 'Not authenticated')
+        test.skip(true, 'Auth state expired - regenerate with playwright codegen')
         return
       }
 
@@ -166,11 +190,16 @@ test.describe('Golden Path - Dashboard (requires auth)', () => {
     })
 
     test('dashboard', async ({ page }) => {
+      if (!HAS_AUTH_STATE) {
+        test.skip(true, 'No auth state - run: npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json')
+        return
+      }
+
       await page.goto('/dashboard')
 
       const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
       if (isLogin) {
-        test.skip(true, 'Not authenticated')
+        test.skip(true, 'Auth state expired - regenerate with playwright codegen')
         return
       }
 
@@ -188,11 +217,16 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
     })
 
     test('session detail - active - no overflow, single copy link', async ({ page }) => {
+      if (!HAS_AUTH_STATE) {
+        test.skip(true, 'No auth state - run: npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json')
+        return
+      }
+
       await page.goto('/dashboard')
 
       const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
       if (isLogin) {
-        test.skip(true, 'Not authenticated')
+        test.skip(true, 'Auth state expired - regenerate with playwright codegen')
         return
       }
 
@@ -214,11 +248,16 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
     })
 
     test('session detail - closed - no overflow', async ({ page }) => {
+      if (!HAS_AUTH_STATE) {
+        test.skip(true, 'No auth state - run: npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json')
+        return
+      }
+
       await page.goto('/dashboard')
 
       const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
       if (isLogin) {
-        test.skip(true, 'Not authenticated')
+        test.skip(true, 'Auth state expired - regenerate with playwright codegen')
         return
       }
 
@@ -245,11 +284,16 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
     })
 
     test('session detail - active', async ({ page }) => {
+      if (!HAS_AUTH_STATE) {
+        test.skip(true, 'No auth state - run: npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json')
+        return
+      }
+
       await page.goto('/dashboard')
 
       const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
       if (isLogin) {
-        test.skip(true, 'Not authenticated')
+        test.skip(true, 'Auth state expired - regenerate with playwright codegen')
         return
       }
 
@@ -269,11 +313,16 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
     })
 
     test('session detail - closed', async ({ page }) => {
+      if (!HAS_AUTH_STATE) {
+        test.skip(true, 'No auth state - run: npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json')
+        return
+      }
+
       await page.goto('/dashboard')
 
       const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
       if (isLogin) {
-        test.skip(true, 'Not authenticated')
+        test.skip(true, 'Auth state expired - regenerate with playwright codegen')
         return
       }
 
@@ -295,12 +344,17 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
 
 test.describe('Golden Path - Profile (requires auth)', () => {
   test('profile setup - welcome back - mobile', async ({ page }) => {
+    if (!HAS_AUTH_STATE) {
+      test.skip(true, 'No auth state - run: npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json')
+      return
+    }
+
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto('/dashboard/profile')
 
     const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
     if (isLogin) {
-      test.skip(true, 'Not authenticated')
+      test.skip(true, 'Auth state expired - regenerate with playwright codegen')
       return
     }
 
@@ -310,12 +364,17 @@ test.describe('Golden Path - Profile (requires auth)', () => {
   })
 
   test('profile setup - welcome back - desktop', async ({ page }) => {
+    if (!HAS_AUTH_STATE) {
+      test.skip(true, 'No auth state - run: npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json')
+      return
+    }
+
     await page.setViewportSize({ width: 1024, height: 768 })
     await page.goto('/dashboard/profile')
 
     const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
     if (isLogin) {
-      test.skip(true, 'Not authenticated')
+      test.skip(true, 'Auth state expired - regenerate with playwright codegen')
       return
     }
 

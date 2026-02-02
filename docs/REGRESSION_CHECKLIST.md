@@ -88,15 +88,45 @@ npm run lint
 > **Quick method:** Use the DEV-only "Response Generator" panel in SessionDetail (only visible in dev mode for active sessions) to generate 2-3 responses, then verify counts are consistent.
 
 ### 13. UI/UX Screenshot Tests
+
+**Setup (one-time):**
 ```bash
-npx playwright test e2e/ui-screenshots.spec.ts
+# Install Playwright browsers if not already installed
+npx playwright install chromium
 ```
+
+**For authenticated tests (optional):**
+```bash
+# Start dev server
+npm run dev
+
+# In another terminal, create auth state:
+npx playwright codegen http://localhost:5173 --save-storage=playwright/.auth/state.json
+# Log in via magic link in the browser, then close codegen
+```
+
+**Run screenshot tests:**
+```bash
+# Ensure dev server is running: npm run dev
+
+# Run with dedicated config
+npx playwright test --config playwright.screenshots.config.ts
+
+# Or run specific test file
+TEST_SESSION_SLUG=your-slug npx playwright test e2e/ui-screenshots.spec.ts
+```
+
+**Checklist:**
 - [ ] Screenshots saved to `./artifacts/screenshots/`
 - [ ] Mobile screenshots (375px): login, feedback pages
 - [ ] Desktop screenshots (1024px): login, feedback pages
-- [ ] No overflow or spillover visible in screenshots
+- [ ] No horizontal overflow at 375px (assertion enforced)
+- [ ] Single "Copy link" block per page (assertion enforced)
+- [ ] Auth tests skip cleanly if no `playwright/.auth/state.json` exists
 
 > **Visual verification:** Compare screenshots against previous versions to catch layout regressions.
+>
+> **Note:** Auth tests will skip with a clear message if `playwright/.auth/state.json` doesn't exist. This is expected for CI or fresh environments.
 
 ### 14. SessionDetail Edit Button (Active Sessions)
 - [ ] Open an active session's detail page
