@@ -231,7 +231,8 @@ export function SessionDetail() {
   }
 
   const handleCloseClick = () => {
-    const responseCount = responses.length + themeResults.length
+    // Use session.responseCount if available, otherwise fall back to responses.length
+    const responseCount = session?.responseCount ?? responses.length
     if (responseCount === 0) {
       setShowNoResponseDialog(true)
     } else {
