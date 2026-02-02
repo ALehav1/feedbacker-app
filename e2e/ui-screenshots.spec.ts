@@ -234,9 +234,12 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
         return
       }
 
+      // Wait for dashboard to load
+      await page.waitForLoadState('networkidle')
+
       // Find first active session card and click
-      const activeSessionCard = page.locator('text=Active Sessions').locator('..').locator('button:has-text("Open details")').first()
-      const hasActive = await activeSessionCard.isVisible({ timeout: 3000 }).catch(() => false)
+      const activeSessionCard = page.locator('button:has-text("Open details")').first()
+      const hasActive = await activeSessionCard.isVisible({ timeout: 5000 }).catch(() => false)
 
       if (!hasActive) {
         test.skip(true, 'No active sessions found')
@@ -245,6 +248,9 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
 
       await activeSessionCard.click()
       await page.waitForLoadState('networkidle')
+      // Wait for actual content to load (not just the loading spinner)
+      await page.waitForSelector('text=Dashboard', { timeout: 10000 })
+      await page.waitForTimeout(500) // Brief pause for any animations
 
       await assertNoHorizontalOverflow(page)
       await assertSingleCopyLinkBlock(page)
@@ -265,9 +271,13 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
         return
       }
 
-      // Find first closed session card and click
-      const closedSessionCard = page.locator('text=Closed Sessions').locator('..').locator('button:has-text("Open details")').first()
-      const hasClosed = await closedSessionCard.isVisible({ timeout: 3000 }).catch(() => false)
+      // Wait for dashboard to load
+      await page.waitForLoadState('networkidle')
+
+      // Find a closed session card (in Closed Presentations section)
+      const closedSection = page.locator('text=Closed Presentations').locator('..')
+      const closedSessionCard = closedSection.locator('button:has-text("Open details")').first()
+      const hasClosed = await closedSessionCard.isVisible({ timeout: 5000 }).catch(() => false)
 
       if (!hasClosed) {
         test.skip(true, 'No closed sessions found')
@@ -276,6 +286,9 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
 
       await closedSessionCard.click()
       await page.waitForLoadState('networkidle')
+      // Wait for actual content to load (not just the loading spinner)
+      await page.waitForSelector('text=Dashboard', { timeout: 10000 })
+      await page.waitForTimeout(500) // Brief pause for any animations
 
       await assertNoHorizontalOverflow(page)
       await page.screenshot({ path: `${SCREENSHOT_DIR}/05-session-detail-closed-mobile.png`, fullPage: true })
@@ -301,8 +314,11 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
         return
       }
 
-      const activeSessionCard = page.locator('text=Active Sessions').locator('..').locator('button:has-text("Open details")').first()
-      const hasActive = await activeSessionCard.isVisible({ timeout: 3000 }).catch(() => false)
+      // Wait for dashboard to load
+      await page.waitForLoadState('networkidle')
+
+      const activeSessionCard = page.locator('button:has-text("Open details")').first()
+      const hasActive = await activeSessionCard.isVisible({ timeout: 5000 }).catch(() => false)
 
       if (!hasActive) {
         test.skip(true, 'No active sessions found')
@@ -311,6 +327,9 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
 
       await activeSessionCard.click()
       await page.waitForLoadState('networkidle')
+      // Wait for actual content to load (not just the loading spinner)
+      await page.waitForSelector('text=Dashboard', { timeout: 10000 })
+      await page.waitForTimeout(500) // Brief pause for any animations
 
       await assertSingleCopyLinkBlock(page)
       await page.screenshot({ path: `${SCREENSHOT_DIR}/04-session-detail-active-desktop.png`, fullPage: true })
@@ -330,8 +349,13 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
         return
       }
 
-      const closedSessionCard = page.locator('text=Closed Sessions').locator('..').locator('button:has-text("Open details")').first()
-      const hasClosed = await closedSessionCard.isVisible({ timeout: 3000 }).catch(() => false)
+      // Wait for dashboard to load
+      await page.waitForLoadState('networkidle')
+
+      // Find a closed session card (in Closed Presentations section)
+      const closedSection = page.locator('text=Closed Presentations').locator('..')
+      const closedSessionCard = closedSection.locator('button:has-text("Open details")').first()
+      const hasClosed = await closedSessionCard.isVisible({ timeout: 5000 }).catch(() => false)
 
       if (!hasClosed) {
         test.skip(true, 'No closed sessions found')
@@ -340,6 +364,9 @@ test.describe('Golden Path - Session Detail (requires auth)', () => {
 
       await closedSessionCard.click()
       await page.waitForLoadState('networkidle')
+      // Wait for actual content to load (not just the loading spinner)
+      await page.waitForSelector('text=Dashboard', { timeout: 10000 })
+      await page.waitForTimeout(500) // Brief pause for any animations
 
       await page.screenshot({ path: `${SCREENSHOT_DIR}/05-session-detail-closed-desktop.png`, fullPage: true })
     })
