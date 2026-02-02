@@ -13,6 +13,14 @@ Instead of guessing what your audience wants:
 1. **Share** what you're working on
 2. **Collect** structured feedback on what interests them
 3. **View** aggregated results to prioritize your presentation
+4. **Generate** AI-powered presentation outline with interest scoring (Deck Builder)
+
+### Feedback Synthesis (What Exists Today)
+
+- **Interest scoring:** Each topic gets a score = (cover more) − (cover less)
+- **Labels:** High / Neutral / Low interest badges on each outline section
+- **Presenter control:** Low-interest sections flagged with guidance, never auto-removed
+- **PPTX export:** Generate PowerPoint from your edited outline
 
 ---
 

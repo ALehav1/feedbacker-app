@@ -322,6 +322,48 @@ Presenter can edit summary and themes even after sharing and receiving responses
    - Copy to clipboard (plain text, markdown)
    - Download as file (PDF, Word, plain text)
 
+### 4.7.1 Deck Builder (Feedback Synthesis v1)
+
+The Deck Builder transforms aggregated feedback into an editable presentation outline.
+
+**Interest Scoring:**
+
+Each proposed topic receives an interest score:
+```
+score = (# cover more) − (# cover less)
+```
+
+Labels:
+- **High interest:** score >= +1
+- **Neutral:** score == 0
+- **Low interest:** score <= -1
+
+**Presenter Controls:**
+
+Low-interest sections are flagged with guidance text but NOT auto-removed:
+> "Consider removing — participants signaled lower interest in this topic."
+
+The presenter decides what to keep or remove. Reasons:
+- Participants signal preference, not absolute value
+- Presenter has context participants lack (dependencies, setup content, etc.)
+- "Cover less" means lower priority, not "don't cover"
+
+**Close Feedback Branching:**
+
+When presenter clicks "Close participant feedback":
+- **0 responses:** Confirm dialog with options "Keep feedback open" or "Close anyway" → stays on Dashboard
+- **≥1 responses:** Close and redirect to Results tab with Deck Builder visible
+
+After closing:
+- Participant link section hidden (presenter no longer needs to share)
+- Status shows "Participant feedback closed"
+
+**PPTX Export:**
+
+- Generates from the final edited outline
+- Interest labels do NOT appear in exported slides
+- Presenter name included in metadata
+
 ### 4.8 Notifications
 
 **Email notification when:**

@@ -442,7 +442,71 @@ Responses
 └─────────────────┘
 ```
 
-### 4. File Upload Flow
+### 4. Feedback Synthesis v1 (Deck Builder)
+
+The Deck Builder feature synthesizes participant feedback into a prioritized presentation outline.
+
+#### Feedback Lifecycle
+
+```
+ACTIVE (feedback open)
+    │
+    ├─▶ responseCount === 0 → Confirm dialog → Stay on Dashboard
+    │
+    └─▶ responseCount >= 1 → Close feedback → Redirect to Results + Deck Builder
+            │
+            ▼
+COMPLETED (feedback closed)
+    │
+    └─▶ Participant link hidden, status shows "Participant feedback closed"
+```
+
+#### Interest Scoring
+
+Each proposed topic receives an interest score based on participant signals:
+
+```
+score = cover_more_count − cover_less_count
+```
+
+| Score Range | Label | Display |
+|-------------|-------|---------|
+| score >= +1 | High interest | Green badge |
+| score == 0 | Neutral | Gray badge |
+| score <= -1 | Low interest | Red badge + guidance text |
+
+**Key behaviors:**
+- Interest is computed server-side at outline generation time (`api/generate-outline.ts`)
+- Slides are matched to themes via fuzzy text matching (title substring or word overlap)
+- Interest data persists through slide title edits (spread operator preserves properties)
+- Interest does NOT re-compute unless "Regenerate Outline" is clicked
+
+#### AI Outline Behavior
+
+The AI prioritizes and annotates the presenter's proposed outline. It does NOT:
+- Auto-delete low-interest sections
+- Reorder beyond natural flow
+- Remove content without presenter action
+
+**Design rationale:**
+- "Cover less" ≠ automatic removal. Participants may signal lower priority, but the presenter knows context the audience doesn't.
+- Presenter judgment remains final. The tool provides signals, not decisions.
+- Low-interest sections show guidance: "Consider removing — participants signaled lower interest in this topic."
+
+#### PPTX Generation
+
+- Generates from the final edited outline only
+- Interest labels and guidance text are NOT included in slides
+- Presenter name and deck title included in metadata
+
+#### Known v1 Limitations
+
+1. Interest matching uses fuzzy text at generation time only
+2. Subsequent title edits preserve labels but don't re-match
+3. If themes don't fuzzy-match any slide, no interest data appears
+4. Single-response sessions work but provide limited signal diversity
+
+### 5. File Upload Flow
 
 ```
 User selects file
