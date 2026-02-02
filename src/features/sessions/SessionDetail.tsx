@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ExternalLink, ChevronDown, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -70,6 +70,7 @@ export function SessionDetail() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { sessionId } = useParams<{ sessionId: string }>()
+  const [searchParams] = useSearchParams()
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -82,12 +83,31 @@ export function SessionDetail() {
   const [resultsError, setResultsError] = useState<string | null>(null)
 
   const [showCloseDialog, setShowCloseDialog] = useState(false)
+  const [showNoResponseDialog, setShowNoResponseDialog] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showNavigateAwayDialog, setShowNavigateAwayDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
   // responseCount is used to determine initial tab but not stored in state
   // since we set activeTab directly in the fetch effect
   const [activeTab, setActiveTab] = useState<string>('details')
+
+  // Handle URL params for tab and focus (from close feedback navigation)
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    const focus = searchParams.get('focus')
+
+    if (tab === 'results') {
+      setActiveTab('results')
+
+      // Scroll to deck builder if requested
+      if (focus === 'deck') {
+        // Small delay to allow tab content to render
+        setTimeout(() => {
+          document.getElementById('deck-builder')?.scrollIntoView({ behavior: 'smooth' })
+        }, 100)
+      }
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -210,9 +230,26 @@ export function SessionDetail() {
     transitionState('active')
   }
 
+  const handleCloseClick = () => {
+    const responseCount = responses.length + themeResults.length
+    if (responseCount === 0) {
+      setShowNoResponseDialog(true)
+    } else {
+      setShowCloseDialog(true)
+    }
+  }
+
   const handleCloseVoting = () => {
     setShowCloseDialog(false)
     transitionState('completed')
+    // Navigation to Results + Deck Builder is handled in transitionState
+  }
+
+  const handleCloseAnyway = () => {
+    setShowNoResponseDialog(false)
+    transitionState('completed')
+    // Navigate back to dashboard for 0-response close
+    navigate('/dashboard')
   }
 
   const handleCopyLink = async () => {
@@ -728,7 +765,7 @@ export function SessionDetail() {
               <Button
                 variant="destructive"
                 className="w-full min-h-[48px]"
-                onClick={() => setShowCloseDialog(true)}
+                onClick={handleCloseClick}
               >
                 Close participant feedback
               </Button>
@@ -816,7 +853,7 @@ export function SessionDetail() {
 
       </main>
 
-      {/* Close Participant Feedback Dialog */}
+      {/* Close Participant Feedback Dialog (has responses) */}
       <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -831,6 +868,30 @@ export function SessionDetail() {
             <AlertDialogAction onClick={handleCloseVoting} disabled={isTransitioning}>
               {isTransitioning ? 'Closing...' : 'Close participant feedback'}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* No Response Dialog (0 responses) */}
+      <AlertDialog open={showNoResponseDialog} onOpenChange={setShowNoResponseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>No feedback received yet</AlertDialogTitle>
+            <AlertDialogDescription>
+              This session has 0 participant responses. Keep feedback open to allow more responses?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowNoResponseDialog(false)}>
+              Keep feedback open
+            </AlertDialogAction>
+            <AlertDialogCancel
+              onClick={handleCloseAnyway}
+              disabled={isTransitioning}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isTransitioning ? 'Closing...' : 'Close anyway'}
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

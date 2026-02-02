@@ -183,8 +183,11 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showNoResponseDialog, setShowNoResponseDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const responseCount = session.responseCount || 0;
 
   const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
 
@@ -236,7 +239,16 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
     navigate(`/dashboard/sessions/${session.id}`);
   };
 
-  const handleCloseVoting = async () => {
+  const handleCloseClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (responseCount === 0) {
+      setShowNoResponseDialog(true);
+    } else {
+      setShowCloseDialog(true);
+    }
+  };
+
+  const handleCloseVoting = async (navigateToResults: boolean) => {
     setIsTransitioning(true);
     try {
       const { error } = await supabase
@@ -260,6 +272,12 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
       });
 
       await onSessionChange();
+
+      // Navigate based on whether we had responses
+      if (navigateToResults) {
+        navigate(`/dashboard/sessions/${session.id}?tab=results&focus=deck`);
+      }
+      // If no responses (close anyway), stay on dashboard
     } catch (err) {
       console.error('Unexpected error closing feedback:', err);
       toast({
@@ -270,6 +288,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
     } finally {
       setIsTransitioning(false);
       setShowCloseDialog(false);
+      setShowNoResponseDialog(false);
     }
   };
 
@@ -380,10 +399,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
         {session.state === 'active' && (
           <Button
             variant="destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowCloseDialog(true);
-            }}
+            onClick={handleCloseClick}
             className="w-full min-h-[48px]"
           >
             Close feedback
@@ -404,7 +420,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
         )}
       </div>
 
-      {/* Close Voting Dialog */}
+      {/* Close Feedback Dialog (has responses) */}
       <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -415,9 +431,33 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCloseVoting} disabled={isTransitioning}>
+            <AlertDialogAction onClick={() => handleCloseVoting(true)} disabled={isTransitioning}>
               {isTransitioning ? 'Closing...' : 'Close feedback'}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* No Response Dialog (0 responses) */}
+      <AlertDialog open={showNoResponseDialog} onOpenChange={setShowNoResponseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>No feedback received yet</AlertDialogTitle>
+            <AlertDialogDescription>
+              This session has 0 participant responses. Keep feedback open to allow more responses?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowNoResponseDialog(false)}>
+              Keep feedback open
+            </AlertDialogAction>
+            <AlertDialogCancel
+              onClick={() => handleCloseVoting(false)}
+              disabled={isTransitioning}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isTransitioning ? 'Closing...' : 'Close anyway'}
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
