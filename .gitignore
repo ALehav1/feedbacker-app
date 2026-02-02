@@ -91,3 +91,4 @@ supabase/.temp
 .scratch
 .tmp
 temp/
+playwright/.auth/state.json
