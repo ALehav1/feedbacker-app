@@ -10,8 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 
 export function ProfileSetup() {
   const navigate = useNavigate();
-  const { user, presenter, refetchPresenter } = useAuth();
+  const { user, presenter, refetchPresenter, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
+
+  // Track if we've done the initial presenter check
+  const [hasCheckedPresenter, setHasCheckedPresenter] = useState(false);
 
   // Mode: 'confirm' for returning users, 'edit' for new/editing
   const [mode, setMode] = useState<'confirm' | 'edit'>('edit');
@@ -24,6 +27,9 @@ export function ProfileSetup() {
 
   // Initialize form with presenter data and set mode
   useEffect(() => {
+    // Don't set mode until auth is done loading
+    if (isAuthLoading) return;
+
     if (presenter) {
       setFormData({
         name: presenter.name,
@@ -35,7 +41,8 @@ export function ProfileSetup() {
       // New user: start in edit mode
       setMode('edit');
     }
-  }, [presenter]);
+    setHasCheckedPresenter(true);
+  }, [presenter, isAuthLoading]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -119,6 +126,18 @@ export function ProfileSetup() {
       setIsSubmitting(false);
     }
   };
+
+  // Show loading spinner while checking auth/presenter state
+  if (isAuthLoading || !hasCheckedPresenter) {
+    return (
+      <div className="flex min-h-[100svh] items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Confirm mode: show profile summary with Continue/Edit buttons
   if (mode === 'confirm' && presenter) {
