@@ -405,6 +405,13 @@ export function DeckBuilderPanel({
                         className="text-sm"
                       />
 
+                      {/* Low-interest helper */}
+                      {slide.interest?.label === 'low' && (
+                        <p className="text-xs text-gray-500">
+                          Consider removing — participants signaled lower interest in this topic.
+                        </p>
+                      )}
+
                       {/* Bullets */}
                       <div className="space-y-2">
                         {slide.bullets.map((bullet, bulletIndex) => (
