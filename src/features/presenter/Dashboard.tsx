@@ -145,7 +145,7 @@ export function Dashboard() {
             </div>
 
             <div>
-              <h3 className="mb-3 text-lg font-medium text-gray-900">Active Presentations — Participant Voting Open</h3>
+              <h3 className="mb-3 text-lg font-medium text-gray-900">Active Presentations — Participant Feedback Open</h3>
               {activeVotingSessions.length > 0 ? (
                 <div className="space-y-3">
                   {activeVotingSessions.map((session) => (
@@ -159,7 +159,7 @@ export function Dashboard() {
 
             {closedVotingSessions.length > 0 && (
               <div>
-                <h3 className="mb-3 text-lg font-medium text-gray-900">Closed Presentations — Participant Voting Closed</h3>
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Closed Presentations — Participant Feedback Closed</h3>
                 <div className="space-y-3">
                   {closedVotingSessions.map((session) => (
                     <SessionCard key={session.id} session={session} onSessionChange={refetch} />
@@ -206,8 +206,8 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
 
   const stateLabels: Record<SessionState, string> = {
     draft: 'Draft',
-    active: 'Voting open',
-    completed: 'Voting closed',
+    active: 'Feedback open',
+    completed: 'Feedback closed',
     archived: 'Archived',
   };
 
@@ -255,7 +255,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
       }
 
       toast({
-        title: 'Voting closed',
+        title: 'Feedback closed',
         description: 'Participants can no longer submit feedback.',
       });
 
@@ -379,12 +379,12 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
         {/* Secondary action based on state */}
         {session.state === 'active' && (
           <Button
-            variant="outline"
+            variant="destructive"
             onClick={(e) => {
               e.stopPropagation();
               setShowCloseDialog(true);
             }}
-            className="h-12 w-full"
+            className="w-full min-h-[48px]"
           >
             Close feedback
           </Button>

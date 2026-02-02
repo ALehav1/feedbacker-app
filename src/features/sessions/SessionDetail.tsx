@@ -546,7 +546,7 @@ export function SessionDetail() {
               ) : (
                 <>
                   {/* DEV ONLY: Response Generator for testing */}
-                  {import.meta.env.DEV && session.state === 'active' && (
+                  {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true') && session.state === 'active' && (
                     <DevResponseGenerator
                       sessionId={session.id}
                       onResponsesGenerated={fetchResults}
@@ -778,7 +778,7 @@ export function SessionDetail() {
         {/* Internal reference accordion */}
         <details className="group">
           <summary className="flex cursor-pointer items-center justify-between rounded-lg border bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">
-            <span>Internal reference</span>
+            <span>Internal reference (not visible to participants)</span>
             <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
           </summary>
           <div className="mt-2 rounded-lg border bg-white p-4 space-y-4 text-sm">

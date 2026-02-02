@@ -194,8 +194,8 @@ export function DeckBuilderPanel({
   const addSlide = () => {
     if (!outline) return;
     const newSlide: DeckSlide = {
-      title: 'New Slide',
-      bullets: [{ text: 'Add your content here' }],
+      title: '',
+      bullets: [{ text: '' }],
     };
     const newSlides = [...outline.slides, newSlide];
     setOutline({ ...outline, slides: newSlides });
@@ -211,7 +211,7 @@ export function DeckBuilderPanel({
   const addBullet = (slideIndex: number) => {
     if (!outline) return;
     const newSlides = [...outline.slides];
-    const newBullets = [...newSlides[slideIndex].bullets, { text: 'New point' }];
+    const newBullets = [...newSlides[slideIndex].bullets, { text: '' }];
     newSlides[slideIndex] = { ...newSlides[slideIndex], bullets: newBullets };
     setOutline({ ...outline, slides: newSlides });
   };
@@ -228,7 +228,7 @@ export function DeckBuilderPanel({
     if (!outline) return;
     const newSlides = [...outline.slides];
     const newBullets = [...newSlides[slideIndex].bullets];
-    const subBullets = [...(newBullets[bulletIndex].subBullets || []), 'New sub-point'];
+    const subBullets = [...(newBullets[bulletIndex].subBullets || []), ''];
     newBullets[bulletIndex] = { ...newBullets[bulletIndex], subBullets };
     newSlides[slideIndex] = { ...newSlides[slideIndex], bullets: newBullets };
     setOutline({ ...outline, slides: newSlides });
@@ -363,8 +363,8 @@ export function DeckBuilderPanel({
                     <span className="text-xs font-medium text-gray-500 shrink-0">
                       {slideIndex + 1}.
                     </span>
-                    <span className="text-sm font-medium text-gray-900 truncate flex-1 min-w-0">
-                      {slide.title}
+                    <span className={`text-sm font-medium truncate flex-1 min-w-0 ${slide.title ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {slide.title || 'New Slide'}
                     </span>
                     {outline.slides.length > 1 && (
                       <Button
@@ -402,6 +402,7 @@ export function DeckBuilderPanel({
                               <Textarea
                                 value={bullet.text}
                                 onChange={(e) => updateBulletText(slideIndex, bulletIndex, e.target.value)}
+                                placeholder="New point"
                                 className="flex-1 text-sm min-h-[38px] resize-none"
                                 rows={1}
                               />
@@ -437,6 +438,7 @@ export function DeckBuilderPanel({
                                   onChange={(e) =>
                                     updateSubBullet(slideIndex, bulletIndex, subIndex, e.target.value)
                                   }
+                                  placeholder="New sub-point"
                                   className="flex-1 text-xs h-8"
                                 />
                                 <Button

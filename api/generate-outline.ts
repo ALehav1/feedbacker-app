@@ -60,6 +60,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: { code: 'missing_fields', message: 'Missing required fields' } });
     }
 
+    // Require at least one response or theme vote
+    if (themeResults.length === 0 && (!responses || responses.length === 0)) {
+      return res.status(400).json({ error: { code: 'no_feedback', message: 'At least one participant response is required to generate an outline.' } });
+    }
+
     // Build context for AI
     const topicSummary = themeResults
       .map((t, i) => `${i + 1}. "${t.text}" (Net interest: ${t.net > 0 ? '+' : ''}${t.net}, ${t.more} more / ${t.less} less)`)
