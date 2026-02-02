@@ -91,3 +91,4 @@ supabase/.temp
 .scratch
 .tmp
 temp/
+test-results/
