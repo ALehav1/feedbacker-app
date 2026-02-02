@@ -1183,6 +1183,37 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ---
 
+### Deck Builder & Screenshot Baseline — 2026-02-02
+
+**Scope:** AI behavior verification infrastructure + UI screenshot tests
+
+**What was added:**
+1. **Structural equivalence tests:** `scripts/test-deck-builder-equivalence.ts` — verifies repeated API calls produce structurally equivalent outlines
+2. **Failure mode tests:** `scripts/test-deck-builder-failures.ts` — edge case coverage
+3. **Screenshot tests:** `e2e/ui-screenshots.spec.ts` — captures mobile/desktop states for login, feedback, dashboard, session detail, and Deck Builder
+4. **Proof artifacts:** `artifacts/deck-equivalence-proof.json` — timestamped evidence of structural stability
+
+**Why this matters:**
+- AI behavior is now testable (not just "it works")
+- UI/UX correctness enforced mechanically via screenshot comparisons
+- Failure modes are first-class (documented, tested, not ignored)
+
+**New npm scripts:**
+```bash
+npm run test:deck-structure     # Structural tests
+npm run test:deck-failures      # Failure mode tests
+npm run test:deck-equivalence   # Equivalence proof (2 runs)
+```
+
+**Build verification:**
+- `npm run build` — Pass
+- `npm run lint` — Pass
+- `npm run test:deck-equivalence` — Pass (proof in artifacts/)
+
+**Commit:** Pending
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation

@@ -495,6 +495,21 @@ The AI prioritizes and annotates the presenter's proposed outline. It does NOT:
 - Interest labels and guidance text are NOT included in slides
 - Presenter name and deck title included in metadata
 
+#### Deck Builder Verification & Stability
+
+AI-generated outlines are tested mechanically to ensure behavioral consistency:
+
+- **Structural equivalence tests:** Verify that repeated API calls with identical input produce structurally equivalent outlines (slide count, section ordering, interest label distribution)
+- **Failure mode tests:** Confirm graceful degradation for edge cases (empty responses, missing themes, malformed input)
+- **Screenshot baselines:** Deck Builder UI states captured in `artifacts/screenshots/` for visual regression prevention
+
+Test commands:
+```bash
+npm run test:deck-structure    # Structural tests against live API
+npm run test:deck-failures     # Failure mode tests
+npm run test:deck-equivalence  # Structural equivalence (2 runs)
+```
+
 #### Known v1 Limitations
 
 1. Interest matching uses fuzzy text at generation time only

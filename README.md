@@ -21,6 +21,7 @@ Instead of guessing what your audience wants:
 - **Labels:** High / Neutral / Low interest badges on each outline section
 - **Presenter control:** Low-interest sections flagged with guidance, never auto-removed
 - **PPTX export:** Generate PowerPoint from your edited outline
+- **AI verification:** Deck Builder outputs are tested for structural equivalence across repeated runs
 
 ---
 

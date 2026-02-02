@@ -133,7 +133,14 @@ TEST_SESSION_SLUG=your-slug npx playwright test e2e/ui-screenshots.spec.ts
 - [ ] Verify "Edit presentation" button is visible below participant link
 - [ ] Click "Edit presentation" → lands on SessionEdit page
 
-### 15. Environment Variable Consistency
+### 15. Deck Builder (AI Behavior)
+- [ ] Open a completed session with responses
+- [ ] Click "Generate Outline" in Deck Builder panel
+- [ ] Verify outline generates with interest labels (high/low/neutral)
+- [ ] Verify "Generate PowerPoint" produces downloadable .pptx
+- [ ] Run `npm run test:deck-equivalence` — structural equivalence confirmed
+
+### 16. Environment Variable Consistency
 - [ ] Verify `VITE_APP_URL` is set in `.env` (preferred)
 - [ ] Fallback to `VITE_PUBLIC_BASE_URL` or `window.location.origin` works
 - [ ] Participant links display correctly in Dashboard and SessionDetail
