@@ -513,7 +513,7 @@ export function SessionCreateWizard() {
 
       toast({
         title: 'Presentation published',
-        description: 'Your presentation is now live and open for participant voting.',
+        description: 'Your presentation is now live and collecting participant feedback.',
       })
 
       clearWizardState()
@@ -999,7 +999,7 @@ Case study`}
               {currentStep === 1 && 'Step 1 of 4: Set up a new presentation'}
               {currentStep === 2 && "Add a welcome message, an overview for participants, and your outline. Next, you'll review the topics we organize from it."}
               {currentStep === 3 && 'We organized your outline into topics. Review wording and order, then add or remove topics.'}
-              {currentStep === 4 && 'Review your presentation before publishing. Once published, participants can vote.'}
+              {currentStep === 4 && 'Review your presentation before publishing. Once published, participants can submit feedback.'}
             </CardDescription>
           </CardHeader>
           <CardContent>

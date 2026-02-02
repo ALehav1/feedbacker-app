@@ -175,7 +175,7 @@ export function FeedbackForm() {
     )
   }
 
-  // Draft and closed voting sessions render full content
+  // Draft and closed feedback sessions render full content
   // Voting interactions are disabled via banner and disabled controls
 
   if (submitted) {
@@ -212,7 +212,7 @@ export function FeedbackForm() {
       toast({
         variant: 'destructive',
         title: 'Voting not available',
-        description: 'Participant voting is not currently open.',
+        description: 'Participant feedback is not currently open.',
       })
       return
     }
@@ -334,7 +334,7 @@ export function FeedbackForm() {
         )}
         {isVotingClosed && !isPreviewMode && (
           <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-4 shadow-sm">
-            <h3 className="text-sm font-semibold text-blue-900 mb-1">Participant voting is closed.</h3>
+            <h3 className="text-sm font-semibold text-blue-900 mb-1">Participant feedback is closed.</h3>
             <p className="text-sm text-blue-700 leading-relaxed">
               You can still review the presentation below, but feedback can no longer be submitted.
             </p>
@@ -485,7 +485,7 @@ export function FeedbackForm() {
                 </Button>
                 {isDraft && (
                   <p className="text-xs text-gray-500 text-center">
-                    Participant voting has not been opened yet.
+                    Participant feedback has not been opened yet.
                   </p>
                 )}
                 {isVotingClosed && (

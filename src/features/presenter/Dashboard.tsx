@@ -245,10 +245,10 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
         .eq('id', session.id);
 
       if (error) {
-        console.error('Error closing voting:', error);
+        console.error('Error closing feedback:', error);
         toast({
           variant: 'destructive',
-          title: 'Failed to close voting',
+          title: 'Failed to close feedback',
           description: 'Please try again.',
         });
         return;
@@ -256,12 +256,12 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
 
       toast({
         title: 'Voting closed',
-        description: 'Participants can no longer vote.',
+        description: 'Participants can no longer submit feedback.',
       });
 
       await onSessionChange();
     } catch (err) {
-      console.error('Unexpected error closing voting:', err);
+      console.error('Unexpected error closing feedback:', err);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -358,10 +358,10 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
               <span className="font-medium text-amber-700">Draft — preview only</span>
             )}
             {session.state === 'active' && (
-              <span className="font-medium text-green-700">Participant voting open</span>
+              <span className="font-medium text-green-700">Participant feedback open</span>
             )}
             {session.state === 'completed' && (
-              <span className="font-medium text-blue-700">Participant voting closed</span>
+              <span className="font-medium text-blue-700">Participant feedback closed</span>
             )}
           </p>
         </div>
@@ -386,7 +386,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
             }}
             className="h-12 w-full"
           >
-            Close voting
+            Close feedback
           </Button>
         )}
         {session.state === 'completed' && (
@@ -408,15 +408,15 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
       <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Close participant voting?</AlertDialogTitle>
+            <AlertDialogTitle>Close participant feedback?</AlertDialogTitle>
             <AlertDialogDescription>
-              Participants can no longer vote once voting is closed.
+              Participants can no longer submit feedback once closed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleCloseVoting} disabled={isTransitioning}>
-              {isTransitioning ? 'Closing...' : 'Close voting'}
+              {isTransitioning ? 'Closing...' : 'Close feedback'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

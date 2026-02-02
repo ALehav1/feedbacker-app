@@ -185,6 +185,15 @@ export function SessionDetail() {
         title: 'Presentation updated',
         description: `Presentation is now ${newState}.`,
       })
+
+      // After closing feedback, switch to Results tab and scroll to Deck Builder
+      if (newState === 'completed') {
+        setActiveTab('results')
+        // Small delay to allow tab content to render before scrolling
+        setTimeout(() => {
+          document.getElementById('deck-builder')?.scrollIntoView({ behavior: 'smooth' })
+        }, 100)
+      }
     } catch (err) {
       console.error('Unexpected error:', err)
       toast({
@@ -609,13 +618,15 @@ export function SessionDetail() {
                   )}
 
                   {/* Deck Builder - AI outline + PPTX export */}
-                  <DeckBuilderPanel
-                    sessionTitle={session.title}
-                    sessionSummary={session.summaryFull || session.summaryCondensed || ''}
-                    lengthMinutes={session.lengthMinutes}
-                    themeResults={themeResults}
-                    responses={responses}
-                  />
+                  <div id="deck-builder">
+                    <DeckBuilderPanel
+                      sessionTitle={session.title}
+                      sessionSummary={session.summaryFull || session.summaryCondensed || ''}
+                      lengthMinutes={session.lengthMinutes}
+                      themeResults={themeResults}
+                      responses={responses}
+                    />
+                  </div>
                 </>
               )}
             </TabsContent>
