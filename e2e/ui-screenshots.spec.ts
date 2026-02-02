@@ -66,9 +66,20 @@ test.describe('Golden Path - Public Pages', () => {
       await page.setViewportSize({ width: 375, height: 812 })
     })
 
-    test('login page - no overflow', async ({ page }) => {
+    test('login page - no overflow', async ({ page, context }) => {
+      // Clear auth state for this test to see login page
+      await context.clearCookies()
+
+      // Navigate first, then clear localStorage
       await page.goto('/')
-      await expect(page.locator('text=Presentation Feedbacker')).toBeVisible()
+      await page.evaluate(() => {
+        try { localStorage.clear() } catch {}
+      })
+
+      // Reload to apply cleared state
+      await page.reload({ waitUntil: 'networkidle' })
+
+      await expect(page.locator('text=Presentation Feedbacker')).toBeVisible({ timeout: 10000 })
       await assertNoHorizontalOverflow(page)
       await page.screenshot({ path: `${SCREENSHOT_DIR}/01-login-mobile.png`, fullPage: true })
     })
@@ -123,9 +134,18 @@ test.describe('Golden Path - Public Pages', () => {
       await page.setViewportSize({ width: 1024, height: 768 })
     })
 
-    test('login page', async ({ page }) => {
+    test('login page', async ({ page, context }) => {
+      // Clear auth state for this test to see login page
+      await context.clearCookies()
+
       await page.goto('/')
-      await expect(page.locator('text=Presentation Feedbacker')).toBeVisible()
+      await page.evaluate(() => {
+        try { localStorage.clear() } catch {}
+      })
+
+      await page.reload({ waitUntil: 'networkidle' })
+
+      await expect(page.locator('text=Presentation Feedbacker')).toBeVisible({ timeout: 10000 })
       await page.screenshot({ path: `${SCREENSHOT_DIR}/01-login-desktop.png`, fullPage: true })
     })
 
@@ -411,5 +431,153 @@ test.describe('Golden Path - Profile (requires auth)', () => {
 
     await page.waitForLoadState('networkidle')
     await page.screenshot({ path: `${SCREENSHOT_DIR}/06-profile-desktop.png`, fullPage: true })
+  })
+})
+
+test.describe('Golden Path - Deck Builder (requires auth)', () => {
+  test('deck builder - initial state - mobile', async ({ page }) => {
+    if (!HAS_AUTH_STATE) {
+      test.skip(true, 'No auth state')
+      return
+    }
+
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/dashboard')
+
+    const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
+    if (isLogin) {
+      test.skip(true, 'Auth state expired')
+      return
+    }
+
+    await page.waitForLoadState('networkidle')
+
+    // Click first session's Open details
+    const detailsButton = page.locator('button:has-text("Open details")').first()
+    const hasSession = await detailsButton.isVisible({ timeout: 5000 }).catch(() => false)
+    if (!hasSession) {
+      test.skip(true, 'No sessions found')
+      return
+    }
+
+    await detailsButton.click()
+    await page.waitForLoadState('networkidle')
+    await page.waitForSelector('text=Dashboard', { timeout: 10000 })
+
+    // Scroll to Deck Builder section
+    const deckBuilder = page.locator('text=Deck Builder').first()
+    await deckBuilder.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(500)
+
+    // Screenshot the Deck Builder section
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/07-deck-builder-initial-mobile.png`, fullPage: true })
+  })
+
+  test('deck builder - success state - mobile', async ({ page }) => {
+    if (!HAS_AUTH_STATE) {
+      test.skip(true, 'No auth state')
+      return
+    }
+
+    // This test needs a session with feedback and requires clicking "Analyze Responses"
+    // which makes an API call. Skip if OPENAI_API_KEY is not available.
+    const skipGeneration = process.env.SKIP_DECK_GENERATION === 'true'
+
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/dashboard')
+
+    const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
+    if (isLogin) {
+      test.skip(true, 'Auth state expired')
+      return
+    }
+
+    await page.waitForLoadState('networkidle')
+
+    // Find a session with responses
+    const detailsButton = page.locator('button:has-text("Open details")').first()
+    const hasSession = await detailsButton.isVisible({ timeout: 5000 }).catch(() => false)
+    if (!hasSession) {
+      test.skip(true, 'No sessions found')
+      return
+    }
+
+    await detailsButton.click()
+    await page.waitForLoadState('networkidle')
+    await page.waitForSelector('text=Dashboard', { timeout: 10000 })
+
+    // Check if Analyze Responses button exists (means outline not generated yet)
+    const analyzeButton = page.locator('button:has-text("Analyze Responses")')
+    const hasAnalyzeButton = await analyzeButton.isVisible({ timeout: 3000 }).catch(() => false)
+
+    if (hasAnalyzeButton && !skipGeneration) {
+      // Click to generate outline
+      await analyzeButton.click()
+
+      // Wait for generation (can take up to 30s)
+      const outlineGenerated = await page.locator('text=Deck Title').isVisible({ timeout: 60000 }).catch(() => false)
+
+      if (!outlineGenerated) {
+        // Check for error state
+        const errorState = await page.locator('text=Try again').isVisible({ timeout: 2000 }).catch(() => false)
+        if (errorState) {
+          await page.screenshot({ path: `${SCREENSHOT_DIR}/07-deck-builder-error-mobile.png`, fullPage: true })
+          test.skip(true, 'Deck generation failed - captured error state')
+          return
+        }
+        test.skip(true, 'Deck generation timed out')
+        return
+      }
+    }
+
+    // Check if we have a generated outline (either just generated or previously generated)
+    const hasOutline = await page.locator('text=Deck Title').isVisible({ timeout: 3000 }).catch(() => false)
+    if (!hasOutline) {
+      test.skip(true, 'No outline available and SKIP_DECK_GENERATION=true')
+      return
+    }
+
+    // Scroll to show the outline
+    const deckTitle = page.locator('text=Deck Title').first()
+    await deckTitle.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(500)
+
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/07-deck-builder-success-mobile.png`, fullPage: true })
+  })
+
+  test('deck builder - desktop', async ({ page }) => {
+    if (!HAS_AUTH_STATE) {
+      test.skip(true, 'No auth state')
+      return
+    }
+
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await page.goto('/dashboard')
+
+    const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
+    if (isLogin) {
+      test.skip(true, 'Auth state expired')
+      return
+    }
+
+    await page.waitForLoadState('networkidle')
+
+    const detailsButton = page.locator('button:has-text("Open details")').first()
+    const hasSession = await detailsButton.isVisible({ timeout: 5000 }).catch(() => false)
+    if (!hasSession) {
+      test.skip(true, 'No sessions found')
+      return
+    }
+
+    await detailsButton.click()
+    await page.waitForLoadState('networkidle')
+    await page.waitForSelector('text=Dashboard', { timeout: 10000 })
+
+    // Scroll to Deck Builder
+    const deckBuilder = page.locator('text=Deck Builder').first()
+    await deckBuilder.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(500)
+
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/07-deck-builder-desktop.png`, fullPage: true })
   })
 })

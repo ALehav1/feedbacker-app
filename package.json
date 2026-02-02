@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:deck-structure": "ENABLE_DEBUG_META=true npx tsx scripts/test-deck-builder-structure.ts --live",
+    "test:deck-failures": "npx tsx scripts/test-deck-builder-failures.ts",
+    "test:deck-equivalence": "ENABLE_DEBUG_META=true npx tsx scripts/test-deck-builder-equivalence.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
