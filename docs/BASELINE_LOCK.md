@@ -1133,6 +1133,56 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 ---
 
+### UI/UX Polish Audit (2026-02-02)
+
+**Files Modified:**
+- `src/features/presenter/Dashboard.tsx` — Env var standardization
+- `src/features/sessions/SessionDetail.tsx` — Env var standardization, Edit button for active sessions
+- `src/features/presenter/ProfileSetup.tsx` — Welcome title for new users
+
+**Change:** UI/UX consistency audit and targeted fixes
+
+**Justification:** Systematic code audit revealed:
+1. Inconsistent env var naming (`VITE_PUBLIC_BASE_URL` vs `VITE_APP_URL`)
+2. Missing Edit button affordance for active sessions in SessionDetail
+3. Unwelcoming title for first-time users
+
+**Scope:** Minimal fixes, copy-only changes
+
+**Fix 1: Environment Variable Standardization**
+- Added `VITE_APP_URL` as primary, with fallback to `VITE_PUBLIC_BASE_URL` and `window.location.origin`
+- Both Dashboard.tsx (line 192) and SessionDetail.tsx (line 78)
+
+**Fix 2: Edit Button for Active Sessions**
+- Added "Edit presentation" button in active state block (SessionDetail.tsx lines 771-776)
+- Placed before "Close participant feedback" button
+- Uses outline variant, links to `/dashboard/sessions/${session.id}/edit`
+
+**Fix 3: Welcome Title for New Users**
+- Changed ProfileSetup title from "Complete Your Profile" to "Welcome! Complete Your Profile"
+- Only affects new users (existing users see "Edit Profile")
+
+**New Files:**
+- `e2e/ui-screenshots.spec.ts` — Screenshot test suite for visual regression prevention
+- `artifacts/screenshots/` — Directory for screenshot artifacts
+
+**Documentation Updates:**
+- `docs/REGRESSION_CHECKLIST.md` — Added UI/UX screenshot tests, edit button check, env var consistency check
+
+**Invariants Enforced:**
+1. Environment variables: Always prefer `VITE_APP_URL`, fallback chain for backwards compatibility
+2. Active sessions: Edit button visible alongside close button
+3. Touch targets: All buttons maintain 48px minimum height
+
+**Build verification:**
+- `npm run build` — ✅ Pass
+- `npm run lint` — ✅ Pass (0 errors, 4 pre-existing warnings)
+
+**Diff size:** ~25 lines across 3 files
+**Commit:** Pending
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation

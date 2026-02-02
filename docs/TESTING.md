@@ -1,6 +1,6 @@
 # Testing Guide
 
-**Last Updated:** January 18, 2026
+**Last Updated:** February 2, 2026
 
 ---
 
@@ -21,15 +21,14 @@
 
 | Test | Steps | Expected |
 |------|-------|----------|
-| Dashboard load | Navigate to `/dashboard` | Shows session list (or empty state) |
-| Empty state | No sessions exist | Shows "Create Your First Session" CTA |
-| Create session | Click "New Session" → Fill form → Submit | Session created in `draft` state |
-| Session detail | Click on session card | Shows session details with tabs |
-| Copy link | Click "Copy Link" | Shareable link copied to clipboard |
-| Open session | In draft, click "Open Session" | State changes to `active` |
-| Close session | In active, click "Close Session" → Confirm | State changes to `completed` |
-| Archive session | In completed, click "Archive Session" → Confirm | State changes to `archived` |
-| Results tab | Click "Results" tab | Shows aggregated theme data + responses |
+| Dashboard load | Navigate to `/dashboard` | Shows two sections: Active Sessions, Closed Sessions |
+| Empty state | No sessions exist | Shows empty state message |
+| Create session | Click "Create New Presentation" → Complete wizard → Confirm | Session created directly as `active` with published snapshot |
+| Session detail | Click on session card | Shows SessionDetail with "Session details" and "Audience feedback" tabs |
+| Copy link | Click "Copy participant link" | Shareable link copied to clipboard |
+| Close voting | In active, click "Close participant voting" → Confirm | State changes to `completed` |
+| Delete session | In completed, click "Delete" → Confirm | Session permanently deleted |
+| Results tab | Click "Audience feedback" tab | Shows Topic Prioritization + Participant Responses + Deck Builder |
 
 ### Session Creation Wizard
 
@@ -60,13 +59,15 @@
 
 | Test | Steps | Expected |
 |------|-------|----------|
-| Access draft session | Visit `/s/{slug}` for draft session | Shows "Session Not Open Yet" |
-| Access active session | Visit `/s/{slug}` for active session | Shows feedback form |
-| Access completed session | Visit `/s/{slug}` for completed/archived | Shows "Session Closed" |
-| Submit feedback | Select themes → Submit | Response saved, shows "Thank You" |
-| Dedupe check | Submit twice (same browser) | localStorage token prevents re-display of form (honor system) |
-| Required selection | Try to submit with no themes selected | Shows validation error |
-| Email validation | Enter invalid email | Shows validation error |
+| Access draft session | Visit `/s/{slug}` for draft session | Shows content with "Presentation draft" banner, voting disabled |
+| Access active session | Visit `/s/{slug}` for active session | Shows full feedback form with voting enabled |
+| Access completed session | Visit `/s/{slug}` for completed/archived | Shows content with "Participant feedback is closed" banner, voting disabled |
+| Submit feedback | Select at least one topic → Submit | Response saved, shows "Thank You!" card |
+| Anonymous submission | Submit without name/email | Works - system generates `anon-{token}@feedbacker.app` |
+| Required selection | Try to submit with no topics selected | Toast error: "Please select at least one topic" |
+| Email validation | Enter invalid email format | Toast error: "Please enter a valid email address" |
+| Topic selection | Click "Cover more" on topic | Button highlighted, can click "Cover less" to switch |
+| Details display | Topics with sub-bullets | Sub-bullets shown as "— detail" under each topic |
 
 ### Results Correctness
 
@@ -239,4 +240,7 @@ Mobile:
 
 ---
 
-**Note:** AI features (theme generation, outline generation) are not yet implemented.
+**Note:**
+- AI theme generation from outline is not yet implemented (requires OPENAI_API_KEY)
+- Deck Builder (outline editor + PPTX export) is implemented but AI outline generation requires API configuration
+- Topics are currently entered manually in the wizard

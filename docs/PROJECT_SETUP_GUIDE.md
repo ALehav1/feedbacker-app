@@ -11,20 +11,41 @@ feedbacker-app/
 ├── .gitignore              # Security - prevents committing secrets
 ├── .env.example            # Environment variable template
 ├── README.md               # Project overview for developers
-├── SCRAP.md                # Code graveyard for safe deletion
+├── package.json            # Dependencies and scripts
+├── vite.config.ts          # Vite build configuration
+├── tailwind.config.js      # Tailwind CSS configuration
+├── tsconfig.json           # TypeScript configuration
+├── vercel.json             # Vercel deployment config
 │
 ├── docs/
 │   ├── ARCHITECTURE.md     # Technical architecture
-│   ├── BASELINE_LOCK.md    # Frozen baseline documentation
+│   ├── SPEC.md             # Product requirements
 │   ├── SECURITY.md         # Security documentation
-│   ├── SMOKE_TEST_RESULTS.md # Test results
-│   └── SPEC.md             # Product requirements
+│   ├── TESTING.md          # Testing strategy
+│   ├── TEST_CASES.md       # Manual test checklist
+│   ├── BASELINE_LOCK.md    # Frozen baseline documentation
+│   ├── PROJECT_SETUP_GUIDE.md  # This file
+│   ├── SUPABASE_SETUP_GUIDE.md # Supabase configuration
+│   └── REGRESSION_CHECKLIST.md # Smoke test for releases
+│
+├── src/
+│   ├── features/           # Feature-based modules
+│   │   ├── auth/           # Authentication (LoginPage, AuthCallback, etc.)
+│   │   ├── presenter/      # Presenter views (Dashboard, ProfileSetup)
+│   │   ├── sessions/       # Session management (Wizard, Detail, Edit, DeckBuilder)
+│   │   └── participant/    # Participant views (FeedbackForm)
+│   ├── components/         # Shared components + shadcn/ui
+│   ├── hooks/              # Custom React hooks
+│   ├── lib/                # External service clients & utilities
+│   ├── types/              # TypeScript definitions
+│   └── config/             # App configuration
 │
 ├── supabase/
-│   ├── README.md           # Supabase setup instructions
 │   ├── schema.sql          # Database schema
-│   └── rls-policies.sql    # Row Level Security policies
+│   ├── rls-policies.sql    # Row Level Security policies
+│   └── MIGRATION.sql       # Migration scripts
 │
+├── e2e/                    # Playwright E2E tests
 └── archive/                # Archived/outdated files
 ```
 
@@ -43,24 +64,37 @@ cd feedbacker-app
 # (or use this as your starting point)
 ```
 
-### 2. Initialize the Project
+### 2. Initialize the Project (Fresh Setup)
+
+If setting up from scratch:
 
 ```bash
-# Initialize npm
-npm init -y
-
 # Initialize Vite + React + TypeScript
 npm create vite@latest . -- --template react-ts
 
 # Install core dependencies
-npm install @supabase/supabase-js openai resend
-npm install react-router-dom
+npm install @supabase/supabase-js react-router-dom react-hook-form @hookform/resolvers zod
+npm install pptxgenjs  # For PowerPoint export
+
+# Install Radix UI primitives (used by shadcn/ui)
+npm install @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-tabs
+npm install @radix-ui/react-toast @radix-ui/react-label @radix-ui/react-slot
+npm install @radix-ui/react-alert-dialog
+
+# Install styling utilities
+npm install tailwind-merge clsx class-variance-authority tailwindcss-animate
+npm install lucide-react  # Icons
+
+# Install dev dependencies
 npm install -D tailwindcss postcss autoprefixer
 npm install -D @types/react @types/react-dom @types/node
+npm install -D @playwright/test  # E2E testing
 
 # Initialize Tailwind
 npx tailwindcss init -p
 ```
+
+**Note:** For an existing clone, just run `npm install` - all dependencies are in package.json.
 
 ### 3. Configure Tailwind
 
@@ -123,19 +157,23 @@ Use the schema from `docs/ARCHITECTURE.md` to create your Supabase tables:
 - `responses`
 - `theme_selections`
 
-### 5. Create the Folder Structure
+### 6. Create the Folder Structure
 
 ```bash
 mkdir -p src/features/auth
-mkdir -p src/features/presenter/SessionCreate
+mkdir -p src/features/presenter
+mkdir -p src/features/sessions
 mkdir -p src/features/participant
 mkdir -p src/components/ui
 mkdir -p src/hooks
 mkdir -p src/lib
 mkdir -p src/types
-mkdir -p src/utils
-mkdir -p src/styles
+mkdir -p src/config
+mkdir -p supabase
+mkdir -p e2e
 ```
+
+**Note:** For an existing clone, folders are already created.
 
 ---
 
