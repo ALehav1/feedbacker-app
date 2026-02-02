@@ -64,7 +64,7 @@ cp .env.example .env
 # Fill in your keys in .env:
 # - VITE_SUPABASE_URL
 # - VITE_SUPABASE_ANON_KEY
-# - VITE_PUBLIC_BASE_URL (for participant links)
+# - VITE_APP_URL (used for auth callbacks)
 
 # Run database migrations
 # 1. Execute supabase/schema.sql in Supabase SQL Editor
@@ -142,14 +142,16 @@ For best topic extraction results:
 ```
 src/
 ├── features/           # Feature-based modules
-│   ├── auth/          # Magic link handling
-│   ├── presenter/     # Presenter views (dashboard, create, results)
-│   └── participant/   # Participant views (access, feedback, thanks)
-├── components/        # Shared UI components
-├── hooks/             # Data hooks (sessions, responses, AI)
-├── lib/               # External service clients (Supabase, OpenAI, Resend)
-├── types/             # TypeScript definitions
-└── utils/             # Utility functions
+│   ├── auth/          # Magic link handling (LoginPage, AuthCallback, AuthContext)
+│   ├── presenter/     # Presenter views (Dashboard, ProfileSetup)
+│   ├── participant/   # Participant views (FeedbackForm)
+│   └── sessions/      # Session management (SessionCreateWizard, SessionDetail, SessionEdit, DeckBuilderPanel)
+├── components/        # Shared UI components + shadcn/ui primitives
+│   └── ui/            # shadcn/ui components (button, card, dialog, etc.)
+├── hooks/             # Custom React hooks (useSessions, useToast)
+├── lib/               # External service clients & utilities (supabase, copy, topicBlocks, generatePptx)
+├── types/             # TypeScript definitions (index.ts)
+└── config/            # App configuration
 ```
 
 ---
@@ -232,7 +234,7 @@ npm run preview      # Preview production build
    ```
    VITE_SUPABASE_URL=your_supabase_project_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   VITE_PUBLIC_BASE_URL=https://your-app.vercel.app
+   VITE_APP_URL=https://your-app.vercel.app
    ```
 
 4. **Configure Supabase redirect URLs:**
@@ -313,7 +315,7 @@ Topics and their optional sub-bullets are encoded as a single string in the data
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18 + TypeScript + Vite |
+| Frontend | React 19 + TypeScript + Vite |
 | Styling | Tailwind CSS + shadcn/ui |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth (magic links) |
@@ -342,10 +344,10 @@ Topics and their optional sub-bullets are encoded as a single string in the data
 ### Participant
 
 1. Open shared link
-2. If voting open: Read summary, select theme interests (👍/👎)
-3. If voting closed: Read summary (voting interactions disabled)
+2. If voting open: Read summary, select topics (Cover more/Cover less)
+3. If voting closed: Read summary (voting interactions disabled, banner explains)
 4. Optionally enter name, email, and free-form thoughts (only when voting open)
-5. Submit → Done
+5. Submit → Thank you confirmation
 
 ---
 

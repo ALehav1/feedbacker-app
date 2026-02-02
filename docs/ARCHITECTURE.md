@@ -1,7 +1,7 @@
 # Feedbacker App - Architecture Documentation
 
-**Last Updated:** January 22, 2026
-**Version:** 1.2
+**Last Updated:** February 2, 2026
+**Version:** 1.3
 
 ---
 
@@ -39,15 +39,23 @@ Presenters guess what audiences want to hear. This app flips the model: share wh
 
 ### Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| Frontend | React 18 + TypeScript + Vite | UI framework |
-| Styling | Tailwind CSS + shadcn/ui | Mobile-first design system |
-| Database | Supabase (PostgreSQL) | Data persistence |
-| Storage | Supabase Storage | File uploads (logos, PDFs) |
+| Layer | Technology | Version | Purpose |
+|-------|------------|---------|---------|
+| Frontend | React + TypeScript | 19.2.0 / 5.9.3 | UI framework |
+| Build | Vite | 7.2.4 | Development server + bundler |
+| Styling | Tailwind CSS + shadcn/ui | 3.4.19 | Mobile-first design system |
+| Database | Supabase (PostgreSQL) | 2.38.5 | Data persistence + Auth |
+| Forms | React Hook Form + Zod | 7.71.1 / 4.3.5 | Form state and validation |
+| PPTX | pptxgenjs | 4.0.1 | PowerPoint generation |
+| Routing | React Router | 7.12.0 | Client-side routing |
+| Hosting | Vercel | — | Deployment |
+
+**Future Integrations (not yet implemented):**
+| Service | Technology | Purpose |
+|---------|------------|---------|
 | AI | OpenAI GPT-4o | Theme generation, outline creation |
 | Email | Resend | Magic links, notifications |
-| Hosting | Vercel | Deployment |
+| Storage | Supabase Storage | File uploads (logos, PDFs) |
 
 ### shadcn/ui Setup (IMPORTANT)
 
@@ -79,96 +87,84 @@ npx shadcn@latest add button card dialog form input label toast skeleton tabs dr
 ```
 feedbacker-app/
 ├── .windsurfrules               # Cascade agent rules (MANDATORY READ)
-├── agents.md                    # Project-specific agent instructions
-├── PLAN.md                      # Day-by-day implementation plan
 ├── docs/
 │   ├── contract.md              # Universal + project rules
 │   ├── ARCHITECTURE.md          # This file
-│   └── SPEC.md                  # Product requirements
+│   ├── SPEC.md                  # Product requirements
+│   ├── SECURITY.md              # Security model & RLS policies
+│   ├── TESTING.md               # Testing strategy
+│   ├── TEST_CASES.md            # Manual test checklist
+│   ├── PROJECT_SETUP_GUIDE.md   # Detailed setup instructions
+│   ├── SUPABASE_SETUP_GUIDE.md  # Supabase configuration
+│   ├── BASELINE_LOCK.md         # Frozen file change log
+│   └── REGRESSION_CHECKLIST.md  # Smoke test for releases
 │
 ├── src/
 │   ├── features/                # Feature-based modules
-│   │   ├── auth/                # Magic link handling
-│   │   │   ├── MagicLinkHandler.tsx
-│   │   │   └── AuthContext.tsx
+│   │   ├── auth/                # Authentication
+│   │   │   ├── AuthCallback.tsx      # Magic link callback handler
+│   │   │   ├── AuthContext.tsx       # Auth state provider
+│   │   │   ├── LoginPage.tsx         # Email entry for login
+│   │   │   └── ProtectedRoute.tsx    # Route guard for dashboard
 │   │   │
 │   │   ├── presenter/           # Presenter-only views
-│   │   │   ├── Dashboard.tsx         # Session list + create
-│   │   │   ├── ProfileSetup.tsx      # First-time setup
-│   │   │   ├── SessionCreate/        # Multi-step creation
-│   │   │   │   ├── index.tsx
-│   │   │   │   ├── StepLength.tsx
-│   │   │   │   ├── StepSummary.tsx
-│   │   │   │   ├── StepReview.tsx
-│   │   │   │   └── StepComplete.tsx
-│   │   │   ├── SessionView.tsx       # Active session details
-│   │   │   ├── ResultsView.tsx       # Aggregated feedback
-│   │   │   └── ArchivedSessions.tsx  # Archived list
+│   │   │   ├── Dashboard.tsx         # Session list + create button
+│   │   │   └── ProfileSetup.tsx      # First-time profile setup
+│   │   │
+│   │   ├── sessions/            # Session management
+│   │   │   ├── SessionCreateWizard.tsx  # Multi-step creation wizard
+│   │   │   ├── SessionCreate.tsx        # Legacy/alternate create
+│   │   │   ├── SessionDetail.tsx        # Session view + results tabs
+│   │   │   ├── SessionEdit.tsx          # Edit active session
+│   │   │   ├── DeckBuilderPanel.tsx     # AI outline + PPTX export
+│   │   │   └── DevResponseGenerator.tsx # Dev-only test data generator
 │   │   │
 │   │   └── participant/         # Participant-only views
-│   │       ├── SessionAccess.tsx     # Email entry
-│   │       ├── FeedbackForm.tsx      # Theme selection + free-form
-│   │       ├── ThankYou.tsx          # Post-submission
-│   │       └── SessionClosed.tsx     # Archived session message
+│   │       └── FeedbackForm.tsx      # All-in-one: access, voting, thank you
 │   │
 │   ├── components/              # Shared UI components
-│   │   ├── ui/                  # shadcn/ui primitives
-│   │   ├── ThemeSelector.tsx    # 👍/👎 theme interaction
-│   │   ├── SummaryEditor.tsx    # Summary input with guidance
-│   │   ├── SummaryDisplay.tsx   # Expandable summary view
-│   │   ├── FileUploader.tsx     # PDF/PPT/Word upload
-│   │   ├── OutlineDisplay.tsx   # Generated outline view
-│   │   ├── ExportOptions.tsx    # Copy/download controls
-│   │   ├── ResponseList.tsx     # Individual responses view
-│   │   ├── AggregatedThemes.tsx # Theme interest counts
-│   │   ├── SpotlightList.tsx    # AI-suggested spotlights
-│   │   ├── WriteInSummary.tsx   # Participant write-in summary
-│   │   └── LoadingStates.tsx    # Skeleton components
+│   │   ├── ui/                  # shadcn/ui primitives (button, card, dialog, etc.)
+│   │   ├── ThemeSelector.tsx    # Cover more/Cover less voting control
+│   │   ├── ErrorBoundary.tsx    # React error boundary wrapper
+│   │   └── UnpublishedChangesBar.tsx # Publish/discard working changes
 │   │
 │   ├── hooks/                   # Custom React hooks
-│   │   ├── usePresenter.ts      # Presenter profile CRUD
 │   │   ├── useSessions.ts       # Session CRUD + state transitions
-│   │   ├── useResponses.ts      # Response fetching + aggregation
-│   │   ├── useThemes.ts         # Theme CRUD
-│   │   ├── useAIGeneration.ts   # OpenAI calls (themes, outline)
-│   │   ├── useFileUpload.ts     # File handling + parsing
-│   │   └── useMagicLink.ts      # Auth flow
+│   │   └── use-toast.ts         # Toast notification hook (shadcn)
 │   │
-│   ├── lib/                     # External service clients
-│   │   ├── supabase.ts          # Supabase client + helpers
-│   │   ├── openai.ts            # OpenAI client + prompts
-│   │   └── resend.ts            # Email client
+│   ├── lib/                     # External service clients & utilities
+│   │   ├── supabase.ts          # Supabase client (singleton, HMR-safe)
+│   │   ├── copy.ts              # Canonical UX copy strings
+│   │   ├── topicBlocks.ts       # Topic encoding/decoding utilities
+│   │   ├── generatePptx.ts      # PowerPoint generation (pptxgenjs)
+│   │   └── utils.ts             # General utilities (cn, etc.)
 │   │
 │   ├── types/                   # TypeScript definitions
-│   │   ├── index.ts             # Re-exports
-│   │   ├── presenter.ts         # Presenter types
-│   │   ├── session.ts           # Session + state types
-│   │   ├── response.ts          # Response + selection types
-│   │   └── database.ts          # Supabase generated types
-│   │
-│   ├── utils/                   # Utility functions
-│   │   ├── fileParser.ts        # PDF/Word/PPT text extraction
-│   │   ├── slugGenerator.ts     # Readable URL slug creation
-│   │   ├── themeCalculation.ts  # Interest aggregation logic
-│   │   ├── exportFormatters.ts  # Outline → PDF/Word/Text
-│   │   └── db-errors.ts         # User-friendly error translation
+│   │   └── index.ts             # All types (Session, Theme, Response, etc.)
 │   │
 │   ├── config/                  # App configuration
 │   │   └── index.ts             # Environment variables
 │   │
-│   ├── styles/                  # Global styles
-│   │   └── globals.css          # Tailwind base + custom
-│   │
-│   ├── App.tsx                  # Root component + routing
-│   └── main.tsx                 # Entry point
+│   ├── App.tsx                  # Root component + routing (data router)
+│   ├── main.tsx                 # Entry point
+│   └── index.css                # Global styles (Tailwind base)
 │
+├── supabase/                    # Database configuration
+│   ├── schema.sql               # Table definitions
+│   ├── rls-policies.sql         # Row Level Security policies
+│   └── MIGRATION.sql            # Migration scripts
+│
+├── e2e/                         # End-to-end tests (Playwright)
 ├── public/                      # Static assets
 ├── .env.example                 # Environment template
 ├── .gitignore                   # Security (includes .env)
 ├── eslint.config.js             # ESLint 9 flat config
+├── playwright.config.ts         # Playwright E2E config
 ├── package.json
 ├── tsconfig.json
+├── tailwind.config.js
 ├── vite.config.ts
+├── vercel.json                  # Vercel deployment config
 └── README.md
 ```
 
@@ -562,15 +558,20 @@ Click link ──▶ /auth/callback?token=xxx
 Shared link (/s/:slug)
     │
     ▼
-SessionAccess (enter email)
+FeedbackForm.tsx (single component handles all states)
     │
-    ├─▶ [New] ──▶ FeedbackForm (empty)
+    ├─▶ [Draft state] ──▶ Preview banner, voting disabled
     │
-    └─▶ [Returning] ──▶ FeedbackForm (pre-filled)
-                              │
-                              ▼
-                         Submit ──▶ ThankYou
+    ├─▶ [Active state] ──▶ Full voting experience
+    │       │
+    │       ├─▶ Select topics (Cover more/Cover less)
+    │       ├─▶ Optional: name, email, freeform text
+    │       └─▶ Submit ──▶ "Thank You" confirmation (same component)
+    │
+    └─▶ [Completed/Archived] ──▶ "Voting closed" banner, content visible
 ```
+
+**Note:** Email is optional for participants. Anonymous submissions use generated email `anon-{token}@feedbacker.app`.
 
 ---
 
@@ -580,134 +581,116 @@ SessionAccess (enter email)
 
 | Component | Purpose | Props | Used In |
 |-----------|---------|-------|---------|
-| `ThemeSelector` | Single theme with 👍/👎 | `theme`, `selection`, `onSelect` | FeedbackForm |
-| `SummaryDisplay` | Expandable summary | `condensed`, `full`, `expanded` | FeedbackForm |
-| `OutlineDisplay` | Sections + sub-points | `outline` | ResultsView |
-| `AggregatedThemes` | Theme with counts | `themes`, `responses` | ResultsView |
-| `SpotlightList` | AI-highlighted items | `spotlights` | ResultsView |
-| `ResponseList` | Individual responses | `responses` | ResultsView |
+| `ThemeSelector` | Cover more/Cover less voting | `text`, `selection`, `onSelect`, `disabled` | FeedbackForm |
+| `UnpublishedChangesBar` | Publish/discard working changes | `onPublish`, `onDiscard`, `participantUrl` | SessionEdit |
+| `ErrorBoundary` | React error boundary | `children` | SessionDetail, SessionEdit |
 
 ### Feature Views (Smart Components)
 
-| Component | Purpose | Hooks Used |
-|-----------|---------|------------|
-| `Dashboard` | Session management | `useSessions`, `usePresenter` |
-| `ProfileSetup` | First-time profile | `usePresenter` |
-| `SessionCreate` | Multi-step wizard | `useSessions`, `useAIGeneration`, `useFileUpload` |
-| `SessionView` | Active session detail | `useSessions`, `useResponses` |
-| `ResultsView` | Aggregated feedback | `useResponses`, `useAIGeneration` |
-| `FeedbackForm` | Participant input | `useResponses`, `useThemes` |
+| Component | Purpose | Data Source |
+|-----------|---------|-------------|
+| `Dashboard` | Session list + create | Direct Supabase queries |
+| `ProfileSetup` | First-time profile | Direct Supabase queries |
+| `SessionCreateWizard` | Multi-step creation | Local state + Supabase insert |
+| `SessionDetail` | Session view + results tabs | Direct Supabase queries |
+| `SessionEdit` | Edit working version | Direct Supabase queries + useSessions |
+| `DeckBuilderPanel` | AI outline + PPTX export | Props from SessionDetail + API |
+| `FeedbackForm` | Participant feedback (all states) | Direct Supabase queries |
+
+### shadcn/ui Components Used
+
+Located in `src/components/ui/`:
+- `button`, `card`, `dialog`, `alert-dialog`
+- `form`, `input`, `label`, `textarea`
+- `tabs`, `dropdown-menu`, `badge`
+- `toast`, `toaster`, `skeleton`, `alert`
 
 ---
 
 ## State Management
 
-### Pattern: Hooks + React Context
+### Pattern: Hooks + React Context + Direct Queries
 
-No Redux. Use React's built-in state + custom hooks.
+No Redux. Use React's built-in state, custom hooks, and direct Supabase queries.
 
-### Primary Data Hooks
+### Hooks
 
-#### `usePresenter`
-```typescript
-{
-  presenter: Presenter | null;
-  loading: boolean;
-  error: string | null;
-  createPresenter: (data: CreatePresenterInput) => Promise<void>;
-  updatePresenter: (data: UpdatePresenterInput) => Promise<void>;
-  refetch: () => Promise<void>;
-}
-```
+#### `useSessions` (`src/hooks/useSessions.ts`)
+Session CRUD operations and state transitions.
 
-#### `useSessions`
-```typescript
-{
-  sessions: Session[];
-  activeSessions: Session[];
-  archivedSessions: Session[];
-  loading: boolean;
-  error: string | null;
-  createSession: (data: CreateSessionInput) => Promise<Session>;
-  updateSession: (id: string, data: UpdateSessionInput) => Promise<void>;
-  transitionState: (id: string, newState: SessionState) => Promise<void>;
-  deleteSession: (id: string) => Promise<void>;
-  useAsTemplate: (id: string) => Promise<Session>;
-  refetch: () => Promise<void>;
-}
-```
-
-#### `useResponses`
-```typescript
-{
-  responses: Response[];
-  responseCount: number;
-  aggregatedThemes: AggregatedTheme[];
-  spotlights: Spotlight[];
-  writeInSummary: string;
-  generatedOutline: Outline | null;
-  loading: boolean;
-  error: string | null;
-  submitResponse: (data: SubmitResponseInput) => Promise<void>;
-  updateResponse: (id: string, data: UpdateResponseInput) => Promise<void>;
-  generateOutline: () => Promise<Outline>;
-  refetch: () => Promise<void>;
-}
-```
+#### `useToast` (`src/hooks/use-toast.ts`)
+Toast notification system (shadcn/ui).
 
 ### Context Providers
 
-#### `AuthContext`
+#### `AuthContext` (`src/features/auth/AuthContext.tsx`)
 ```typescript
 {
-  presenter: Presenter | null;
-  isAuthenticated: boolean;
+  user: User | null;           // Supabase auth user
+  presenter: Presenter | null; // Presenter profile from DB
   isLoading: boolean;
-  signIn: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 ```
+
+### Data Fetching Pattern
+
+Most components fetch data directly from Supabase rather than using centralized hooks:
+
+```typescript
+// Example from SessionDetail.tsx
+const { data, error } = await supabase
+  .from('sessions')
+  .select('*, themes(*)')
+  .eq('id', sessionId)
+  .single();
+```
+
+This pattern provides:
+- Simpler code with fewer abstractions
+- Direct control over query shape
+- Easier debugging
 
 ---
 
 ## External Services
 
-### Supabase
+### Supabase (Implemented)
 
 **Tables:**
 - `presenters` - Presenter profiles
-- `sessions` - Session metadata
-- `themes` - Generated themes per session
+- `sessions` - Session metadata + published snapshots
+- `themes` - Working themes per session
 - `responses` - Participant responses
 - `theme_selections` - Interest signals per response
-
-**Storage Buckets:**
-- `presenter-assets` - Logos, brand guidelines
 
 **Auth:**
 - Magic link via `supabase.auth.signInWithOtp()`
 - Session management via `onAuthStateChange`
 
-### OpenAI
+### pptxgenjs (Implemented)
 
-**Model:** `gpt-4o`
+**Purpose:** PowerPoint generation from Deck Builder outline
+**Location:** `src/lib/generatePptx.ts`
 
-**Temperature Settings:**
-- Theme generation: 0.7 (creative)
-- Outline generation: 0.5 (balanced)
-- Summarization: 0.3 (focused)
+### OpenAI (Planned - Not Yet Implemented)
 
-**Rate Limiting:**
-- Retry with exponential backoff
-- User-friendly error on quota exceeded
+**Planned Model:** `gpt-4o`
 
-### Resend
+**Planned Features:**
+- Theme generation from outline
+- AI-powered outline prioritization
+- Write-in response summarization
 
-**Emails Sent:**
-1. Magic link to presenters
-2. New response notification to presenters
+**Note:** Currently, topics are manually entered in the wizard. AI generation requires OPENAI_API_KEY in Edge Functions.
 
-**Sender:** `onboarding@resend.dev` (default for v1)
+### Resend (Planned - Not Yet Implemented)
+
+**Planned Emails:**
+1. Magic links (currently handled by Supabase)
+2. New response notifications
+
+**Note:** Currently using Supabase's built-in email for magic links.
 
 ---
 
@@ -829,16 +812,17 @@ The session creation wizard (`SessionCreateWizard.tsx`) follows these write rule
 ### Route Structure
 
 ```
-/                           → Login/landing page
-/auth/callback              → Magic link handler
-/dashboard                  → Presenter dashboard (protected)
-/dashboard/profile          → Profile setup/edit (protected)
-/dashboard/create           → Session creation wizard (protected)
-/dashboard/session/:id      → Session detail view (protected)
-/dashboard/session/:id/results → Results view (protected)
-/dashboard/archived         → Archived sessions (protected)
-/s/:slug                    → Participant session access (public)
+/                              → Login/landing page (LoginPage)
+/auth/callback                 → Magic link handler (AuthCallback)
+/dashboard                     → Presenter dashboard (Dashboard, protected)
+/dashboard/profile             → Profile setup/edit (ProfileSetup, protected)
+/dashboard/sessions/new        → Session creation wizard (SessionCreateWizard, protected)
+/dashboard/sessions/:sessionId → Session detail + results tabs (SessionDetail, protected)
+/dashboard/sessions/:sessionId/edit → Edit active session (SessionEdit, protected)
+/s/:slug                       → Participant feedback (FeedbackForm, public)
 ```
+
+**Note:** Results are shown in the "Audience feedback" tab within SessionDetail, not a separate route.
 
 ### Protected Routes
 

@@ -2,8 +2,8 @@
 
 ## Product Requirements Specification
 
-**Version:** 1.2
-**Date:** January 22, 2026
+**Version:** 1.3
+**Date:** February 2, 2026
 
 ---
 
@@ -57,11 +57,12 @@ The person creating a session to gather feedback before presenting.
 The person responding to a session with their interests.
 
 **Identification:**
-- Email (required to access session)
+- Email (optional - for uniqueness tracking)
 - Name (optional)
-- Email for follow-up (optional - may differ from access email)
 
-**Rationale:** Low friction entry. Email required to prevent duplicates and enable returning to edit responses. Additional contact info optional since it's low stakes.
+**Anonymous submissions:** When no email is provided, the system generates a unique identifier (`anon-{token}@feedbacker.app`) for deduplication.
+
+**Rationale:** Lowest possible friction. Participants can submit feedback without providing any personal information. Email is useful for presenter follow-up but not required.
 
 ---
 
@@ -395,83 +396,68 @@ Permanent removal from any state. No recovery.
 
 ### 5.1 Access Session
 
-1. Open shared link
-2. See email entry screen
-3. Enter email
-4. Access session content
+1. Open shared link (`/s/{slug}`)
+2. **Directly see feedback form** (no email gate)
+3. Session state determines available actions
 
-**Email validation:** None (just accept what they enter)
+**Current Implementation:** FeedbackForm.tsx handles all session states in a single component with appropriate banners and disabled controls based on state.
 
-**Rationale:** Low stakes. Verification adds friction without meaningful benefit here.
-
-**Returning participant:** Same email → sees previous response, can edit/update
-
-### 5.2 Session Page Layout
+### 5.2 Session Page Layout (Active State)
 
 **Components in order:**
 
-1. **Header**
-   - Presenter name and organization
-   - Logo (if uploaded)
-   - Session length (e.g., "30 minute presentation")
+1. **Welcome message** (if provided)
+   - Presenter-customized greeting
 
-2. **Welcome message**
-   - AI-generated, presenter-customized
+2. **Presentation metadata box**
+   - Title
+   - Presenter name
+   - Session length (e.g., "30 minutes")
 
-3. **Summary**
-   - AI-condensed preview by default
-   - "Read more" expands to full summary
+3. **Presentation overview** (if provided)
+   - Condensed summary of what will be covered
 
-4. **Themes - More Interested**
-   - List of all themes
-   - Each theme has 👍 button
-   - Can select multiple
+4. **Proposed Topics section**
+   - Instruction text: "Tell the presenter which topics to spend more time on and which to spend less time on."
+   - List of all topics with voting controls
+   - Each topic has "Cover more" / "Cover less" buttons
+   - Optional sub-bullets shown as context under each topic
+   - Can select multiple topics
 
-5. **Themes - Less Interested**
-   - Same list of themes
-   - Each theme has 👎 button
-   - Can select multiple
+**Interaction:** Tap "Cover more" or "Cover less" per topic. Cannot select both for same topic.
 
-**Interaction:** Tap 👍 = more interested, tap 👎 = less interested, tap nothing = no signal
+5. **Optional section: Tell us more**
+   - Your Name (optional text field)
+   - Your Email (optional email field)
+   - Additional Thoughts (optional textarea)
 
-Cannot select both 👍 and 👎 for same theme.
+6. **Submit Feedback button**
 
-6. **Free-form field**
-   - Single text area
-   - Guidance on what to include and to be specific
-   - For: theme requests not listed, questions, general context
-   - AI parses and categorizes these
+**Required for submission:** At least one topic must be selected.
 
-7. **Optional contact info**
-   - Name field (optional)
-   - Email for follow-up (optional)
-
-8. **Submit button**
-
-All fields optional except access email. Nothing blocks submission.
-
-**Rationale:** Busy executives. Lower friction = higher completion rate.
+**Rationale:** Low friction. All personal info is optional. Participants can submit anonymously.
 
 ### 5.3 Submission
 
 - Submit button saves response
-- Shows simple "Thank you" message
-- No email confirmation
-- No summary of what they submitted
+- Same component shows "Thank You!" card
+- Message: "Your feedback has been submitted successfully. Your input will help shape this presentation."
 
-**Rationale:** Keep it simple. They can return to the link to see/edit their response.
+### 5.4 Draft State
 
-### 5.4 Returning to Edit
+If session is in draft state:
+- Banner: "Presentation draft — Preview only. Feedback collection starts after the presenter confirms and saves."
+- All voting controls disabled
+- Submit button disabled
+- Content is visible for preview
 
-- Same link, same email
-- Shows previous response pre-filled
-- Can modify and re-submit
+### 5.5 Completed/Archived State
 
-### 5.5 Archived Session
-
-If session is archived:
-- Link shows "This session is closed"
-- No other information or contact details
+If session is completed or archived:
+- Banner: "Participant feedback is closed. You can still review the presentation below, but feedback can no longer be submitted."
+- All voting controls disabled
+- Submit button disabled
+- Content remains visible for reference
 
 ---
 
