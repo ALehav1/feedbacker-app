@@ -777,33 +777,11 @@ export function SessionDetail() {
           </Card>
         )}
 
-        {/* Completed: Participant link (read-only) */}
+        {/* Completed: Status only (participant link hidden) */}
         {session.state === 'completed' && (
           <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-mono text-gray-900 flex-1 break-all min-w-0">
-                  {participantUrl}
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={handleCopyLink}
-                  className="min-h-[44px] shrink-0"
-                >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy link
-                </Button>
-              </div>
-              <a
-                href={participantUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Open participant page
-              </a>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-blue-700">
                   Participant feedback closed
                 </span>

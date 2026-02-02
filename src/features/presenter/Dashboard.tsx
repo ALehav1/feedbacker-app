@@ -402,7 +402,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
             onClick={handleCloseClick}
             className="w-full min-h-[48px]"
           >
-            Close feedback
+            Close participant feedback
           </Button>
         )}
         {session.state === 'completed' && (
@@ -432,7 +432,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => handleCloseVoting(true)} disabled={isTransitioning}>
-              {isTransitioning ? 'Closing...' : 'Close feedback'}
+              {isTransitioning ? 'Closing...' : 'Close participant feedback'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
