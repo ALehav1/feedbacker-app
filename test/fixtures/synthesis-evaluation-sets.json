@@ -1,0 +1,164 @@
+{
+  "description": "Evaluation sets for feedback synthesis quality testing. Each set tests different aspects of clustering, labeling, and coverage.",
+  "metadata": {
+    "createdAt": "2026-02-02",
+    "version": 1,
+    "rubric": [
+      "1. Cluster membership stays stable across repeated runs on the same dataset",
+      "2. Labels are short, specific, and distinct; each label matches its cluster's content",
+      "3. Interest scoring produces a clear ranking with stable tie handling and no surprising inversions",
+      "4. Top interests show up early in the outline and receive proportionate coverage",
+      "5. Outliers route to a clear bucket with a visible explanation in the UI"
+    ]
+  },
+  "evaluationSets": [
+    {
+      "id": "clear-winner",
+      "name": "Clear Interest Winner",
+      "description": "One theme has significantly higher interest than others. Tests ranking clarity.",
+      "request": {
+        "sessionTitle": "Tech Stack Deep Dive",
+        "sessionSummary": "Exploring modern web development tools and practices",
+        "lengthMinutes": 30,
+        "themeResults": [
+          { "text": "React Server Components", "more": 12, "less": 1, "net": 11 },
+          { "text": "TypeScript best practices", "more": 5, "less": 2, "net": 3 },
+          { "text": "Testing strategies", "more": 3, "less": 2, "net": 1 },
+          { "text": "Build tool comparison", "more": 2, "less": 4, "net": -2 }
+        ],
+        "responses": [
+          { "participantName": "Dev1", "freeFormText": "Very interested in how RSC handles data fetching" },
+          { "participantName": "Dev2", "freeFormText": "Would love to see examples of TypeScript generics in real code" }
+        ]
+      },
+      "expectations": {
+        "highInterestThemes": ["React Server Components"],
+        "lowInterestThemes": ["Build tool comparison"],
+        "firstSlideTopics": ["React Server Components"],
+        "coverageOrder": ["React Server Components", "TypeScript best practices", "Testing strategies", "Build tool comparison"]
+      }
+    },
+    {
+      "id": "tied-scores",
+      "name": "Tied Interest Scores",
+      "description": "Multiple themes with identical net scores. Tests tie-breaking stability.",
+      "request": {
+        "sessionTitle": "Team Communication Workshop",
+        "sessionSummary": "Improving how engineering teams communicate",
+        "lengthMinutes": 45,
+        "themeResults": [
+          { "text": "Async communication patterns", "more": 6, "less": 2, "net": 4 },
+          { "text": "Code review etiquette", "more": 5, "less": 1, "net": 4 },
+          { "text": "Meeting effectiveness", "more": 4, "less": 0, "net": 4 },
+          { "text": "Documentation standards", "more": 3, "less": 3, "net": 0 },
+          { "text": "Feedback delivery", "more": 2, "less": 2, "net": 0 }
+        ],
+        "responses": [
+          { "participantName": "Manager", "freeFormText": "Our team struggles with context-switching due to too many meetings" },
+          { "participantName": null, "freeFormText": "Need practical examples of good code review comments" }
+        ]
+      },
+      "expectations": {
+        "highInterestThemes": ["Async communication patterns", "Code review etiquette", "Meeting effectiveness"],
+        "neutralInterestThemes": ["Documentation standards", "Feedback delivery"],
+        "tieHandling": "stable-ordering",
+        "allHighInterestInFirstHalf": true
+      }
+    },
+    {
+      "id": "single-vote",
+      "name": "Single Vote Items",
+      "description": "Themes with minimal votes. Tests edge case handling.",
+      "request": {
+        "sessionTitle": "Startup Pitch Workshop",
+        "sessionSummary": "Learning to pitch your startup idea effectively",
+        "lengthMinutes": 20,
+        "themeResults": [
+          { "text": "Storytelling techniques", "more": 1, "less": 0, "net": 1 },
+          { "text": "Slide design", "more": 0, "less": 1, "net": -1 },
+          { "text": "Handling Q&A", "more": 1, "less": 1, "net": 0 },
+          { "text": "Investor psychology", "more": 0, "less": 0, "net": 0 }
+        ],
+        "responses": []
+      },
+      "expectations": {
+        "shouldHandleGracefully": true,
+        "minSlidesExpected": 6,
+        "noInterestDataOk": true
+      }
+    },
+    {
+      "id": "negative-dominant",
+      "name": "Negative Interest Dominant",
+      "description": "Most themes have negative interest. Tests low-interest handling.",
+      "request": {
+        "sessionTitle": "Legacy System Migration",
+        "sessionSummary": "Strategies for migrating from legacy systems",
+        "lengthMinutes": 30,
+        "themeResults": [
+          { "text": "Risk assessment frameworks", "more": 2, "less": 5, "net": -3 },
+          { "text": "Database migration tactics", "more": 3, "less": 6, "net": -3 },
+          { "text": "Testing legacy code", "more": 4, "less": 1, "net": 3 },
+          { "text": "Stakeholder communication", "more": 1, "less": 4, "net": -3 }
+        ],
+        "responses": [
+          { "participantName": "Architect", "freeFormText": "Most important is understanding which tests to write first" },
+          { "participantName": null, "freeFormText": "We've had bad experiences with big-bang migrations" }
+        ]
+      },
+      "expectations": {
+        "highInterestThemes": ["Testing legacy code"],
+        "lowInterestThemes": ["Risk assessment frameworks", "Database migration tactics", "Stakeholder communication"],
+        "lowInterestShouldBeDeemphasized": true
+      }
+    },
+    {
+      "id": "freeform-heavy",
+      "name": "Freeform Feedback Heavy",
+      "description": "Many freeform responses but few theme votes. Tests freeform influence.",
+      "request": {
+        "sessionTitle": "AI in Production",
+        "sessionSummary": "Deploying ML models in production environments",
+        "lengthMinutes": 45,
+        "themeResults": [
+          { "text": "Model monitoring", "more": 2, "less": 0, "net": 2 },
+          { "text": "A/B testing ML", "more": 1, "less": 1, "net": 0 }
+        ],
+        "responses": [
+          { "participantName": "ML Eng", "freeFormText": "What about feature stores? Very interested in that topic." },
+          { "participantName": "Data Scientist", "freeFormText": "How do you handle model drift over time?" },
+          { "participantName": "DevOps", "freeFormText": "CI/CD for ML pipelines is a mystery to me" },
+          { "participantName": null, "freeFormText": "Cost optimization for inference would be super helpful" },
+          { "participantName": "PM", "freeFormText": "How do you explain model decisions to stakeholders?" }
+        ]
+      },
+      "expectations": {
+        "freeformInfluence": true,
+        "suggestedTopicsFromFreeform": ["Feature stores", "Model drift", "ML CI/CD", "Inference costs", "Model explainability"],
+        "outlineShouldReflectFreeform": true
+      }
+    },
+    {
+      "id": "all-high-interest",
+      "name": "All High Interest",
+      "description": "Every theme has positive interest. Tests proportionate coverage.",
+      "request": {
+        "sessionTitle": "JavaScript Performance",
+        "sessionSummary": "Optimizing JavaScript for speed",
+        "lengthMinutes": 30,
+        "themeResults": [
+          { "text": "Memory management", "more": 8, "less": 1, "net": 7 },
+          { "text": "Bundle optimization", "more": 6, "less": 0, "net": 6 },
+          { "text": "Runtime performance", "more": 7, "less": 2, "net": 5 },
+          { "text": "Lazy loading strategies", "more": 5, "less": 1, "net": 4 }
+        ],
+        "responses": []
+      },
+      "expectations": {
+        "allThemesHigh": true,
+        "proportionateCoverage": true,
+        "higherInterestGetsMoreSlides": true
+      }
+    }
+  ]
+}

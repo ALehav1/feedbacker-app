@@ -1,5 +1,37 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
+import crypto from 'crypto';
+
+// Debug metadata for observability (included in response when ENABLE_DEBUG_META is set)
+interface DebugMeta {
+  inputHash: string;
+  modelParams: {
+    model: string;
+    temperature: number;
+    maxTokens: number;
+  };
+  responseStructure: {
+    slideCount: number;
+    sectionTitles: string[];
+    themesMatched: number;
+    themesUnmatched: number;
+  };
+  timing: {
+    apiCallMs: number;
+    totalMs: number;
+  };
+}
+
+function computeInputHash(body: RequestBody): string {
+  const normalized = JSON.stringify({
+    sessionTitle: body.sessionTitle,
+    sessionSummary: body.sessionSummary,
+    lengthMinutes: body.lengthMinutes,
+    themeResults: body.themeResults,
+    responses: body.responses,
+  });
+  return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
+}
 
 interface ThemeResult {
   text: string;
@@ -59,9 +91,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: { code: 'missing_openai_key', message: 'OPENAI_API_KEY is not set for this environment.' } });
   }
 
+  const startTime = Date.now();
+  const enableDebugMeta = process.env.ENABLE_DEBUG_META === 'true';
+
   try {
     const body = req.body as RequestBody;
     const { sessionTitle, sessionSummary, lengthMinutes, themeResults, responses } = body;
+
+    // Compute input hash for debugging/caching reference
+    const inputHash = computeInputHash(body);
+    if (enableDebugMeta) {
+      console.log(`[generate-outline] inputHash=${inputHash} themes=${themeResults.length} responses=${responses?.length || 0}`);
+    }
 
     // Validate required fields
     if (!sessionTitle || !themeResults) {
@@ -126,8 +167,15 @@ Respond with ONLY valid JSON matching this exact structure:
 
     const openai = new OpenAI({ apiKey });
 
+    const modelParams = {
+      model: 'gpt-4o' as const,
+      temperature: 0.7,
+      maxTokens: 4000,
+    };
+
+    const apiCallStart = Date.now();
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: modelParams.model,
       messages: [
         {
           role: 'system',
@@ -138,9 +186,10 @@ Respond with ONLY valid JSON matching this exact structure:
           content: prompt,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 4000,
+      temperature: modelParams.temperature,
+      max_tokens: modelParams.maxTokens,
     });
+    const apiCallMs = Date.now() - apiCallStart;
 
     const content = completion.choices[0]?.message?.content;
     if (!content) {
@@ -218,6 +267,30 @@ Respond with ONLY valid JSON matching this exact structure:
           less: bestMatch.less,
         };
       }
+    }
+
+    // Build debug metadata
+    const themesMatched = outline.slides.filter(s => s.interest).length;
+    const themesUnmatched = outline.slides.filter(s => !s.interest).length;
+    const totalMs = Date.now() - startTime;
+
+    if (enableDebugMeta) {
+      const debugMeta: DebugMeta = {
+        inputHash,
+        modelParams,
+        responseStructure: {
+          slideCount: outline.slides.length,
+          sectionTitles: outline.slides.map(s => s.title),
+          themesMatched,
+          themesUnmatched,
+        },
+        timing: {
+          apiCallMs,
+          totalMs,
+        },
+      };
+      console.log(`[generate-outline] complete: slides=${outline.slides.length} matched=${themesMatched} apiMs=${apiCallMs} totalMs=${totalMs}`);
+      return res.status(200).json({ ...outline, _debug: debugMeta });
     }
 
     return res.status(200).json(outline);

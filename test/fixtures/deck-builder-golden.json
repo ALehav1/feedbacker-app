@@ -1,0 +1,79 @@
+{
+  "description": "Golden fixture for Deck Builder structural tests. Based on real session structure with synthetic vote/response data.",
+  "metadata": {
+    "sourceSessionSlug": "dcqqrpj714iezyoc",
+    "createdAt": "2026-02-02",
+    "version": 1
+  },
+  "request": {
+    "sessionTitle": "Introduction to Feedbacker",
+    "sessionSummary": "A walkthrough of the Feedbacker app: what it does, why it was built, how it works, and who should use it.",
+    "lengthMinutes": 30,
+    "themeResults": [
+      {
+        "text": "What is this app - purpose and use cases",
+        "more": 5,
+        "less": 1,
+        "net": 4
+      },
+      {
+        "text": "Why I built it",
+        "more": 3,
+        "less": 2,
+        "net": 1
+      },
+      {
+        "text": "How does it work",
+        "more": 4,
+        "less": 0,
+        "net": 4
+      },
+      {
+        "text": "Who should use it",
+        "more": 2,
+        "less": 3,
+        "net": -1
+      }
+    ],
+    "responses": [
+      {
+        "participantName": "Alice",
+        "freeFormText": "I'd love to hear more about the technical architecture and how real-time updates work."
+      },
+      {
+        "participantName": "Bob",
+        "freeFormText": "Can you show a live demo? Also interested in pricing if this becomes a product."
+      },
+      {
+        "participantName": null,
+        "freeFormText": "How does this compare to Google Forms or Slido?"
+      }
+    ]
+  },
+  "expectedStructure": {
+    "minSlides": 6,
+    "maxSlides": 10,
+    "requiredSections": [
+      "opening",
+      "purpose",
+      "how-it-works",
+      "conclusion"
+    ],
+    "interestMapping": {
+      "high": ["What is this app", "How does it work"],
+      "neutral": ["Why I built it"],
+      "low": ["Who should use it"]
+    },
+    "coverageExpectations": {
+      "highInterestThemesShouldAppearInFirstHalf": true,
+      "allThemesShouldBeAddressed": true,
+      "freeformFeedbackShouldInfluenceContent": true
+    }
+  },
+  "validationRules": {
+    "slideTitlesMustBeUnique": true,
+    "bulletsPerSlide": { "min": 2, "max": 4 },
+    "subBulletsAllowed": true,
+    "speakerNotesOptional": true
+  }
+}

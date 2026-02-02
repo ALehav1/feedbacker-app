@@ -92,6 +92,8 @@ supabase/.temp
 .tmp
 temp/
 test-results/
+artifacts/
+playwright-report/
 
 # Playwright auth state (contains credentials)
 playwright/.auth/state.json
