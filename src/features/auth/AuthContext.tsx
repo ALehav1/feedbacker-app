@@ -154,10 +154,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     );
 
+    // Timeout wrapper to prevent hanging promises
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+        ),
+      ]);
+    };
+
     const getSessionWithRetry = async (retries = 3): Promise<void> => {
       for (let i = 0; i < retries; i++) {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          // 5 second timeout per attempt to prevent infinite hang
+          const { data: { session } } = await withTimeout(
+            supabase.auth.getSession(),
+            5000,
+            'getSession'
+          );
           if (import.meta.env.DEV) {
             console.log('[Auth] getSession result:', session ? 'has session' : 'no session', 'elapsed:', Date.now() - bootStart);
           }
@@ -169,6 +184,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (err instanceof DOMException && err.name === 'AbortError') {
             console.log('[Auth] getSession AbortError, retrying...', i + 1);
             await new Promise(r => setTimeout(r, 100 * (i + 1)));
+            continue;
+          }
+          // Log timeout and other errors, then retry
+          if (err instanceof Error && err.message.includes('timed out')) {
+            console.warn('[Auth] getSession timeout, retrying...', i + 1);
+            await new Promise(r => setTimeout(r, 500 * (i + 1)));
             continue;
           }
           console.error('[Auth] getSession error:', err);
