@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { generatePptx, type DeckOutline } from '@/lib/generatePptx';
+import { generatePptx, type DeckOutline, type DeckSlide } from '@/lib/generatePptx';
 import { Sparkles, FileDown, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface ThemeResult {
@@ -34,16 +34,6 @@ interface DeckBuilderPanelProps {
   presenterName?: string;
 }
 
-interface DeckBullet {
-  text: string;
-  subBullets?: string[];
-}
-
-interface DeckSlide {
-  title: string;
-  bullets: DeckBullet[];
-  speakerNotes?: string;
-}
 
 export function DeckBuilderPanel({
   sessionTitle,
@@ -345,6 +335,13 @@ export function DeckBuilderPanel({
                 </Button>
               </div>
 
+              {/* Interest scoring guide */}
+              {outline.slides.some(s => s.interest) && (
+                <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-200">
+                  Sections marked <span className="text-red-600 font-medium">Low interest</span> reflect "cover less" signals. Keep or remove them based on your plan.
+                </p>
+              )}
+
               {outline.slides.map((slide, slideIndex) => (
                 <div
                   key={slideIndex}
@@ -366,6 +363,22 @@ export function DeckBuilderPanel({
                     <span className={`text-sm font-medium truncate flex-1 min-w-0 ${slide.title ? 'text-gray-900' : 'text-gray-400'}`}>
                       {slide.title || 'New Slide'}
                     </span>
+                    {slide.interest && (
+                      <span
+                        className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded ${
+                          slide.interest.label === 'high'
+                            ? 'bg-green-100 text-green-700'
+                            : slide.interest.label === 'low'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                        title={`${slide.interest.more} more / ${slide.interest.less} less`}
+                      >
+                        {slide.interest.label === 'high' ? 'High' : slide.interest.label === 'low' ? 'Low' : 'Neutral'}
+                        {' '}
+                        ({slide.interest.score > 0 ? '+' : ''}{slide.interest.score})
+                      </span>
+                    )}
                     {outline.slides.length > 1 && (
                       <Button
                         variant="ghost"

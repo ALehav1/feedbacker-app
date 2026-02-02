@@ -5,10 +5,18 @@ interface DeckBullet {
   subBullets?: string[];
 }
 
-interface DeckSlide {
+interface InterestData {
+  score: number;
+  label: 'high' | 'neutral' | 'low';
+  more: number;
+  less: number;
+}
+
+export interface DeckSlide {
   title: string;
   bullets: DeckBullet[];
   speakerNotes?: string;
+  interest?: InterestData;
 }
 
 export interface DeckOutline {

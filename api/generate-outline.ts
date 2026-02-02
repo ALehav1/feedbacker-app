@@ -21,6 +21,13 @@ interface RequestBody {
   responses: ResponseData[];
 }
 
+interface InterestData {
+  score: number;
+  label: 'high' | 'neutral' | 'low';
+  more: number;
+  less: number;
+}
+
 interface DeckSlide {
   title: string;
   bullets: Array<{
@@ -28,6 +35,7 @@ interface DeckSlide {
     subBullets?: string[];
   }>;
   speakerNotes?: string;
+  interest?: InterestData;
 }
 
 interface DeckOutline {
@@ -152,6 +160,64 @@ Respond with ONLY valid JSON matching this exact structure:
     // Validate structure
     if (!outline.deckTitle || !Array.isArray(outline.slides)) {
       throw new Error('Invalid outline structure');
+    }
+
+    // Add interest scoring to slides by matching to theme results
+    const normalizeText = (text: string) => text.toLowerCase().trim();
+
+    for (const slide of outline.slides) {
+      const slideTitle = normalizeText(slide.title);
+
+      // Find best matching theme by checking if slide title contains theme text or vice versa
+      let bestMatch: ThemeResult | null = null;
+      let bestMatchScore = 0;
+
+      for (const theme of themeResults) {
+        const themeText = normalizeText(theme.text);
+
+        // Check for substring match (either direction)
+        const slideContainsTheme = slideTitle.includes(themeText);
+        const themeContainsSlide = themeText.includes(slideTitle);
+
+        // Also check for significant word overlap
+        const slideWords = new Set(slideTitle.split(/\s+/).filter(w => w.length > 3));
+        const themeWords = themeText.split(/\s+/).filter(w => w.length > 3);
+        const matchingWords = themeWords.filter(w => slideWords.has(w)).length;
+        const overlapScore = themeWords.length > 0 ? matchingWords / themeWords.length : 0;
+
+        // Calculate match score
+        let matchScore = 0;
+        if (slideContainsTheme || themeContainsSlide) {
+          matchScore = 1.0;
+        } else if (overlapScore >= 0.5) {
+          matchScore = overlapScore;
+        }
+
+        if (matchScore > bestMatchScore) {
+          bestMatchScore = matchScore;
+          bestMatch = theme;
+        }
+      }
+
+      // Add interest data if we found a match with reasonable confidence
+      if (bestMatch && bestMatchScore >= 0.5) {
+        const score = bestMatch.more - bestMatch.less;
+        let label: 'high' | 'neutral' | 'low';
+        if (score >= 1) {
+          label = 'high';
+        } else if (score <= -1) {
+          label = 'low';
+        } else {
+          label = 'neutral';
+        }
+
+        slide.interest = {
+          score,
+          label,
+          more: bestMatch.more,
+          less: bestMatch.less,
+        };
+      }
     }
 
     return res.status(200).json(outline);
