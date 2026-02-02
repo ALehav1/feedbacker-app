@@ -189,7 +189,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
 
   const responseCount = session.responseCount || 0;
 
-  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
+  const baseUrl = import.meta.env.VITE_APP_URL || import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
 
   const getStateBadgeClassName = (state: SessionState): string => {
     const baseClasses = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold';

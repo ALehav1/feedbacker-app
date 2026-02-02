@@ -75,7 +75,7 @@ export function SessionDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin
+  const baseUrl = import.meta.env.VITE_APP_URL || import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin
 
   const [themeResults, setThemeResults] = useState<ThemeResult[]>([])
   const [responses, setResponses] = useState<Response[]>([])
@@ -763,6 +763,13 @@ export function SessionDetail() {
                 </span>
                 <span className="text-sm text-gray-600">{responses.length} responses</span>
               </div>
+              <Button
+                variant="outline"
+                className="w-full min-h-[48px]"
+                onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
+              >
+                Edit presentation
+              </Button>
               <Button
                 variant="destructive"
                 className="w-full min-h-[48px]"

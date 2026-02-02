@@ -87,6 +87,27 @@ npm run lint
 
 > **Quick method:** Use the DEV-only "Response Generator" panel in SessionDetail (only visible in dev mode for active sessions) to generate 2-3 responses, then verify counts are consistent.
 
+### 13. UI/UX Screenshot Tests
+```bash
+npx playwright test e2e/ui-screenshots.spec.ts
+```
+- [ ] Screenshots saved to `./artifacts/screenshots/`
+- [ ] Mobile screenshots (375px): login, feedback pages
+- [ ] Desktop screenshots (1024px): login, feedback pages
+- [ ] No overflow or spillover visible in screenshots
+
+> **Visual verification:** Compare screenshots against previous versions to catch layout regressions.
+
+### 14. SessionDetail Edit Button (Active Sessions)
+- [ ] Open an active session's detail page
+- [ ] Verify "Edit presentation" button is visible below participant link
+- [ ] Click "Edit presentation" → lands on SessionEdit page
+
+### 15. Environment Variable Consistency
+- [ ] Verify `VITE_APP_URL` is set in `.env` (preferred)
+- [ ] Fallback to `VITE_PUBLIC_BASE_URL` or `window.location.origin` works
+- [ ] Participant links display correctly in Dashboard and SessionDetail
+
 ---
 
 ## Pass Criteria

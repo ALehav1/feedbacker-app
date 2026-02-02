@@ -201,7 +201,7 @@ export function ProfileSetup() {
               <span className="text-2xl font-semibold">{getInitials(formData.name)}</span>
             </div>
             <div className="flex-1">
-              <CardTitle>{presenter ? 'Edit Profile' : 'Complete Your Profile'}</CardTitle>
+              <CardTitle>{presenter ? 'Edit Profile' : 'Welcome! Complete Your Profile'}</CardTitle>
               <CardDescription>
                 {presenter ? 'Update your profile information' : 'Tell us a bit about yourself to get started'}
               </CardDescription>
