@@ -244,7 +244,7 @@ export function SessionDetail() {
     }
   }
 
-  const handleCloseVoting = () => {
+  const handleCloseFeedback = () => {
     setShowCloseDialog(false)
     transitionState('completed')
     // Navigation to Results + Deck Builder is handled in transitionState
@@ -1029,7 +1029,7 @@ export function SessionDetail() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCloseVoting} disabled={isTransitioning}>
+            <AlertDialogAction onClick={handleCloseFeedback} disabled={isTransitioning}>
               {isTransitioning ? 'Closing...' : 'Close participant feedback'}
             </AlertDialogAction>
           </AlertDialogFooter>

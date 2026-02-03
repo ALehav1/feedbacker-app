@@ -73,13 +73,13 @@ The person responding to a session with their interests.
 | State | Description | Participant Link | Presenter Actions |
 |-------|-------------|------------------|-------------------|
 | **Draft** | (Not used in current flow) | N/A | N/A |
-| **Active** | Link shared, participant voting open | Works (shows Live version) | Edit Working version, Publish updates, View results, Close participant voting, Delete |
-| **Completed** | Participant voting closed, reviewing results | Content visible, voting disabled (banner explains) | View results, Delete |
+| **Active** | Link shared, participant feedback open | Works (shows Live version) | Edit Working version, Publish updates, View results, Close participant feedback, Delete |
+| **Completed** | Participant feedback closed, reviewing results | Content visible, feedback disabled (banner explains) | View results, Delete |
 | **Archived** | (Not currently used in UI) | Shows "closed" message | View (read-only), Delete, Use as template |
 
 **Rationale:** 
-- Completed disables voting but keeps content visible — participants can still read the presentation summary and topics, but cannot vote. Banner explains "Participant voting has closed."
-- Terminology clarified: "Participant voting" refers to the time-bounded voting window, distinct from "Presentation" content.
+- Completed disables feedback but keeps content visible — participants can still read the presentation summary and topics, but cannot submit feedback. Banner explains "Participant feedback has closed."
+- Terminology clarified: "Participant feedback" refers to the time-bounded feedback collection period, distinct from "Presentation" content.
 - Active sessions use Working vs Live model: presenter edits Working version, participants see Live version (last published snapshot).
 - Explicit "Publish updates" action prevents accidental changes to participant experience. The publish/discard bar appears on the session detail page when unpublished changes exist, with two actions: **Publish updates** (copies working → published, clears flag) and **Discard changes** (restores working from published, with confirmation dialog).
 - Topic edits use soft-delete to preserve participant feedback: renamed/reordered topics keep their feedback; removed topics are deactivated but their historical feedback is retained in the database.
@@ -89,7 +89,7 @@ The person responding to a session with their interests.
 
 ```
 (Wizard creates directly as Active with published snapshot)
-Active → Completed (presenter clicks "Close participant voting")
+Active → Completed (presenter clicks "Close participant feedback")
 Completed → Archived (not currently implemented in UI)
 Archived → Active (use as template - creates new active session with summary/topics, no responses)
 Any state → Deleted (permanent removal via Delete button with confirmation)
@@ -98,8 +98,8 @@ Any state → Deleted (permanent removal via Delete button with confirmation)
 **Current Implementation Note:** The creation wizard now creates presentations directly as Active (skipping Draft state). This simplifies the flow: presenter enters info → reviews topics → clicks "Confirm & Publish" → presentation is immediately live.
 
 **Current Implementation Note:** Dashboard shows two sections:
-- "Active Sessions — Participant Voting Open" (state = 'active')
-- "Closed Sessions — Participant Voting Closed" (state = 'completed')
+- "Active Sessions — Participant Feedback Open" (state = 'active')
+- "Closed Sessions — Participant Feedback Closed" (state = 'completed')
 
 Archived state exists in schema but is not actively used in current UI.
 
@@ -169,23 +169,23 @@ Wipes any test data, keeps summary/topics structure for fresh start.
 - Edit Profile and Sign Out buttons
 
 **Primary sections:**
-1. **Active Sessions — Participant Voting Open**
+1. **Active Sessions — Participant Feedback Open**
    - Sessions where state = 'active'
-   - "Close voting" button on each tile
-   - Empty state: "No active voting sessions." (always shown)
+   - "Close feedback" button on each tile
+   - Empty state: "No active feedback sessions." (always shown)
 
-2. **Closed Sessions — Participant Voting Closed**
+2. **Closed Sessions — Participant Feedback Closed**
    - Sessions where state = 'completed'
    - "Delete" button (destructive) on each tile
    - Only shown when closed sessions exist
 
 **Per-session tile:**
 - Session title
-- State badge ("Voting open" or "Voting closed")
+- State badge ("Feedback open" or "Feedback closed")
 - Duration and response count
 - Shareable link with copy button
 - Quick actions: "Presentation details" and "Audience feedback"
-- State-specific action (Close voting or Delete)
+- State-specific action (Close feedback or Delete)
 
 ### 4.4 Create New Session
 
@@ -278,8 +278,8 @@ Slug is AI-generated, not editable.
 - Response count ("7 people have responded")
 - List of who responded (emails/names)
 - Edit button
-- Close participant voting button (transitions to completed state)
-- Confirmation dialog: "Participants can no longer vote once voting is closed."
+- Close participant feedback button (transitions to completed state)
+- Confirmation dialog: "Participants can no longer submit feedback once this is closed."
 
 **Refresh:** Manual (presenter clicks to update)
 
@@ -420,7 +420,7 @@ Permanent removal from any state. No recovery.
 
 4. **Proposed Topics section**
    - Instruction text: "Tell the presenter which topics to spend more time on and which to spend less time on."
-   - List of all topics with voting controls
+   - List of all topics with feedback controls
    - Each topic has "Cover more" / "Cover less" buttons
    - Optional sub-bullets shown as context under each topic
    - Can select multiple topics
@@ -448,7 +448,7 @@ Permanent removal from any state. No recovery.
 
 If session is in draft state:
 - Banner: "Presentation draft — Preview only. Feedback collection starts after the presenter confirms and saves."
-- All voting controls disabled
+- All feedback controls disabled
 - Submit button disabled
 - Content is visible for preview
 
@@ -456,7 +456,7 @@ If session is in draft state:
 
 If session is completed or archived:
 - Banner: "Participant feedback is closed. You can still review the presentation below, but feedback can no longer be submitted."
-- All voting controls disabled
+- All feedback controls disabled
 - Submit button disabled
 - Content remains visible for reference
 
@@ -658,7 +658,7 @@ Confirm & Publish (creates active presentation) →
 See confirmation with participant link →
 Share link externally →
 [Optional: Edit working version → Publish updates] →
-Check results → Close participant voting →
+Check results → Close participant feedback →
 Export outline → Archive
 ```
 

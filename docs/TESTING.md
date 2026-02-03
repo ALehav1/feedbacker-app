@@ -26,7 +26,7 @@
 | Create session | Click "Create New Presentation" → Complete wizard → Confirm | Session created directly as `active` with published snapshot |
 | Session detail | Click on session card | Shows SessionDetail with "Session details" and "Audience feedback" tabs |
 | Copy link | Click "Copy participant link" | Shareable link copied to clipboard |
-| Close voting | In active, click "Close participant voting" → Confirm | State changes to `completed` |
+| Close feedback | In active, click "Close participant feedback" → Confirm | State changes to `completed` |
 | Delete session | In completed, click "Delete" → Confirm | Session permanently deleted |
 | Results tab | Click "Audience feedback" tab | Shows Topic Prioritization + Participant Responses + Deck Builder |
 
@@ -59,9 +59,9 @@
 
 | Test | Steps | Expected |
 |------|-------|----------|
-| Access draft session | Visit `/s/{slug}` for draft session | Shows content with "Presentation draft" banner, voting disabled |
-| Access active session | Visit `/s/{slug}` for active session | Shows full feedback form with voting enabled |
-| Access completed session | Visit `/s/{slug}` for completed/archived | Shows content with "Participant feedback is closed" banner, voting disabled |
+| Access draft session | Visit `/s/{slug}` for draft session | Shows content with "Presentation draft" banner, feedback disabled |
+| Access active session | Visit `/s/{slug}` for active session | Shows full feedback form with feedback enabled |
+| Access completed session | Visit `/s/{slug}` for completed/archived | Shows content with "Participant feedback is closed" banner, feedback disabled |
 | Submit feedback | Select at least one topic → Submit | Response saved, shows "Thank You!" card |
 | Anonymous submission | Submit without name/email | Works - system generates `anon-{token}@feedbacker.app` |
 | Required selection | Try to submit with no topics selected | Toast error: "Please select at least one topic" |
@@ -74,7 +74,7 @@
 | Test | Steps | Expected |
 |------|-------|----------|
 | Theme aggregation | Multiple participants submit → Check Results | Counts match actual submissions |
-| Sorting | Themes with different votes | Sorted by net desc, total desc, sort_order asc |
+| Sorting | Themes with different feedback | Sorted by net desc, total desc, sort_order asc |
 | Response display | Submit with free-form text | Text appears in Participant Responses section |
 
 ---

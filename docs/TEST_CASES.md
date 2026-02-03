@@ -47,9 +47,9 @@ Solution
 - Details shown as `— detail` in gray text under each topic
 
 **Participant View:**
-- 2 topics with voting controls
+- 2 topics with feedback controls
 - Details visible as context under each topic
-- Details are NOT votable (no controls on details)
+- Details are NOT selectable (no controls on details)
 
 ---
 
@@ -72,7 +72,7 @@ Case study
 - "Case study" has 2 details: "what happened", "what we learned"
 
 **Participant View:**
-- 2 topics votable
+- 2 topics with feedback controls
 - 4 total details shown as context
 
 ---
@@ -106,7 +106,7 @@ Q&A
 - "Q&A" has 0 details
 
 **Participant View:**
-- 4 votable topics
+- 4 topics with feedback controls
 - 8 total details shown as context
 
 ---
@@ -228,7 +228,7 @@ Q&A
 - [ ] Details visible under each topic
 
 **Controls disabled:**
-- [ ] Topic voting buttons disabled
+- [ ] Topic feedback buttons disabled
 - [ ] Submit button disabled
 
 **Banner:**
@@ -248,7 +248,7 @@ Q&A
 - [ ] Details visible as context under topics
 
 **Controls enabled:**
-- [ ] Topic voting buttons work (Cover more / Cover less)
+- [ ] Topic feedback buttons work (Cover more / Cover less)
 - [ ] Submit button enabled
 - [ ] Form submission works
 
@@ -417,7 +417,7 @@ Q&A
 - [ ] Suggested welcome message works
 - [ ] Sub-bullets never become standalone topics
 - [ ] Draft preview shows content with disabled controls
-- [ ] Active voting works end-to-end
+- [ ] Active feedback works end-to-end
 - [ ] Edit Session loads and saves to working version
 - [ ] Mobile UX has no overflow at 375px
 - [ ] If "Creation failed" occurs, error object captured and root cause identified
@@ -463,7 +463,7 @@ Q&A
    - [ ] Verify response count matches dashboard
    - [ ] Click "Audience feedback" tab
    - [ ] **CRITICAL:** Both responses visible on first load (no tab switching needed)
-   - [ ] Topic Prioritization shows aggregated votes from both
+   - [ ] Topic Prioritization shows aggregated feedback from both
 
 5. **Refresh stability:**
    - [ ] Hard refresh SessionDetail page
@@ -510,7 +510,7 @@ Q&A
    - [ ] Response count updates in status block
    - [ ] Click "Audience feedback" tab
    - [ ] All generated responses appear in list
-   - [ ] Topic Prioritization shows aggregated votes
+   - [ ] Topic Prioritization shows aggregated feedback
 
 5. **Clear generated responses (optional):**
    - [ ] Click "Clear generated" to remove test data

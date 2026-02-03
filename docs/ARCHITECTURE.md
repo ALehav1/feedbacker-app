@@ -120,11 +120,11 @@ feedbacker-app/
 │   │   │   └── DevResponseGenerator.tsx # Dev-only test data generator
 │   │   │
 │   │   └── participant/         # Participant-only views
-│   │       └── FeedbackForm.tsx      # All-in-one: access, voting, thank you
+│   │       └── FeedbackForm.tsx      # All-in-one: access, feedback, thank you
 │   │
 │   ├── components/              # Shared UI components
 │   │   ├── ui/                  # shadcn/ui primitives (button, card, dialog, etc.)
-│   │   ├── ThemeSelector.tsx    # Cover more/Cover less voting control
+│   │   ├── ThemeSelector.tsx    # Cover more/Cover less feedback control
 │   │   ├── ErrorBoundary.tsx    # React error boundary wrapper
 │   │   └── UnpublishedChangesBar.tsx # Publish/discard working changes
 │   │
@@ -284,19 +284,19 @@ Sessions follow a strict state machine:
                             - Publish updates           - Export outline             - Use as template
                             - Discard changes           - Move to archived           - Delete
                             - View responses            - Delete
-                            - Close voting
+                            - Close feedback
                             - Delete
 
                             Participants:               Participants:                Participants:
                             - See Live version          - See Live version           - See "closed" message
-                            - Can respond               - Voting disabled
+                            - Can respond               - Feedback disabled
                             - Can edit response         - Content still visible
 ```
 
 **Current Flow (v0.1.3+):**
 - Wizard creates presentations directly as Active with published snapshot
 - No Draft state in normal flow (schema supports it but UI bypasses)
-- Active → Completed: Presenter clicks "Close participant voting"
+- Active → Completed: Presenter clicks "Close participant feedback"
 - Completed → Archived: Explicit presenter action only
 - Archived → Active: "Use as template" creates NEW active session (copies summary/topics, removes responses)
 
@@ -596,15 +596,15 @@ Shared link (/s/:slug)
     ▼
 FeedbackForm.tsx (single component handles all states)
     │
-    ├─▶ [Draft state] ──▶ Preview banner, voting disabled
+    ├─▶ [Draft state] ──▶ Preview banner, feedback disabled
     │
-    ├─▶ [Active state] ──▶ Full voting experience
+    ├─▶ [Active state] ──▶ Full feedback experience
     │       │
     │       ├─▶ Select topics (Cover more/Cover less)
     │       ├─▶ Optional: name, email, freeform text
     │       └─▶ Submit ──▶ "Thank You" confirmation (same component)
     │
-    └─▶ [Completed/Archived] ──▶ "Voting closed" banner, content visible
+    └─▶ [Completed/Archived] ──▶ "Feedback closed" banner, content visible
 ```
 
 **Note:** Email is optional for participants. Anonymous submissions use generated email `anon-{token}@feedbacker.app`.
@@ -617,7 +617,7 @@ FeedbackForm.tsx (single component handles all states)
 
 | Component | Purpose | Props | Used In |
 |-----------|---------|-------|---------|
-| `ThemeSelector` | Cover more/Cover less voting | `text`, `selection`, `onSelect`, `disabled` | FeedbackForm |
+| `ThemeSelector` | Cover more/Cover less feedback | `text`, `selection`, `onSelect`, `disabled` | FeedbackForm |
 | `UnpublishedChangesBar` | Publish/discard working changes | `onPublish`, `onDiscard`, `participantUrl` | SessionEdit |
 | `ErrorBoundary` | React error boundary | `children` | SessionDetail, SessionEdit |
 

@@ -125,7 +125,7 @@ CREATE POLICY "Anyone can read active sessions"
 -- No token verification at RLS level
 ```
 
-**Risk:** Someone could inspect network calls and manipulate `response_id` to change others' votes.
+**Risk:** Someone could inspect network calls and manipulate `response_id` to change others' feedback.
 
 **Why Acceptable for MVP:**
 - Requires technical knowledge + malicious intent

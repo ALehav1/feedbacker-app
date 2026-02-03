@@ -77,8 +77,8 @@ export function Dashboard() {
   }
 
   const hasNoSessions = activeSessions.length === 0 && archivedSessions.length === 0;
-  const activeVotingSessions = activeSessions.filter((s) => s.state === 'active');
-  const closedVotingSessions = activeSessions.filter((s) => s.state === 'completed');
+  const activeFeedbackSessions = activeSessions.filter((s) => s.state === 'active');
+  const closedFeedbackSessions = activeSessions.filter((s) => s.state === 'completed');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -146,9 +146,9 @@ export function Dashboard() {
 
             <div>
               <h3 className="mb-3 text-lg font-medium text-gray-900">Active Presentations — Participant Feedback Open</h3>
-              {activeVotingSessions.length > 0 ? (
+              {activeFeedbackSessions.length > 0 ? (
                 <div className="space-y-3">
-                  {activeVotingSessions.map((session) => (
+                  {activeFeedbackSessions.map((session) => (
                     <SessionCard key={session.id} session={session} onSessionChange={refetch} />
                   ))}
                 </div>
@@ -157,11 +157,11 @@ export function Dashboard() {
               )}
             </div>
 
-            {closedVotingSessions.length > 0 && (
+            {closedFeedbackSessions.length > 0 && (
               <div>
                 <h3 className="mb-3 text-lg font-medium text-gray-900">Closed Presentations — Participant Feedback Closed</h3>
                 <div className="space-y-3">
-                  {closedVotingSessions.map((session) => (
+                  {closedFeedbackSessions.map((session) => (
                     <SessionCard key={session.id} session={session} onSessionChange={refetch} />
                   ))}
                 </div>
@@ -248,7 +248,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
     }
   };
 
-  const handleCloseVoting = async (navigateToResults: boolean) => {
+  const handleCloseFeedback = async (navigateToResults: boolean) => {
     setIsTransitioning(true);
     try {
       const { error } = await supabase
@@ -431,7 +431,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleCloseVoting(true)} disabled={isTransitioning}>
+            <AlertDialogAction onClick={() => handleCloseFeedback(true)} disabled={isTransitioning}>
               {isTransitioning ? 'Closing...' : 'Close participant feedback'}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -452,7 +452,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
               Keep feedback open
             </AlertDialogAction>
             <AlertDialogCancel
-              onClick={() => handleCloseVoting(false)}
+              onClick={() => handleCloseFeedback(false)}
               disabled={isTransitioning}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
