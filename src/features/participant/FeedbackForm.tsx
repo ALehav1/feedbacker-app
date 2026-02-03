@@ -399,28 +399,16 @@ export function FeedbackForm() {
                     Tell the presenter which topics to spend more time on and which to spend less time on.
                   </p>
                   <div className="space-y-3">
-                    {themes.map((theme) => {
-                      const publishedTopic = session.publishedTopics.find(t => t.themeId === theme.id)
-                      return (
-                        <div key={theme.id}>
-                          <ThemeSelector
-                            text={theme.text}
-                            selection={selections[theme.id] || null}
-                            onSelect={(selection) => handleSelectionChange(theme.id, selection)}
-                            disabled={isSubmitting || isDraft || isFeedbackClosed}
-                          />
-                          {publishedTopic?.details && publishedTopic.details.length > 0 && (
-                            <ul className="mt-1 ml-4 space-y-0.5">
-                              {publishedTopic.details.map((detail, idx) => (
-                                <li key={idx} className="text-xs text-gray-600 break-words">
-                                  — {detail}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )
-                    })}
+                    {themes.map((theme) => (
+                      <div key={theme.id}>
+                        <ThemeSelector
+                          text={theme.text}
+                          selection={selections[theme.id] || null}
+                          onSelect={(selection) => handleSelectionChange(theme.id, selection)}
+                          disabled={isSubmitting || isDraft || isFeedbackClosed}
+                        />
+                      </div>
+                    ))}
                   </div>
                   {isDraft && (
                     <p className="text-xs text-gray-500 mt-3">

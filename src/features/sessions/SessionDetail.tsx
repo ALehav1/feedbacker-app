@@ -23,7 +23,6 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
-import { decodeTopicBlock } from '@/lib/topicBlocks'
 import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
 import { DevResponseGenerator } from './DevResponseGenerator'
 import { DeckBuilderPanel } from './DeckBuilderPanel'
@@ -148,6 +147,7 @@ export function SessionDetail() {
             topicsSource: (data.topics_source as 'generated' | 'manual') || 'generated',
             publishedWelcomeMessage: data.published_welcome_message,
             publishedSummaryCondensed: data.published_summary_condensed,
+            publishedSummaryFull: data.published_summary_full,
             publishedTopics: data.published_topics || [],
             publishedAt: data.published_at ? new Date(data.published_at) : undefined,
             hasUnpublishedChanges: data.has_unpublished_changes || false,
@@ -301,15 +301,11 @@ export function SessionDetail() {
       }
 
       // 2. Build published_topics JSONB array
-      const publishedTopics: PublishedTopic[] = (themesData || []).map((t: ThemeRow) => {
-        const decoded = decodeTopicBlock(t.text)
-        return {
-          themeId: t.id,
-          text: t.text,
-          sortOrder: t.sort_order,
-          ...(decoded.subtopics.length > 0 ? { details: decoded.subtopics } : {}),
-        }
-      })
+      const publishedTopics: PublishedTopic[] = (themesData || []).map((t: ThemeRow) => ({
+        themeId: t.id,
+        text: t.text,
+        sortOrder: t.sort_order,
+      }))
 
       // 3. Update session: copy working → published
       const { error: updateError } = await supabase
@@ -317,6 +313,7 @@ export function SessionDetail() {
         .update({
           published_welcome_message: session.welcomeMessage,
           published_summary_condensed: session.summaryCondensed,
+          published_summary_full: session.summaryFull,
           published_topics: publishedTopics,
           published_at: new Date().toISOString(),
           has_unpublished_changes: false,
@@ -335,6 +332,7 @@ export function SessionDetail() {
         ...session,
         publishedWelcomeMessage: session.welcomeMessage,
         publishedSummaryCondensed: session.summaryCondensed,
+        publishedSummaryFull: session.summaryFull,
         publishedTopics: publishedTopics,
         publishedAt: new Date(),
         hasUnpublishedChanges: false,
@@ -364,6 +362,7 @@ export function SessionDetail() {
         .update({
           welcome_message: session.publishedWelcomeMessage || '',
           summary_condensed: session.publishedSummaryCondensed || '',
+          summary_full: session.publishedSummaryFull || '',
           has_unpublished_changes: false,
         })
         .eq('id', sessionId)
@@ -423,6 +422,7 @@ export function SessionDetail() {
         ...session,
         welcomeMessage: session.publishedWelcomeMessage || '',
         summaryCondensed: session.publishedSummaryCondensed || '',
+        summaryFull: session.publishedSummaryFull || '',
         hasUnpublishedChanges: false,
       })
 

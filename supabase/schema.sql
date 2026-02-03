@@ -35,6 +35,7 @@ CREATE TABLE sessions (
   -- Published snapshot fields (what participants see)
   published_welcome_message TEXT,
   published_summary_condensed TEXT,
+  published_summary_full TEXT,
   published_topics JSONB NOT NULL DEFAULT '[]'::jsonb,
   published_at TIMESTAMPTZ,
   has_unpublished_changes BOOLEAN NOT NULL DEFAULT false,
@@ -48,8 +49,9 @@ CREATE TABLE themes (
   session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   text TEXT NOT NULL,
   sort_order INTEGER NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(session_id, sort_order)  -- Prevent sort_order collisions within a session
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+  -- Uniqueness enforced via partial index (active themes only)
 );
 
 -- Responses (participant feedback)
@@ -82,6 +84,8 @@ CREATE INDEX idx_sessions_presenter ON sessions(presenter_id);
 CREATE INDEX idx_sessions_slug ON sessions(slug);
 CREATE INDEX idx_sessions_state ON sessions(state);
 CREATE INDEX idx_themes_session ON themes(session_id);
+CREATE UNIQUE INDEX themes_session_sort_active_unique ON themes(session_id, sort_order) WHERE is_active = true;
+CREATE INDEX idx_themes_session_active ON themes(session_id) WHERE is_active = true;
 CREATE INDEX idx_responses_session ON responses(session_id);
 CREATE INDEX idx_responses_email ON responses(session_id, participant_email);
 CREATE INDEX idx_responses_token ON responses(participant_token);

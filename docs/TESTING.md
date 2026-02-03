@@ -205,6 +205,41 @@ SELECT * FROM sessions WHERE state = 'active';
 
 ---
 
+## Migration Verification Queries
+
+### Verify `is_active` Column on Themes
+
+```sql
+-- Check that is_active column exists and has correct default
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = 'themes' AND column_name = 'is_active';
+-- Expected: is_active | boolean | NO | true
+```
+
+### Verify Partial Unique Index
+
+```sql
+-- Check that the partial unique index exists on themes
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE tablename = 'themes' AND indexname = 'themes_session_sort_active_unique';
+-- Expected: CREATE UNIQUE INDEX themes_session_sort_active_unique
+--           ON public.themes USING btree (session_id, sort_order) WHERE (is_active = true)
+```
+
+### Verify `published_summary_full` Column on Sessions
+
+```sql
+-- Check that published_summary_full column exists
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'sessions' AND column_name = 'published_summary_full';
+-- Expected: published_summary_full | text | YES
+```
+
+---
+
 ## Troubleshooting
 
 ### Auth Issues

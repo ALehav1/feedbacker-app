@@ -420,17 +420,12 @@ export function SessionCreateWizard() {
     try {
       const slug = generateSlug()
 
-      // Build published topics snapshot (decode for display info)
-      const publishedTopics = wizardData.themes.map((theme) => {
-        const decoded = decodeTopicBlock(theme.text)
-        return {
-          themeId: theme.id,
-          text: theme.text, // Keep encoded for persistence
-          sortOrder: theme.sortOrder,
-          title: decoded.title,
-          subtopics: decoded.subtopics,
-        }
-      })
+      // Build published topics snapshot
+      const publishedTopics = wizardData.themes.map((theme) => ({
+        themeId: theme.id,
+        text: theme.text,
+        sortOrder: theme.sortOrder,
+      }))
 
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
@@ -446,6 +441,7 @@ export function SessionCreateWizard() {
           topics_source: 'generated',
           published_welcome_message: wizardData.welcomeMessage.trim() || '',
           published_summary_condensed: wizardData.summaryCondensed.trim() || '',
+          published_summary_full: wizardData.summaryFull.trim() || '',
           published_topics: publishedTopics.length > 0 ? publishedTopics : [],
           published_at: new Date().toISOString(),
           has_unpublished_changes: false,

@@ -32,6 +32,7 @@ export interface Session {
   // Published snapshot fields (what participants see)
   publishedWelcomeMessage?: string;
   publishedSummaryCondensed?: string;
+  publishedSummaryFull?: string;
   publishedTopics: PublishedTopic[];
   publishedAt?: Date;
   hasUnpublishedChanges: boolean;

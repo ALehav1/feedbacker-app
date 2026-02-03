@@ -17,6 +17,7 @@ interface SessionRow {
   topics_source: string
   published_welcome_message?: string
   published_summary_condensed?: string
+  published_summary_full?: string
   published_topics: { themeId: string; text: string; sortOrder: number }[] // JSONB array from database
   published_at?: string
   has_unpublished_changes: boolean
@@ -100,6 +101,7 @@ export function useSessions(): UseSessionsReturn {
         topicsSource: (row.topics_source as 'generated' | 'manual') || 'generated',
         publishedWelcomeMessage: row.published_welcome_message,
         publishedSummaryCondensed: row.published_summary_condensed,
+        publishedSummaryFull: row.published_summary_full,
         publishedTopics: row.published_topics || [],
         publishedAt: row.published_at ? new Date(row.published_at) : undefined,
         hasUnpublishedChanges: row.has_unpublished_changes || false,
