@@ -1,52 +1,66 @@
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { UNPUBLISHED_CHANGES_BAR } from '@/lib/copy';
 
 interface UnpublishedChangesBarProps {
   onPublish: () => void;
   onDiscard: () => void;
   isPublishing?: boolean;
-  isActive?: boolean;
   slug?: string;
 }
 
 export function UnpublishedChangesBar({
-  onPublish: _onPublish,
-  onDiscard: _onDiscard,
-  isPublishing: _isPublishing = false,
-  isActive: _isActive = false,
+  onPublish,
+  onDiscard,
+  isPublishing = false,
   slug,
 }: UnpublishedChangesBarProps) {
-  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
+  const baseUrl = import.meta.env.VITE_APP_URL || import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
   const liveUrl = slug ? `${baseUrl}/s/${slug}` : null;
-  
-  // Minimal non-blocking bar with just preview links
+
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white px-4 py-2">
-      <div className="mx-auto max-w-screen-lg flex items-center justify-between gap-3">
-        <p className="text-xs text-gray-600">Unsaved edits</p>
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold text-amber-900">
+          {UNPUBLISHED_CHANGES_BAR.title}
+        </h3>
+        <p className="text-sm text-amber-700 mt-1">
+          {UNPUBLISHED_CHANGES_BAR.body}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={onPublish}
+          disabled={isPublishing}
+          size="sm"
+          className="min-h-[40px]"
+        >
+          {isPublishing ? 'Publishing...' : UNPUBLISHED_CHANGES_BAR.primaryAction}
+        </Button>
+        <Button
+          onClick={onDiscard}
+          disabled={isPublishing}
+          variant="outline"
+          size="sm"
+          className="min-h-[40px]"
+        >
+          {UNPUBLISHED_CHANGES_BAR.secondaryAction}
+        </Button>
         {liveUrl && (
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open(`${liveUrl}?preview=working`, '_blank')}
-              className="h-8 text-xs"
-            >
-              <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-              Preview participant view
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open(liveUrl, '_blank')}
-              className="h-8 text-xs"
-            >
-              <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-              Open participant page
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.open(liveUrl, '_blank')}
+            className="min-h-[40px] text-xs"
+          >
+            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+            {UNPUBLISHED_CHANGES_BAR.viewLiveLink}
+          </Button>
         )}
       </div>
+      <p className="text-xs text-amber-600">
+        {UNPUBLISHED_CHANGES_BAR.activeReassurance}
+      </p>
     </div>
   );
 }

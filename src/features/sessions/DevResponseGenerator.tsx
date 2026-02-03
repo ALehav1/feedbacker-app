@@ -131,11 +131,12 @@ export function DevResponseGenerator({ sessionId, onResponsesGenerated }: DevRes
     setIsGenerating(true)
 
     try {
-      // First, fetch themes for this session
+      // First, fetch active themes for this session
       const { data: themesData, error: themesError } = await supabase
         .from('themes')
         .select('id')
         .eq('session_id', sessionId)
+        .eq('is_active', true)
         .order('sort_order', { ascending: true })
 
       if (themesError) {

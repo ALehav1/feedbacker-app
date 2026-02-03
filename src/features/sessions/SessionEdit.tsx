@@ -254,11 +254,12 @@ export function SessionEdit() {
       setInitialSummaryCondensed(summaryCondensedVal)
       setInitialSummaryFull(summaryFullVal)
 
-      // Fetch themes
+      // Fetch active themes (soft-deleted themes excluded)
       const { data: themesData } = await supabase
         .from('themes')
         .select('*')
         .eq('session_id', sessionId)
+        .eq('is_active', true)
         .order('sort_order', { ascending: true })
 
       if (themesData) {
@@ -332,28 +333,88 @@ export function SessionEdit() {
         return
       }
 
-      // Delete all existing themes and insert new ones
-      await supabase.from('themes').delete().eq('session_id', sessionId)
+      // --- Diff-based theme save: preserves participant feedback ---
 
-      if (themes.length > 0) {
-        const { error: themesError } = await supabase
+      // 1. Fetch existing active theme IDs from DB
+      const { data: existingThemesData } = await supabase
+        .from('themes')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('is_active', true)
+
+      const existingIds = new Set<string>(
+        (existingThemesData || []).map((t: { id: string }) => t.id)
+      )
+      const editedIds = new Set<string>(themes.map(t => t.id))
+
+      // 2. Identify removed, surviving, and new themes
+      const removedIds = [...existingIds].filter(id => !editedIds.has(id))
+      const survivingThemes = themes.filter(t => existingIds.has(t.id))
+      const newThemes = themes.filter(t => !existingIds.has(t.id))
+
+      // 3. Soft-delete removed themes (frees sort_order slots via partial unique index)
+      if (removedIds.length > 0) {
+        const { error: deactivateError } = await supabase
+          .from('themes')
+          .update({ is_active: false })
+          .in('id', removedIds)
+
+        if (deactivateError) {
+          console.error('[SessionEdit] Theme deactivation failed:', deactivateError)
+          toast({ variant: 'destructive', title: 'Save failed', description: 'Could not deactivate removed topics' })
+          setSaving(false)
+          return
+        }
+      }
+
+      // 4. Two-pass reorder for surviving themes to avoid UNIQUE conflicts
+      //    Pass 1: Move all surviving themes to negative sort_order (clearing the 1-N space)
+      if (survivingThemes.length > 0) {
+        for (const theme of survivingThemes) {
+          const { error } = await supabase
+            .from('themes')
+            .update({ sort_order: -(theme.sortOrder + 1000) })
+            .eq('id', theme.id)
+          if (error) {
+            console.error('[SessionEdit] Theme reorder pass 1 failed:', error)
+            toast({ variant: 'destructive', title: 'Save failed', description: 'Could not update topic order' })
+            setSaving(false)
+            return
+          }
+        }
+
+        //    Pass 2: Move surviving themes to final sort_order + update text
+        for (const theme of survivingThemes) {
+          const { error } = await supabase
+            .from('themes')
+            .update({ text: theme.text, sort_order: theme.sortOrder })
+            .eq('id', theme.id)
+          if (error) {
+            console.error('[SessionEdit] Theme reorder pass 2 failed:', error)
+            toast({ variant: 'destructive', title: 'Save failed', description: 'Could not finalize topic updates' })
+            setSaving(false)
+            return
+          }
+        }
+      }
+
+      // 5. Insert new themes at final sort_order
+      if (newThemes.length > 0) {
+        const { error: insertError } = await supabase
           .from('themes')
           .insert(
-            themes.map((theme) => ({
-              id: theme.id,
+            newThemes.map(t => ({
+              id: t.id,
               session_id: sessionId,
-              text: theme.text, // Already encoded
-              sort_order: theme.sortOrder,
+              text: t.text,
+              sort_order: t.sortOrder,
+              is_active: true,
             }))
           )
 
-        if (themesError) {
-          console.error('[SessionEdit] Themes insert failed:', themesError)
-          toast({
-            variant: 'destructive',
-            title: 'Save failed',
-            description: 'Topics could not be saved',
-          })
+        if (insertError) {
+          console.error('[SessionEdit] New themes insert failed:', insertError)
+          toast({ variant: 'destructive', title: 'Save failed', description: 'Could not add new topics' })
           setSaving(false)
           return
         }

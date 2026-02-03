@@ -510,6 +510,27 @@ npm run test:deck-failures     # Failure mode tests
 npm run test:deck-equivalence  # Structural equivalence (2 runs)
 ```
 
+#### Theme Soft-Delete Strategy
+
+Themes use a soft-delete model (`is_active BOOLEAN DEFAULT true`) to preserve participant feedback when topics are edited.
+
+**Why soft-delete instead of hard-delete:**
+- `theme_selections` has `ON DELETE CASCADE` to `themes(id)` — hard-deleting a theme destroys all participant feedback on that theme
+- Editing a session previously deleted ALL themes and reinserted them, wiping all feedback
+- Soft-delete preserves `theme_selections` rows for surviving themes across edits
+
+**How it works:**
+- **Rename/reorder:** Themes keep their stable UUIDs; only `text` and `sort_order` are updated. Feedback stays attached.
+- **Remove:** Theme is set to `is_active = false`. Its `theme_selections` rows remain in the database but are excluded from results queries.
+- **Add:** New themes are inserted with `is_active = true` and a fresh UUID.
+- **All theme queries** filter `.eq('is_active', true)` — soft-deleted themes are invisible in the UI.
+
+**Database constraint:** The `UNIQUE(session_id, sort_order)` constraint is replaced by a partial unique index: `UNIQUE ON (session_id, sort_order) WHERE is_active = true`. This allows soft-deleted themes to coexist without sort_order conflicts.
+
+**Migration:** `supabase/migrations/add_is_active_to_themes.sql`
+
+**Regression test:** `scripts/test-feedback-survives-edit.ts` — verifies per-theme feedback aggregates are unchanged after edits.
+
 #### Known v1 Limitations
 
 1. Interest matching uses fuzzy text at generation time only

@@ -23,9 +23,11 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
+import { decodeTopicBlock } from '@/lib/topicBlocks'
+import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
 import { DevResponseGenerator } from './DevResponseGenerator'
 import { DeckBuilderPanel } from './DeckBuilderPanel'
-import type { Session, SessionState } from '@/types'
+import type { Session, SessionState, PublishedTopic } from '@/types'
 
 interface ThemeResult {
   themeId: string
@@ -87,6 +89,8 @@ export function SessionDetail() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showNavigateAwayDialog, setShowNavigateAwayDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false)
   // responseCount is used to determine initial tab but not stored in state
   // since we set activeTab directly in the fetch effect
   const [activeTab, setActiveTab] = useState<string>('details')
@@ -273,6 +277,169 @@ export function SessionDetail() {
     }
   }
 
+  // --- Publish/Discard handlers ---
+
+  const handlePublishUpdates = async () => {
+    if (!session || !sessionId) return
+
+    setIsPublishing(true)
+
+    try {
+      // 1. Fetch current active themes to build published_topics
+      const { data: themesData, error: themesError } = await supabase
+        .from('themes')
+        .select('id, text, sort_order')
+        .eq('session_id', sessionId)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+
+      if (themesError) {
+        console.error('Error fetching themes for publish:', themesError)
+        toast({ variant: 'destructive', title: 'Publish failed', description: 'Could not read current topics.' })
+        setIsPublishing(false)
+        return
+      }
+
+      // 2. Build published_topics JSONB array
+      const publishedTopics: PublishedTopic[] = (themesData || []).map((t: ThemeRow) => {
+        const decoded = decodeTopicBlock(t.text)
+        return {
+          themeId: t.id,
+          text: t.text,
+          sortOrder: t.sort_order,
+          ...(decoded.subtopics.length > 0 ? { details: decoded.subtopics } : {}),
+        }
+      })
+
+      // 3. Update session: copy working → published
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({
+          published_welcome_message: session.welcomeMessage,
+          published_summary_condensed: session.summaryCondensed,
+          published_topics: publishedTopics,
+          published_at: new Date().toISOString(),
+          has_unpublished_changes: false,
+        })
+        .eq('id', sessionId)
+
+      if (updateError) {
+        console.error('Error publishing:', updateError)
+        toast({ variant: 'destructive', title: 'Publish failed', description: updateError.message })
+        setIsPublishing(false)
+        return
+      }
+
+      // 4. Update local state
+      setSession({
+        ...session,
+        publishedWelcomeMessage: session.welcomeMessage,
+        publishedSummaryCondensed: session.summaryCondensed,
+        publishedTopics: publishedTopics,
+        publishedAt: new Date(),
+        hasUnpublishedChanges: false,
+      })
+
+      toast({
+        title: 'Updates published',
+        description: 'Participants now see your latest changes.',
+      })
+    } catch (err) {
+      console.error('Unexpected error during publish:', err)
+      toast({ variant: 'destructive', title: 'Publish failed', description: 'An unexpected error occurred.' })
+    } finally {
+      setIsPublishing(false)
+    }
+  }
+
+  const handleDiscardChanges = async () => {
+    if (!session || !sessionId) return
+
+    setIsPublishing(true)
+
+    try {
+      // 1. Revert session working fields from published (canonical)
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({
+          welcome_message: session.publishedWelcomeMessage || '',
+          summary_condensed: session.publishedSummaryCondensed || '',
+          has_unpublished_changes: false,
+        })
+        .eq('id', sessionId)
+
+      if (updateError) {
+        console.error('Error discarding changes:', updateError)
+        toast({ variant: 'destructive', title: 'Discard failed', description: updateError.message })
+        setIsPublishing(false)
+        return
+      }
+
+      // 2. Reconcile themes table to match published_topics (canonical)
+      //    Step A: Soft-delete ALL current active themes (clears sort_order space)
+      await supabase
+        .from('themes')
+        .update({ is_active: false })
+        .eq('session_id', sessionId)
+        .eq('is_active', true)
+
+      //    Step B: Reactivate or insert themes from published_topics
+      if (session.publishedTopics && session.publishedTopics.length > 0) {
+        for (const topic of session.publishedTopics) {
+          // Check if theme row exists (active or inactive)
+          const { data: existing } = await supabase
+            .from('themes')
+            .select('id')
+            .eq('id', topic.themeId)
+            .single()
+
+          if (existing) {
+            // Reactivate and restore published state
+            await supabase
+              .from('themes')
+              .update({
+                text: topic.text,
+                sort_order: topic.sortOrder,
+                is_active: true,
+              })
+              .eq('id', topic.themeId)
+          } else {
+            // Insert fresh (theme was truly deleted)
+            await supabase
+              .from('themes')
+              .insert({
+                id: topic.themeId,
+                session_id: sessionId,
+                text: topic.text,
+                sort_order: topic.sortOrder,
+                is_active: true,
+              })
+          }
+        }
+      }
+
+      // 3. Update local state
+      setSession({
+        ...session,
+        welcomeMessage: session.publishedWelcomeMessage || '',
+        summaryCondensed: session.publishedSummaryCondensed || '',
+        hasUnpublishedChanges: false,
+      })
+
+      toast({
+        title: 'Changes discarded',
+        description: 'Working version reverted to the published state.',
+      })
+
+      setShowDiscardDialog(false)
+    } catch (err) {
+      console.error('Unexpected error during discard:', err)
+      toast({ variant: 'destructive', title: 'Discard failed', description: 'An unexpected error occurred.' })
+    } finally {
+      setIsPublishing(false)
+    }
+  }
+
   const fetchResults = async () => {
     if (!sessionId) return
 
@@ -284,6 +451,7 @@ export function SessionDetail() {
         .from('themes')
         .select('id, text, sort_order')
         .eq('session_id', sessionId)
+        .eq('is_active', true)
         .order('sort_order', { ascending: true })
 
       if (themesError) {
@@ -721,6 +889,16 @@ export function SessionDetail() {
           </Tabs>
         )}
 
+        {/* Unpublished changes bar (active sessions only) */}
+        {session.state === 'active' && session.hasUnpublishedChanges && (
+          <UnpublishedChangesBar
+            onPublish={handlePublishUpdates}
+            onDiscard={() => setShowDiscardDialog(true)}
+            isPublishing={isPublishing}
+            slug={session.slug}
+          />
+        )}
+
         {/* Active: Participant link and close feedback */}
         {session.state === 'active' && (
           <Card>
@@ -878,6 +1056,25 @@ export function SessionDetail() {
             >
               {isTransitioning ? 'Closing...' : 'Close anyway'}
             </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Discard Changes Confirmation Dialog */}
+      <AlertDialog open={showDiscardDialog} onOpenChange={setShowDiscardDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unpublished changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your working version will revert to match the current live version.
+              Any edits since the last publish will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDiscardChanges} disabled={isPublishing}>
+              {isPublishing ? 'Discarding...' : 'Discard changes'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

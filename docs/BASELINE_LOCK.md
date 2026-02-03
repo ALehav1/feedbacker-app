@@ -1214,6 +1214,47 @@ npm run test:deck-equivalence   # Equivalence proof (2 runs)
 
 ---
 
+### P0 Integrity Fixes — 2026-02-03
+
+**Scope:** Two data integrity fixes: preserve participant feedback during topic edits + complete Working vs Published lifecycle
+
+**P0-A: Preserve participant feedback when editing topics**
+
+Problem: `SessionEdit.tsx` deleted all themes and reinserted them on every save. Because `theme_selections` has `ON DELETE CASCADE` to `themes(id)`, this destroyed ALL participant feedback on every save.
+
+Fix:
+- Added `is_active BOOLEAN DEFAULT true` to themes table (soft-delete)
+- Replaced delete-all/reinsert with diff-based save: UPDATE surviving themes, soft-delete removed themes, INSERT new themes
+- Replaced `UNIQUE(session_id, sort_order)` with partial unique index (`WHERE is_active = true`)
+- Added `is_active = true` filter to all theme queries (SessionDetail, FeedbackForm, DevResponseGenerator)
+
+**P0-B: Complete Working vs Published lifecycle**
+
+Problem: SessionEdit set `has_unpublished_changes = true` and FeedbackForm read from `published_*` fields, but there was no UI to publish or discard. Presenters had no way to push working changes to participants.
+
+Fix:
+- Rewrote `UnpublishedChangesBar` with real Publish and Discard buttons (using canonical copy from `src/lib/copy.ts`)
+- Wired bar into `SessionDetail.tsx` — appears when `session.state === 'active' && session.hasUnpublishedChanges`
+- Implemented `handlePublishUpdates`: copies working → published fields, builds `published_topics` from active themes, clears flag
+- Implemented `handleDiscardChanges`: restores working from published (canonical), reconciles themes table to match `published_topics`, clears flag
+
+**Files modified:**
+- `supabase/migrations/add_is_active_to_themes.sql` (NEW — migration)
+- `scripts/test-feedback-survives-edit.ts` (NEW — regression test)
+- `src/features/sessions/SessionEdit.tsx` (diff-based save, is_active filter)
+- `src/features/sessions/SessionDetail.tsx` (publish/discard handlers, bar wiring, is_active filter)
+- `src/components/UnpublishedChangesBar.tsx` (real publish/discard buttons)
+- `src/features/sessions/DevResponseGenerator.tsx` (is_active filter)
+- `src/features/participant/FeedbackForm.tsx` (is_active filter)
+
+**Build verification:**
+- `npm run build` — Pass
+- `npm run lint` — Pass (0 new errors)
+
+**Commit:** Pending
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation

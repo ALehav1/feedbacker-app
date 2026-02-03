@@ -108,6 +108,7 @@ export function FeedbackForm() {
               .from('themes')
               .select('*')
               .eq('session_id', mappedSession.id)
+              .eq('is_active', true)
               .order('sort_order', { ascending: true })
 
             if (themesError) {

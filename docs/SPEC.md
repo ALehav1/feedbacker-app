@@ -81,7 +81,8 @@ The person responding to a session with their interests.
 - Completed disables voting but keeps content visible — participants can still read the presentation summary and topics, but cannot vote. Banner explains "Participant voting has closed."
 - Terminology clarified: "Participant voting" refers to the time-bounded voting window, distinct from "Presentation" content.
 - Active sessions use Working vs Live model: presenter edits Working version, participants see Live version (last published snapshot).
-- Explicit "Publish updates" action prevents accidental changes to participant experience.
+- Explicit "Publish updates" action prevents accidental changes to participant experience. The publish/discard bar appears on the session detail page when unpublished changes exist, with two actions: **Publish updates** (copies working → published, clears flag) and **Discard changes** (restores working from published, with confirmation dialog).
+- Topic edits use soft-delete to preserve participant feedback: renamed/reordered topics keep their feedback; removed topics are deactivated but their historical feedback is retained in the database.
 - Archive state exists in schema but Dashboard currently shows only Active and Completed sections.
 
 ### 3.2 State Transitions
