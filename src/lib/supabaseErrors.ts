@@ -41,7 +41,13 @@ export function classifySupabaseError(error: SupabaseErrorLike | null): Supabase
   }
 
   // Schema mismatch (missing column, relation, etc.)
-  if (code === '42703' || code === '42P01' || message.includes('column') && message.includes('does not exist')) {
+  if (
+    code === '42703' ||
+    code === '42P01' ||
+    (message.includes('column') && message.includes('does not exist')) ||
+    message.includes('schema cache') ||
+    message.includes('could not find the')
+  ) {
     return 'schema';
   }
 

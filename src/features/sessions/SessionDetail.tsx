@@ -325,20 +325,57 @@ export function SessionDetail() {
       // 3. Update session: copy working → published
       const newShareToken = crypto.randomUUID()
       const nextPublishedVersion = (session.publishedVersion ?? 0) + 1
+      let schemaFallbackUsed = false
 
-      const { error: updateError } = await supabase
+      const publishPayload = {
+        published_welcome_message: session.welcomeMessage,
+        published_summary_condensed: session.summaryCondensed,
+        published_summary_full: session.summaryFull,
+        published_topics: publishedTopics,
+        published_at: new Date().toISOString(),
+        has_unpublished_changes: false,
+        published_share_token: newShareToken,
+        published_version: nextPublishedVersion,
+      }
+
+      let updateError = null as { message?: string; code?: string } | null
+
+      const initialUpdate = await supabase
         .from('sessions')
-        .update({
-          published_welcome_message: session.welcomeMessage,
-          published_summary_condensed: session.summaryCondensed,
-          published_summary_full: session.summaryFull,
-          published_topics: publishedTopics,
-          published_at: new Date().toISOString(),
-          has_unpublished_changes: false,
-          published_share_token: newShareToken,
-          published_version: nextPublishedVersion,
-        })
+        .update(publishPayload)
         .eq('id', sessionId)
+
+      if (initialUpdate.error) {
+        const kind = classifySupabaseError(initialUpdate.error)
+        const message = (initialUpdate.error.message || '').toLowerCase()
+        const isSchemaLag = kind === 'schema' && (
+          message.includes('schema cache') ||
+          message.includes('published_share_token') ||
+          message.includes('published_version')
+        )
+
+        if (isSchemaLag) {
+          const legacyUpdate = await supabase
+            .from('sessions')
+            .update({
+              published_welcome_message: session.welcomeMessage,
+              published_summary_condensed: session.summaryCondensed,
+              published_summary_full: session.summaryFull,
+              published_topics: publishedTopics,
+              published_at: new Date().toISOString(),
+              has_unpublished_changes: false,
+            })
+            .eq('id', sessionId)
+
+          if (legacyUpdate.error) {
+            updateError = legacyUpdate.error
+          } else {
+            schemaFallbackUsed = true
+          }
+        } else {
+          updateError = initialUpdate.error
+        }
+      }
 
       if (updateError) {
         console.error('Error publishing:', updateError)
@@ -346,6 +383,9 @@ export function SessionDetail() {
         setIsPublishing(false)
         return
       }
+
+      const updatedShareToken = schemaFallbackUsed ? (session.publishedShareToken ?? null) : newShareToken
+      const updatedVersion = schemaFallbackUsed ? (session.publishedVersion ?? null) : nextPublishedVersion
 
       // 4. Update local state
       setSession({
@@ -355,10 +395,17 @@ export function SessionDetail() {
         publishedSummaryFull: session.summaryFull,
         publishedTopics: publishedTopics,
         publishedAt: new Date(),
-        publishedShareToken: newShareToken,
-        publishedVersion: nextPublishedVersion,
+        publishedShareToken: updatedShareToken,
+        publishedVersion: updatedVersion,
         hasUnpublishedChanges: false,
       })
+
+      if (schemaFallbackUsed) {
+        toast({
+          title: 'Security upgrade pending',
+          description: 'Share links won’t rotate until the database migration is applied.',
+        })
+      }
 
       toast({
         title: 'Updates published',

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Plus } from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { classifySupabaseError } from '@/lib/supabaseErrors'
 import {
   encodeTopicBlock,
   decodeTopicBlock,
@@ -434,30 +435,69 @@ export function SessionCreateWizard() {
 
       const hasPublishedTopics = publishedTopics.length > 0
       const publishedShareToken = hasPublishedTopics ? crypto.randomUUID() : null
+      let schemaFallbackUsed = false
 
-      const { data: sessionData, error: sessionError } = await supabase
+      const baseInsert = {
+        presenter_id: user.id,
+        state: 'active',
+        length_minutes: parseInt(wizardData.lengthMinutes, 10),
+        title: wizardData.title.trim(),
+        welcome_message: wizardData.welcomeMessage.trim() || '',
+        summary_full: wizardData.summaryFull.trim() || '',
+        summary_condensed: wizardData.summaryCondensed.trim() || '',
+        slug,
+        topics_source: 'generated',
+        published_welcome_message: wizardData.welcomeMessage.trim() || '',
+        published_summary_condensed: wizardData.summaryCondensed.trim() || '',
+        published_summary_full: wizardData.summaryFull.trim() || '',
+        published_topics: hasPublishedTopics ? publishedTopics : [],
+        published_at: new Date().toISOString(),
+        has_unpublished_changes: false,
+      }
+
+      const tokenInsert = {
+        ...baseInsert,
+        published_share_token: publishedShareToken,
+        published_version: hasPublishedTopics ? 1 : 0,
+      }
+
+      let sessionData: { id: string } | null = null
+      let sessionError: { code?: string; message?: string; details?: string; hint?: string } | null = null
+
+      const initialInsert = await supabase
         .from('sessions')
-        .insert({
-          presenter_id: user.id,
-          state: 'active',
-          length_minutes: parseInt(wizardData.lengthMinutes, 10),
-          title: wizardData.title.trim(),
-          welcome_message: wizardData.welcomeMessage.trim() || '',
-          summary_full: wizardData.summaryFull.trim() || '',
-          summary_condensed: wizardData.summaryCondensed.trim() || '',
-          slug,
-          topics_source: 'generated',
-          published_welcome_message: wizardData.welcomeMessage.trim() || '',
-          published_summary_condensed: wizardData.summaryCondensed.trim() || '',
-          published_summary_full: wizardData.summaryFull.trim() || '',
-          published_topics: hasPublishedTopics ? publishedTopics : [],
-          published_at: new Date().toISOString(),
-          has_unpublished_changes: false,
-          published_share_token: publishedShareToken,
-          published_version: hasPublishedTopics ? 1 : 0,
-        })
+        .insert(tokenInsert)
         .select()
         .single()
+
+      if (initialInsert.error) {
+        const kind = classifySupabaseError(initialInsert.error)
+        const message = (initialInsert.error.message || '').toLowerCase()
+        const isSchemaLag = kind === 'schema' && (
+          message.includes('schema cache') ||
+          message.includes('published_share_token') ||
+          message.includes('published_version')
+        )
+
+        if (isSchemaLag) {
+          const legacyInsert = await supabase
+            .from('sessions')
+            .insert(baseInsert)
+            .select()
+            .single()
+
+          if (legacyInsert.error) {
+            sessionError = legacyInsert.error
+          } else {
+            sessionData = legacyInsert.data
+            schemaFallbackUsed = true
+          }
+        } else {
+          sessionError = initialInsert.error
+        }
+      } else {
+        sessionData = initialInsert.data
+      }
 
       if (sessionError) {
         console.error('[SessionCreateWizard] Session insert failed:', {
@@ -497,7 +537,7 @@ export function SessionCreateWizard() {
         return
       }
 
-      if (wizardData.themes.length > 0) {
+      if (wizardData.themes.length > 0 && sessionData) {
         const themesInsert = wizardData.themes.map((theme) => ({
           id: theme.id,
           session_id: sessionData.id,
@@ -515,6 +555,22 @@ export function SessionCreateWizard() {
             description: `${themesError.message || 'Presentation created but topics could not be added'}. Check the console for details.`,
           })
         }
+      }
+
+      if (schemaFallbackUsed) {
+        toast({
+          title: 'Security upgrade pending',
+          description: 'Share links won’t rotate until the database migration is applied.',
+        })
+      }
+
+      if (!sessionData) {
+        toast({
+          variant: 'destructive',
+          title: 'Presentation creation failed',
+          description: 'Unable to complete session creation. Please try again.',
+        })
+        return
       }
 
       toast({
