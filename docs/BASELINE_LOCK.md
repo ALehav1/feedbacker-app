@@ -1255,6 +1255,33 @@ Fix:
 
 ---
 
+## P0-C: Tokenized participant links + preview gating
+
+Problem: Participant links could be shared before publish, and republish did not invalidate old links. Preview mode could be accessed without presenter auth.
+
+Fix:
+- Added `published_share_token` and `published_version` columns to sessions (migration).
+- Rotated share token and incremented version on every publish/republish.
+- Participant links include `?k=` token when present; legacy sessions without token continue to work.
+- Preview `?preview=working` is restricted to the authenticated presenter.
+
+**Files modified:**
+- `supabase/migrations/add_published_share_token.sql` (NEW — migration)
+- `src/lib/shareLink.ts` (URL building + token validation)
+- `src/features/sessions/SessionDetail.tsx` (share URL, publish rotates token)
+- `src/features/sessions/SessionCreateWizard.tsx` (token on publish-at-create)
+- `src/features/participant/FeedbackForm.tsx` (token gate + preview restriction)
+- `src/components/UnpublishedChangesBar.tsx` (live link uses token)
+- `src/hooks/useSessions.ts`, `src/types/index.ts` (new fields)
+
+**Build verification:**
+- `npm run build` — Pending
+- `npm run lint` — Pending
+
+**Commit:** Pending
+
+---
+
 ## Next Build Phase
 
 **Focus:** Application feature development on stable foundation

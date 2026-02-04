@@ -954,6 +954,9 @@ export function SessionDetail() {
                       Open participant page
                     </a>
                   </div>
+                  <p className="text-xs text-gray-600">
+                    Editing and republishing will generate a new link.
+                  </p>
                 </CardContent>
               </Card>
             ) : (
@@ -961,8 +964,8 @@ export function SessionDetail() {
                 <CardContent className="pt-6 space-y-3">
                   <h3 className="text-base font-semibold text-gray-900">Publish to collect audience feedback</h3>
                   <p className="text-sm text-gray-700">
-                    Once you publish, we'll generate a participant link you can
-                    share with your audience to collect feedback.
+                    Publish topics to generate your participant link. After you publish,
+                    the share link appears here.
                   </p>
                   <Button onClick={handlePublishUpdates} disabled={isPublishing} className="min-h-[44px]">
                     {isPublishing ? 'Publishing...' : 'Publish topics'}

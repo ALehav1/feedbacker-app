@@ -1158,6 +1158,13 @@ Both the session creation wizard and the session editor use **list-first inline 
 
 A session is considered **published** when `session.publishedTopics?.length > 0`. No additional flags or states are used — the presence of at least one published topic is the sole gate.
 
+### Tokenized Share Links
+
+- On every publish/republish, the system rotates `sessions.published_share_token` and increments `sessions.published_version`.
+- Participant links include `?k=<token>` when a token exists.
+- Legacy sessions without a token continue to work without gating.
+- `?preview=working` is restricted to the authenticated presenter who owns the session.
+
 ### Where Enforced
 
 | Location | Behavior |

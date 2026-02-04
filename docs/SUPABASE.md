@@ -97,3 +97,38 @@ If the result shows `NOT NULL` with `DEFAULT ''`, that is also acceptable — th
 - `src/features/sessions/SessionCreateWizard.tsx` — initial insert
 - `src/hooks/useSessions.ts` — row mapping
 - `src/types/index.ts` — `Session.publishedSummaryFull`
+
+---
+
+## Tokenized Participant Links (`published_share_token`)
+
+### Schema declaration
+
+```sql
+-- supabase/migrations/add_published_share_token.sql
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS published_share_token TEXT;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS published_version INTEGER NOT NULL DEFAULT 0;
+```
+
+### Verification query
+
+```sql
+SELECT slug, published_topics, published_share_token, published_version
+FROM sessions
+ORDER BY updated_at DESC
+LIMIT 20;
+```
+
+### Behavior
+
+- **Publish/republish:** rotates `published_share_token` and increments `published_version`.
+- **Share link:** `/s/:slug?k=<token>` when a token exists.
+- **Legacy sessions:** no token → no gate (plain `/s/:slug` still works).
+- **Preview:** `?preview=working` is allowed only for the authenticated presenter.
+
+### Implementation
+
+- `src/features/sessions/SessionDetail.tsx` — publish rotates token + share URL builds
+- `src/features/sessions/SessionCreateWizard.tsx` — initial token on publish-at-create
+- `src/features/participant/FeedbackForm.tsx` — token validation + preview restriction
+- `src/lib/shareLink.ts` — shared URL building + token validation
