@@ -1117,4 +1117,39 @@ interface OutlineSection {
 
 ---
 
+## Topics Encoding and Editing
+
+### Canonical Storage Format
+
+Topics (themes) are stored in the `themes.text` column as a single encoded string. There is no separate `details` or `subtopics` column — sub-bullets live inside the encoded text.
+
+**Format:** `"Title\n- Sub-bullet 1\n- Sub-bullet 2"`
+
+Encoding and decoding is handled by shared helpers in `src/lib/topicBlocks.ts`:
+
+- `encodeTopicBlock(title, subtopics)` → encoded string
+- `decodeTopicBlock(text)` → `{ title: string, subtopics: string[] }`
+- `parseOutlineToTopicBlocks(outline)` → encoded string array (used for auto-generation from outline)
+
+### Editing Behavior
+
+Both the session creation wizard and the session editor use **list-first inline editing**:
+
+1. Topics are displayed as a list immediately
+2. Clicking **Edit** on a topic swaps that card into a textarea with Save/Cancel
+3. **Add topic** opens an inline editor at the top of the list
+4. Reorder controls (↑/↓) update `sort_order` immediately
+5. Keyboard shortcuts: `Cmd/Ctrl+Enter` saves, `Escape` cancels
+
+### Implementation Files
+
+| File | Role |
+|------|------|
+| `src/lib/topicBlocks.ts` | Encode/decode helpers (single source of truth) |
+| `src/features/sessions/SessionCreateWizard.tsx` | Step 3 — list-first inline editing for new sessions |
+| `src/features/sessions/SessionEdit.tsx` | Inline editing for existing sessions |
+| `src/components/ThemeSelector.tsx` | Display-only component for participant feedback (uses `decodeTopicBlock`) |
+
+---
+
 *End of Architecture Documentation*

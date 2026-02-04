@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { Plus } from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { supabase } from '@/lib/supabase'
 import {
@@ -52,7 +53,9 @@ export function SessionCreateWizard() {
 
   // Theme editing state
   const [editingThemeId, setEditingThemeId] = useState<string | null>(null)
-  const [themeInputText, setThemeInputText] = useState('')
+  const [editingText, setEditingText] = useState('')
+  const [addingTopic, setAddingTopic] = useState(false)
+  const [newTopicText, setNewTopicText] = useState('')
 
   // Navigation protection state
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
@@ -261,7 +264,7 @@ export function SessionCreateWizard() {
   }
 
   const handleAddTheme = () => {
-    if (!themeInputText.trim()) {
+    if (!newTopicText.trim()) {
       toast({
         variant: 'destructive',
         title: 'Empty theme',
@@ -271,7 +274,7 @@ export function SessionCreateWizard() {
     }
 
     // Parse textarea: first line = title, rest = subtopics
-    const lines = themeInputText.split('\n').map(l => l.trim()).filter(Boolean)
+    const lines = newTopicText.split('\n').map(l => l.trim()).filter(Boolean)
     if (lines.length === 0) return
 
     const title = lines[0]
@@ -292,27 +295,29 @@ export function SessionCreateWizard() {
       ...wizardData,
       themes: [...wizardData.themes, newTheme],
     })
-    setThemeInputText('')
+    setNewTopicText('')
+    setAddingTopic(false)
   }
 
   const handleEditTheme = (themeId: string) => {
     const theme = wizardData.themes.find((t) => t.id === themeId)
     if (theme) {
       setEditingThemeId(themeId)
+      setAddingTopic(false)
       // Decode for editing: show as multiline text
       const decoded = decodeTopicBlock(theme.text)
       const lines = [decoded.title]
       if (decoded.subtopics.length > 0) {
         lines.push(...decoded.subtopics.map(s => `- ${s}`))
       }
-      setThemeInputText(lines.join('\n'))
+      setEditingText(lines.join('\n'))
     }
   }
 
   const handleSaveTheme = () => {
     if (!editingThemeId) return
 
-    if (!themeInputText.trim()) {
+    if (!editingText.trim()) {
       toast({
         variant: 'destructive',
         title: 'Empty theme',
@@ -322,7 +327,7 @@ export function SessionCreateWizard() {
     }
 
     // Parse and re-encode
-    const lines = themeInputText.split('\n').map(l => l.trim()).filter(Boolean)
+    const lines = editingText.split('\n').map(l => l.trim()).filter(Boolean)
     if (lines.length === 0) return
 
     const title = lines[0]
@@ -339,7 +344,7 @@ export function SessionCreateWizard() {
       ),
     })
     setEditingThemeId(null)
-    setThemeInputText('')
+    setEditingText('')
   }
 
   const handleDeleteTheme = (themeId: string) => {
@@ -693,134 +698,179 @@ Case study`}
   )
 
   const renderStep3 = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-sm font-medium text-gray-900 mb-3">Add or edit topics</h3>
-
-        <div className="flex items-start gap-2">
-          <Textarea
-            id="theme-input"
-            placeholder="Add a topic and optional sub-bullets."
-            value={themeInputText}
-            onChange={(e) => setThemeInputText(e.target.value)}
-            onKeyDown={(e) => {
-              // Cmd/Ctrl+Enter submits
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault()
-                if (editingThemeId) {
-                  handleSaveTheme()
-                } else {
-                  handleAddTheme()
-                }
-              }
-              // Plain Enter inserts newline (default behavior)
-              if (e.key === 'Escape') {
-                setEditingThemeId(null)
-                setThemeInputText('')
-              }
-            }}
-            rows={2}
-            className="min-h-[48px] flex-1 min-w-0 resize-none"
-          />
-          {editingThemeId ? (
-            <>
-              <Button onClick={handleSaveTheme} className="h-[48px] shrink-0">
-                Save
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditingThemeId(null)
-                  setThemeInputText('')
-                }}
-                className="h-[48px] shrink-0"
-              >
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button onClick={handleAddTheme} className="h-[48px] shrink-0">
-              Add
-            </Button>
-          )}
-        </div>
-        <p className="mt-2 text-xs text-gray-500">
-          Format: Title on first line, then sub-bullets with dashes (- Sub 1).
-        </p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-gray-900">
+          Topics{wizardData.themes.length > 0 ? ` (${wizardData.themes.length})` : ''}
+        </h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setAddingTopic(true)
+            setEditingThemeId(null)
+            setEditingText('')
+            setNewTopicText('')
+          }}
+          className="min-h-[40px]"
+          disabled={addingTopic}
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          Add topic
+        </Button>
       </div>
 
-      {wizardData.themes.length > 0 ? (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-900">Topics ({wizardData.themes.length})</h4>
-          <div className="space-y-2">
-            {wizardData.themes.map((theme, index) => {
-              const decoded = decodeTopicBlock(theme.text)
-              return (
-                <div
-                  key={theme.id}
-                  className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white p-3"
-                >
-                  <div className="flex flex-col gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMoveTheme(theme.id, 'up')}
-                      disabled={index === 0}
-                      className="h-10 w-10 p-0"
-                    >
-                      ↑
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMoveTheme(theme.id, 'down')}
-                      disabled={index === wizardData.themes.length - 1}
-                      className="h-10 w-10 p-0"
-                    >
-                      ↓
-                    </Button>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900">{decoded.title}</p>
-                    {decoded.subtopics.length > 0 && (
-                      <ul className="mt-1 space-y-0.5">
-                        {decoded.subtopics.map((sub, idx) => (
-                          <li key={idx} className="text-xs text-gray-600">
-                            — {sub}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">Order: {theme.sortOrder}</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditTheme(theme.id)}
-                      className="min-h-[48px]"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteTheme(theme.id)}
-                      className="min-h-[48px]"
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
+      {/* Inline editor for adding a new topic */}
+      {addingTopic && (
+        <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+          <Textarea
+            value={newTopicText}
+            onChange={(e) => setNewTopicText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                handleAddTheme()
+              }
+              if (e.key === 'Escape') {
+                setAddingTopic(false)
+                setNewTopicText('')
+              }
+            }}
+            placeholder="Title on first line, then sub-bullets with dashes (- Sub 1)"
+            rows={3}
+            className="w-full min-h-[60px] resize-none"
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleAddTheme} className="min-h-[40px]">
+              Save
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setAddingTopic(false)
+                setNewTopicText('')
+              }}
+              className="min-h-[40px]"
+            >
+              Cancel
+            </Button>
           </div>
         </div>
-      ) : (
-        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <p className="text-sm text-gray-600">No topics added yet. Add at least one topic above.</p>
-        </div>
       )}
+
+      {/* Topic list with inline editing */}
+      {wizardData.themes.length > 0 ? (
+        <div className="space-y-2">
+          {wizardData.themes.map((theme, index) => {
+            const decoded = decodeTopicBlock(theme.text)
+            return (
+              <div
+                key={theme.id}
+                className="rounded-lg border border-gray-200 bg-white p-3"
+              >
+                {editingThemeId === theme.id ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                          e.preventDefault()
+                          handleSaveTheme()
+                        }
+                        if (e.key === 'Escape') {
+                          setEditingThemeId(null)
+                          setEditingText('')
+                        }
+                      }}
+                      rows={3}
+                      className="w-full min-h-[60px] resize-none"
+                      autoFocus
+                    />
+                    <p className="text-xs text-gray-500">Title on first line, then sub-bullets with dashes (- Sub 1).</p>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleSaveTheme} className="min-h-[40px]">
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingThemeId(null)
+                          setEditingText('')
+                        }}
+                        className="min-h-[40px]"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMoveTheme(theme.id, 'up')}
+                        disabled={index === 0}
+                        className="h-10 w-10 p-0"
+                      >
+                        ↑
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMoveTheme(theme.id, 'down')}
+                        disabled={index === wizardData.themes.length - 1}
+                        className="h-10 w-10 p-0"
+                      >
+                        ↓
+                      </Button>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 break-words">{decoded.title}</p>
+                      {decoded.subtopics.length > 0 && (
+                        <ul className="mt-1 space-y-0.5">
+                          {decoded.subtopics.map((sub, idx) => (
+                            <li key={idx} className="text-xs text-gray-600 pl-2 flex items-start gap-1">
+                              <span className="text-gray-400">—</span>
+                              <span className="break-words">{sub}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditTheme(theme.id)}
+                        className="min-h-[48px]"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteTheme(theme.id)}
+                        className="min-h-[48px]"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ) : !addingTopic ? (
+        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+          <p className="text-sm text-gray-600">No topics yet. Click "Add topic" to get started.</p>
+        </div>
+      ) : null}
     </div>
   )
 
