@@ -23,6 +23,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
+import { classifySupabaseError } from '@/lib/supabaseErrors'
 import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
 import { DevResponseGenerator } from './DevResponseGenerator'
 import { DeckBuilderPanel } from './DeckBuilderPanel'
@@ -376,25 +377,39 @@ export function SessionDetail() {
 
       // 2. Reconcile themes table to match published_topics (canonical)
       //    Step A: Soft-delete ALL current active themes (clears sort_order space)
-      await supabase
+      const { error: deactivateError } = await supabase
         .from('themes')
         .update({ is_active: false })
         .eq('session_id', sessionId)
         .eq('is_active', true)
 
+      if (deactivateError) {
+        console.error('Error deactivating themes during discard:', deactivateError)
+        toast({ variant: 'destructive', title: 'Discard failed', description: 'Could not reset topics.' })
+        setIsPublishing(false)
+        return
+      }
+
       //    Step B: Reactivate or insert themes from published_topics
       if (session.publishedTopics && session.publishedTopics.length > 0) {
         for (const topic of session.publishedTopics) {
           // Check if theme row exists (active or inactive)
-          const { data: existing } = await supabase
+          const { data: existing, error: lookupError } = await supabase
             .from('themes')
             .select('id')
             .eq('id', topic.themeId)
             .single()
 
+          if (lookupError && classifySupabaseError(lookupError) !== 'not_found') {
+            console.error('Error looking up theme during discard:', lookupError)
+            toast({ variant: 'destructive', title: 'Discard failed', description: 'Could not verify theme state.' })
+            setIsPublishing(false)
+            return
+          }
+
           if (existing) {
             // Reactivate and restore published state
-            await supabase
+            const { error: reactivateError } = await supabase
               .from('themes')
               .update({
                 text: topic.text,
@@ -402,9 +417,16 @@ export function SessionDetail() {
                 is_active: true,
               })
               .eq('id', topic.themeId)
+
+            if (reactivateError) {
+              console.error('Error reactivating theme during discard:', reactivateError)
+              toast({ variant: 'destructive', title: 'Discard failed', description: 'Could not restore topic.' })
+              setIsPublishing(false)
+              return
+            }
           } else {
             // Insert fresh (theme was truly deleted)
-            await supabase
+            const { error: insertError } = await supabase
               .from('themes')
               .insert({
                 id: topic.themeId,
@@ -413,6 +435,13 @@ export function SessionDetail() {
                 sort_order: topic.sortOrder,
                 is_active: true,
               })
+
+            if (insertError) {
+              console.error('Error inserting theme during discard:', insertError)
+              toast({ variant: 'destructive', title: 'Discard failed', description: 'Could not restore topic.' })
+              setIsPublishing(false)
+              return
+            }
           }
         }
       }

@@ -14,6 +14,7 @@ import {
   decodeTopicBlock,
   parseOutlineToTopicBlocks,
 } from '@/lib/topicBlocks'
+import { classifySupabaseError } from '@/lib/supabaseErrors'
 import type { Session } from '@/types'
 
 interface Theme {
@@ -43,6 +44,8 @@ export function SessionEdit() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [themesLoadError, setThemesLoadError] = useState(false)
   const [themes, setThemes] = useState<Theme[]>([])
 
   // Form state
@@ -194,13 +197,16 @@ export function SessionEdit() {
         .single()
 
       if (error || !data) {
-        console.error('[SessionEdit] Session fetch failed:', { error, sessionId })
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load session',
-        })
-        navigate('/dashboard')
+        const kind = error ? classifySupabaseError(error) : 'not_found'
+        console.error('[SessionEdit] Session fetch failed:', { error, kind, sessionId })
+        if (kind === 'not_found') {
+          toast({ variant: 'destructive', title: 'Error', description: 'Session not found' })
+          navigate('/dashboard')
+          return
+        }
+        // Network/RLS/other — show inline error with retry
+        setFetchError('Failed to load session. Please try again.')
+        setLoading(false)
         return
       }
 
@@ -255,12 +261,17 @@ export function SessionEdit() {
       setInitialSummaryFull(summaryFullVal)
 
       // Fetch active themes (soft-deleted themes excluded)
-      const { data: themesData } = await supabase
+      const { data: themesData, error: themesError } = await supabase
         .from('themes')
         .select('*')
         .eq('session_id', sessionId)
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
+
+      if (themesError) {
+        console.error('[SessionEdit] Themes fetch failed:', themesError)
+        setThemesLoadError(true)
+      }
 
       if (themesData) {
         const loadedThemes: Theme[] = themesData.map((t: { id: string; text: string; sort_order: number }) => ({
@@ -625,8 +636,15 @@ export function SessionEdit() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Presentation not found</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <p className="text-gray-600">{fetchError || 'Presentation not found'}</p>
+          {fetchError && (
+            <Button variant="outline" onClick={() => window.location.reload()} className="min-h-[44px]">
+              Retry
+            </Button>
+          )}
+        </div>
       </div>
     )
   }
@@ -763,7 +781,14 @@ export function SessionEdit() {
               </div>
 
               {/* Topic list */}
-              {themes.length > 0 ? (
+              {themesLoadError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center space-y-3">
+                  <p className="text-sm text-red-700">Failed to load topics.</p>
+                  <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="min-h-[40px]">
+                    Retry
+                  </Button>
+                </div>
+              ) : themes.length > 0 ? (
                 <div className="space-y-2">
                   {themes.map((theme) => {
                     const decoded = decodeTopicBlock(theme.text)

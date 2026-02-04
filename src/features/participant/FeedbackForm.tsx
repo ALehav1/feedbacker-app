@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ThemeSelector } from '@/components/ThemeSelector'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
+import { classifySupabaseError } from '@/lib/supabaseErrors'
 import { PARTICIPANT_COPY } from '@/lib/copy'
 import type { Session, Theme } from '@/types'
 
@@ -34,6 +35,7 @@ export function FeedbackForm() {
   const [themes, setThemes] = useState<Theme[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [canRetry, setCanRetry] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -59,7 +61,15 @@ export function FeedbackForm() {
 
         if (sessionError) {
           console.error('Error fetching session:', sessionError)
-          setError('Presentation not found')
+          const kind = classifySupabaseError(sessionError)
+          if (kind === 'not_found') {
+            setError('Presentation not found')
+          } else if (kind === 'rls') {
+            setError("This session isn't available right now. Please contact the organizer.")
+          } else {
+            setError('Temporary issue loading this session. Please try again.')
+            setCanRetry(true)
+          }
           setLoading(false)
           return
         }
@@ -168,9 +178,24 @@ export function FeedbackForm() {
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Presentation Not Found</CardTitle>
+            <CardTitle>{canRetry ? 'Connection Issue' : 'Presentation Not Found'}</CardTitle>
             <CardDescription>{error || 'This session does not exist'}</CardDescription>
           </CardHeader>
+          {canRetry && (
+            <CardContent>
+              <Button
+                onClick={() => {
+                  setError(null)
+                  setCanRetry(false)
+                  setLoading(true)
+                  window.location.reload()
+                }}
+                className="w-full min-h-[48px]"
+              >
+                Retry
+              </Button>
+            </CardContent>
+          )}
         </Card>
       </div>
     )
