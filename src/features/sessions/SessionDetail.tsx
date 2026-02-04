@@ -25,6 +25,7 @@ import { supabase } from '@/lib/supabase'
 import { SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
 import { classifySupabaseError } from '@/lib/supabaseErrors'
 import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
+import { buildSuggestionGroupsFromResponses } from '@/lib/suggestions'
 import { DevResponseGenerator } from './DevResponseGenerator'
 import { DeckBuilderPanel } from './DeckBuilderPanel'
 import { buildParticipantUrl, buildPreviewUrl } from '@/lib/shareLink'
@@ -791,6 +792,8 @@ export function SessionDetail() {
     </div>
   )
 
+  const suggestionData = buildSuggestionGroupsFromResponses(responses)
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sticky top bar with safe-area for iPhone notch */}
@@ -926,6 +929,34 @@ export function SessionDetail() {
                       {deckBuilderBlock}
                     </>
                   )}
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Participant suggestions</CardTitle>
+                      <CardDescription>
+                        Topics participants typed in (separate from Cover more/less votes).
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {suggestionData.groups.length > 0 ? (
+                        <div className="space-y-2">
+                          {suggestionData.groups.map((group) => (
+                            <div
+                              key={group.normalized}
+                              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2"
+                            >
+                              <p className="text-sm text-gray-900">{group.label}</p>
+                              <span className="text-xs font-medium text-violet-700">+{group.count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600">
+                          No participant suggestions yet.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
 
                   {/* Topic Prioritization */}
                   {themeResults.length > 0 && (

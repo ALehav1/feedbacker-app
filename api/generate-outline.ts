@@ -29,6 +29,8 @@ function computeInputHash(body: RequestBody): string {
     lengthMinutes: body.lengthMinutes,
     themeResults: body.themeResults,
     responses: body.responses,
+    suggestedThemes: body.suggestedThemes,
+    rawSuggestions: body.rawSuggestions,
   });
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
@@ -45,12 +47,19 @@ interface ResponseData {
   freeFormText: string | null;
 }
 
+interface SuggestedTheme {
+  label: string;
+  count: number;
+}
+
 interface RequestBody {
   sessionTitle: string;
   sessionSummary: string;
   lengthMinutes: number;
   themeResults: ThemeResult[];
   responses: ResponseData[];
+  suggestedThemes?: SuggestedTheme[];
+  rawSuggestions?: string[];
 }
 
 interface InterestData {
@@ -73,6 +82,11 @@ interface DeckSlide {
 interface DeckOutline {
   deckTitle: string;
   slides: DeckSlide[];
+  suggested_topics_used?: Array<{
+    label: string;
+    count: number;
+    where_in_outline: string;
+  }>;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -96,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = req.body as RequestBody;
-    const { sessionTitle, sessionSummary, lengthMinutes, themeResults, responses } = body;
+    const { sessionTitle, sessionSummary, lengthMinutes, themeResults, responses, suggestedThemes, rawSuggestions } = body;
 
     // Compute input hash for debugging/caching reference
     const inputHash = computeInputHash(body);
@@ -124,6 +138,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .map(r => `- ${r.participantName || 'Anonymous'}: "${r.freeFormText}"`)
       .join('\n');
 
+    const suggestedThemesSummary = (suggestedThemes || [])
+      .map((s) => `- ${s.label} (+${s.count})`)
+      .join('\n');
+
+    const rawSuggestionsSummary = (rawSuggestions || [])
+      .map((s) => `- ${s}`)
+      .join('\n');
+
     // Calculate target slide count based on presentation length
     const targetSlides = Math.max(6, Math.min(15, Math.floor(lengthMinutes / 5) + 3));
 
@@ -140,12 +162,21 @@ ${topicSummary || 'No topic votes yet'}
 ## Audience Open-Ended Feedback
 ${freeFormResponses || 'No written feedback yet'}
 
+## Participant Suggested Topics (separate from votes)
+Grouped themes with counts:
+${suggestedThemesSummary || 'No participant suggestions yet'}
+
+Raw suggestions:
+${rawSuggestionsSummary || 'No raw suggestions yet'}
+
 ## Your Task
 Create a presentation outline with approximately ${targetSlides} slides that:
 1. Prioritizes topics with higher net interest scores
-2. Addresses themes from the open-ended feedback where relevant
-3. Includes an engaging opening and clear conclusion
-4. Has 2-4 bullet points per slide (with optional sub-bullets for detail)
+2. Incorporates participant suggested topics (even with a single response)
+   - Themes with higher +N should appear earlier or receive more coverage
+3. Addresses themes from the open-ended feedback where relevant
+4. Includes an engaging opening and clear conclusion
+5. Has 2-4 bullet points per slide (with optional sub-bullets for detail)
 
 ## Output Format
 Respond with ONLY valid JSON matching this exact structure:
@@ -161,6 +192,13 @@ Respond with ONLY valid JSON matching this exact structure:
         }
       ],
       "speakerNotes": "string" // optional, brief note for presenter
+    }
+  ],
+  "suggested_topics_used": [
+    {
+      "label": "string",
+      "count": 1,
+      "where_in_outline": "string"
     }
   ]
 }`;
@@ -209,6 +247,10 @@ Respond with ONLY valid JSON matching this exact structure:
     // Validate structure
     if (!outline.deckTitle || !Array.isArray(outline.slides)) {
       throw new Error('Invalid outline structure');
+    }
+
+    if (!Array.isArray(outline.suggested_topics_used)) {
+      outline.suggested_topics_used = [];
     }
 
     // Add interest scoring to slides by matching to theme results

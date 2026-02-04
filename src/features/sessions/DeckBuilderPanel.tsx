@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { generatePptx, type DeckOutline, type DeckSlide } from '@/lib/generatePptx';
 import { Sparkles, FileDown, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { buildSuggestionGroupsFromResponses } from '@/lib/suggestions';
 
 interface ThemeResult {
   themeId: string;
@@ -61,6 +62,7 @@ export function DeckBuilderPanel({
     setAnalyzeError(null);
 
     try {
+      const suggestionData = buildSuggestionGroupsFromResponses(responses);
       const response = await fetch('/api/generate-outline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -78,6 +80,11 @@ export function DeckBuilderPanel({
             participantName: r.participantName,
             freeFormText: r.freeFormText,
           })),
+          suggestedThemes: suggestionData.groups.map((group) => ({
+            label: group.label,
+            count: group.count,
+          })),
+          rawSuggestions: suggestionData.rawSuggestions,
         }),
       });
 

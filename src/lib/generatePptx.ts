@@ -22,6 +22,11 @@ export interface DeckSlide {
 export interface DeckOutline {
   deckTitle: string;
   slides: DeckSlide[];
+  suggested_topics_used?: Array<{
+    label: string;
+    count: number;
+    where_in_outline: string;
+  }>;
 }
 
 interface GeneratePptxOptions {
