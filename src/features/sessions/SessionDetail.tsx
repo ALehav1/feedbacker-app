@@ -25,7 +25,7 @@ import { supabase } from '@/lib/supabase'
 import { SECTION_INDICATORS, NAVIGATION_GUARDRAIL } from '@/lib/copy'
 import { classifySupabaseError } from '@/lib/supabaseErrors'
 import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
-import { buildSuggestionGroupsFromResponses } from '@/lib/suggestions'
+import { buildSuggestionGroupsFromResponses, parseSuggestionsAndFreeform } from '@/lib/suggestions'
 import { DevResponseGenerator } from './DevResponseGenerator'
 import { DeckBuilderPanel } from './DeckBuilderPanel'
 import { buildParticipantUrl, buildPreviewUrl } from '@/lib/shareLink'
@@ -995,8 +995,10 @@ export function SessionDetail() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {responses.map((response) => (
-                            <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
+                          {responses.map((response) => {
+                            const parsedResponse = parseSuggestionsAndFreeform(response.freeFormText)
+                            return (
+                              <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
                               <div className="flex items-center justify-between gap-2 mb-2">
                                 <span className="text-sm font-medium text-gray-900 break-words min-w-0">
                                   {response.participantName || 'Anonymous'}
@@ -1010,13 +1012,14 @@ export function SessionDetail() {
                                   {response.participantEmail}
                                 </p>
                               )}
-                              {response.freeFormText && (
+                              {parsedResponse.freeformText && (
                                 <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-                                  {response.freeFormText}
+                                  {parsedResponse.freeformText}
                                 </p>
                               )}
                             </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </CardContent>
                     </Card>

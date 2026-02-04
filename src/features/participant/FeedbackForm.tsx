@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase'
 import { classifySupabaseError } from '@/lib/supabaseErrors'
 import { PARTICIPANT_COPY } from '@/lib/copy'
 import { validateShareToken } from '@/lib/shareLink'
+import { serializeSuggestionsAndFreeform } from '@/lib/suggestions'
 import type { Session, Theme } from '@/types'
 
 type ThemeSelection = 'more' | 'less' | null
@@ -44,6 +45,7 @@ export function FeedbackForm() {
   const [selections, setSelections] = useState<Record<string, ThemeSelection>>({})
   const [participantName, setParticipantName] = useState('')
   const [participantEmail, setParticipantEmail] = useState('')
+  const [suggestedTopicsRaw, setSuggestedTopicsRaw] = useState('')
   const [freeform, setFreeform] = useState('')
 
   useEffect(() => {
@@ -301,6 +303,7 @@ export function FeedbackForm() {
 
     try {
       const participantToken = crypto.randomUUID()
+      const freeformPayload = serializeSuggestionsAndFreeform(suggestedTopicsRaw, freeform)
 
       const { data: responseData, error: responseError } = await supabase
         .from('responses')
@@ -309,7 +312,7 @@ export function FeedbackForm() {
           participant_email: participantEmail || `anon-${participantToken}@feedbacker.app`,
           name: participantName || null,
           followup_email: participantEmail || null,
-          free_form_text: freeform || null,
+          free_form_text: freeformPayload,
           participant_token: participantToken,
         })
         .select()
@@ -479,7 +482,31 @@ export function FeedbackForm() {
                   )}
                 </div>
 
-                <div className="border-t pt-6 space-y-4">
+                <div className="border-t pt-6 space-y-3">
+                  <Label htmlFor="suggestedTopics">Suggested topics (optional)</Label>
+                  <Textarea
+                    id="suggestedTopics"
+                    placeholder={`Pricing strategy\n- Packaging\n- Renewal motion`}
+                    value={suggestedTopicsRaw}
+                    onChange={(e) => setSuggestedTopicsRaw(e.target.value)}
+                    disabled={isSubmitting}
+                    rows={4}
+                    className="resize-none"
+                  />
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <p>Add topics you want covered that aren’t listed.</p>
+                    <p>Use one topic per line.</p>
+                    <p>Use bullets and sub-bullets like this:</p>
+                    <pre className="bg-gray-50 border border-gray-200 rounded p-2 text-gray-700">
+Pricing strategy
+- Packaging
+- Renewal motion
+                    </pre>
+                    <p>Sub-bullets start with - and begin at the start of the line.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
                   <h3 className="text-sm font-medium text-gray-900">Optional: Tell us more</h3>
 
                   <div className="space-y-2">

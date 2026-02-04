@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { generatePptx, type DeckOutline, type DeckSlide } from '@/lib/generatePptx';
 import { Sparkles, FileDown, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
-import { buildSuggestionGroupsFromResponses } from '@/lib/suggestions';
+import { buildSuggestionGroupsFromResponses, parseSuggestionsAndFreeform } from '@/lib/suggestions';
 
 interface ThemeResult {
   themeId: string;
@@ -78,7 +78,7 @@ export function DeckBuilderPanel({
           })),
           responses: responses.map((r) => ({
             participantName: r.participantName,
-            freeFormText: r.freeFormText,
+            freeFormText: parseSuggestionsAndFreeform(r.freeFormText).freeformText,
           })),
           suggestedThemes: suggestionData.groups.map((group) => ({
             label: group.label,
@@ -125,9 +125,21 @@ export function DeckBuilderPanel({
         throw new Error(errorMsg);
       }
 
-      setOutline(data as DeckOutline);
+      const outlineData = data as DeckOutline;
+      if (!Array.isArray(outlineData.suggested_topics_used)) {
+        outlineData.suggested_topics_used = [];
+      }
+      if (outlineData.suggested_topics_used.length === 0 && suggestionData.groups.length > 0) {
+        outlineData.suggested_topics_used = suggestionData.groups.map((group) => ({
+          label: group.label,
+          count: group.count,
+          where_in_outline: 'unspecified',
+        }));
+      }
+
+      setOutline(outlineData);
       // Expand all slides by default
-      setExpandedSlides(new Set((data as DeckOutline).slides.map((_, i) => i)));
+      setExpandedSlides(new Set(outlineData.slides.map((_, i) => i)));
 
       toast({
         title: 'Outline generated',

@@ -14,9 +14,9 @@ const { outputText } = ts.transpileModule(source, {
 
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`
 const mod = await import(moduleUrl)
-const { extractSuggestions, groupSuggestions } = mod
+const { extractSuggestions, extractSuggestionsFromSuggestedRaw, groupSuggestions } = mod
 
-const responses = [
+const freeformSamples = [
   '- Pricing strategy',
   'Topic: pricing strategy',
   'pricing strategy.',
@@ -24,7 +24,7 @@ const responses = [
   'This is a long paragraph that should not be treated as a suggestion because it exceeds the character threshold and contains no bullet or label to indicate a specific topic.'
 ]
 
-const extracted = responses.flatMap(text => extractSuggestions(text))
+const extracted = freeformSamples.flatMap(text => extractSuggestions(text))
 const groups = groupSuggestions(extracted)
 
 const findGroup = (label) => groups.find(g => g.normalized.includes(label))
@@ -41,9 +41,16 @@ if (!competitive || competitive.count !== 1) {
   process.exit(1)
 }
 
-const longExtracted = extractSuggestions(responses[4])
+const longExtracted = extractSuggestions(freeformSamples[4])
 if (longExtracted.length !== 0) {
   console.error('[FAIL] long paragraph should yield zero suggestions', longExtracted)
+  process.exit(1)
+}
+
+const suggestedRaw = `Pricing strategy\n- Packaging\n- Renewal motion`
+const suggestedExtracted = extractSuggestionsFromSuggestedRaw(suggestedRaw)
+if (suggestedExtracted.length !== 1 || suggestedExtracted[0] !== 'Pricing strategy') {
+  console.error('[FAIL] suggested raw should yield only top-level topic', suggestedExtracted)
   process.exit(1)
 }
 
