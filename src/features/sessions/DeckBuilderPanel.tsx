@@ -78,10 +78,18 @@ export function DeckBuilderPanel({
       // Get response details for better error handling
       const contentType = response.headers.get('content-type') || '';
       const responseText = await response.text();
+      const isDev = import.meta.env.DEV;
+
+      if (isDev && response.status === 404) {
+        throw new Error('AI analysis is not available in local dev. Use vercel dev or deploy to Vercel.');
+      }
 
       // Check if response is JSON
       if (!contentType.includes('application/json')) {
         console.error('Non-JSON response:', response.status, responseText.slice(0, 200));
+        if (isDev) {
+          throw new Error('AI analysis is not available in local dev. Use vercel dev or deploy to Vercel.');
+        }
         throw new Error('AI analysis is unavailable. The server returned an unexpected response.');
       }
 

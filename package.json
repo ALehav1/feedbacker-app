@@ -13,7 +13,7 @@
     "test:deck-structure": "ENABLE_DEBUG_META=true npx tsx scripts/test-deck-builder-structure.ts --live",
     "test:deck-failures": "npx tsx scripts/test-deck-builder-failures.ts",
     "test:deck-equivalence": "ENABLE_DEBUG_META=true npx tsx scripts/test-deck-builder-equivalence.ts",
-    "test:share-token": "npx tsx scripts/test-share-token.ts"
+    "test:share-token": "node scripts/test-share-token.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
