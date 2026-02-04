@@ -86,6 +86,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     let isMounted = true;
     let lastUserId: string | null = null;
+    let bootstrapResolved = false;
 
     // Log timestamp for debugging bootstrap timing
     const bootStart = Date.now();
@@ -93,7 +94,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('[Auth] Bootstrap starting at', new Date().toISOString());
     }
 
-    const handleSession = async (session: Session | null, source: string, isInitialBoot = false) => {
+    const resolveBootstrap = () => {
+      if (!bootstrapResolved && isMounted) {
+        bootstrapResolved = true;
+        setIsLoading(false);
+        if (import.meta.env.DEV) {
+          console.log('[Auth] Bootstrap resolved. Elapsed:', Date.now() - bootStart, 'ms');
+        }
+      }
+    };
+
+    const handleSession = async (session: Session | null, source: string) => {
       try {
         const nextUserId = session?.user?.id ?? null;
 
@@ -107,13 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (nextUserId === lastUserId) {
           setUser(session?.user ?? null);
-          // Still need to clear loading on initial boot even if user hasn't changed
-          if (isInitialBoot && isMounted) {
-            setIsLoading(false);
-            if (import.meta.env.DEV) {
-              console.log('[Auth] Bootstrap complete (same user). Elapsed:', Date.now() - bootStart, 'ms');
-            }
-          }
+          resolveBootstrap();
           return;
         }
 
@@ -123,19 +128,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(null);
           setPresenter(null);
           setPresenterStatus('loading');
+          resolveBootstrap();
           return;
         }
 
         setUser(session!.user);
 
-        // On initial boot, set loading false BEFORE fetching presenter
+        // Resolve bootstrap BEFORE fetching presenter
         // This ensures the app doesn't hang if presenter fetch is slow
-        if (isInitialBoot && isMounted) {
-          setIsLoading(false);
-          if (import.meta.env.DEV) {
-            console.log('[Auth] Bootstrap complete (session found). Elapsed:', Date.now() - bootStart, 'ms');
-          }
-        }
+        resolveBootstrap();
 
         const presenterData = await fetchPresenter(nextUserId);
         if (!isMounted) return;
@@ -158,9 +159,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (err instanceof DOMException && err.name === 'AbortError') return;
           console.error('Auth state change handler error:', err);
         }
-        // Don't set isLoading false here - wait for initial bootstrap
-        // Only set loading false after initial getSession completes
-        // Auth state changes after that are handled without blocking UI
+        // resolveBootstrap() inside handleSession unblocks the UI
+        // on whichever source delivers a session first
       }
     );
 
@@ -187,8 +187,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.log('[Auth] getSession result:', session ? 'has session' : 'no session', 'elapsed:', Date.now() - bootStart);
           }
           if (!isMounted) return;
-          // Pass isInitialBoot=true so loading is set false before presenter fetch
-          await handleSession(session, 'getSession', true);
+          await handleSession(session, 'getSession');
           return;
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') {
@@ -209,9 +208,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.warn('[Auth] getSession failed after retries');
     };
 
-    // Bootstrap: getSession determines auth state
-    // Loading is set false inside handleSession for authenticated users (before presenter fetch)
-    // For unauthenticated users or errors, set loading false here
+    // Bootstrap: whichever resolves first (getSession or onAuthStateChange) unblocks UI
+    // The finally block is a safety net in case both paths fail
     getSessionWithRetry().finally(() => {
       if (isMounted) {
         // Always ensure loading is false after bootstrap attempt
