@@ -73,6 +73,7 @@ export function useSessions(): UseSessionsReturn {
       const sessionIds = sessionRows.map((row) => row.id);
 
       const responseCounts = new Map<string, number>();
+      let countsUnavailable = false;
       if (sessionIds.length > 0) {
         const { data: countsData, error: countsError } = await supabase
           .from('responses')
@@ -81,6 +82,7 @@ export function useSessions(): UseSessionsReturn {
 
         if (countsError) {
           console.error('Error fetching response counts:', countsError);
+          countsUnavailable = true;
         } else if (countsData) {
           countsData.forEach((row: { session_id: string }) => {
             responseCounts.set(row.session_id, (responseCounts.get(row.session_id) || 0) + 1);
@@ -107,7 +109,7 @@ export function useSessions(): UseSessionsReturn {
         hasUnpublishedChanges: row.has_unpublished_changes || false,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
-        responseCount: responseCounts.get(row.id) || 0,
+        responseCount: countsUnavailable ? undefined : (responseCounts.get(row.id) || 0),
       }));
 
       setSessions(mappedSessions);

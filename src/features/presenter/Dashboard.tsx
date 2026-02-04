@@ -187,7 +187,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const responseCount = session.responseCount || 0;
+  const responseCount = session.responseCount ?? 0;
 
   const baseUrl = import.meta.env.VITE_APP_URL || import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
 
@@ -354,7 +354,7 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
         <div className="flex items-center gap-3 text-sm text-gray-600">
           <span>{session.lengthMinutes} min</span>
           <span>•</span>
-          <span>{(session.responseCount || 0) === 1 ? '1 response' : `${session.responseCount || 0} responses`}</span>
+          <span>{session.responseCount == null ? '— responses' : session.responseCount === 1 ? '1 response' : `${session.responseCount} responses`}</span>
         </div>
 
         <div className="space-y-1">
