@@ -94,13 +94,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('[Auth] Bootstrap starting at', new Date().toISOString());
     }
 
-    const resolveBootstrap = () => {
-      if (!bootstrapResolved && isMounted) {
-        bootstrapResolved = true;
-        setIsLoading(false);
-        if (import.meta.env.DEV) {
-          console.log('[Auth] Bootstrap resolved. Elapsed:', Date.now() - bootStart, 'ms');
-        }
+    const resolveWithSession = (session: Session | null, source: string) => {
+      if (bootstrapResolved || !isMounted) return;
+      bootstrapResolved = true;
+      setUser(session?.user ?? null);
+      if (!session?.user) {
+        setPresenter(null);
+        setPresenterStatus('loading');
+      }
+      setIsLoading(false);
+      if (import.meta.env.DEV) {
+        console.log('[Auth] Bootstrap resolved via', source, 'Elapsed:', Date.now() - bootStart, 'ms');
       }
     };
 
@@ -118,7 +122,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (nextUserId === lastUserId) {
           setUser(session?.user ?? null);
-          resolveBootstrap();
+          resolveWithSession(session, source);
           return;
         }
 
@@ -128,15 +132,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(null);
           setPresenter(null);
           setPresenterStatus('loading');
-          resolveBootstrap();
+          resolveWithSession(null, source);
           return;
         }
 
         setUser(session!.user);
 
-        // Resolve bootstrap BEFORE fetching presenter
-        // This ensures the app doesn't hang if presenter fetch is slow
-        resolveBootstrap();
+        // Resolve bootstrap immediately once a valid session exists
+        resolveWithSession(session, source);
 
         const presenterData = await fetchPresenter(nextUserId);
         if (!isMounted) return;
@@ -154,13 +157,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.log('[Auth] onAuthStateChange:', event, session ? 'has session' : 'no session');
         }
         try {
+          // If a valid session arrives, resolve immediately
+          if (session) {
+            resolveWithSession(session, `onAuthStateChange:${event}`);
+          }
           await handleSession(session, `onAuthStateChange:${event}`);
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') return;
           console.error('Auth state change handler error:', err);
         }
-        // resolveBootstrap() inside handleSession unblocks the UI
-        // on whichever source delivers a session first
       }
     );
 
@@ -174,55 +179,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
       ]);
     };
 
-    const getSessionWithRetry = async (retries = 3): Promise<void> => {
-      for (let i = 0; i < retries; i++) {
-        try {
-          // 5 second timeout per attempt to prevent infinite hang
-          const { data: { session } } = await withTimeout(
-            supabase.auth.getSession(),
-            5000,
-            'getSession'
-          );
+    const getSessionOnce = async (): Promise<void> => {
+      try {
+        const { data: { session } } = await withTimeout(
+          supabase.auth.getSession(),
+          2000,
+          'getSession'
+        );
+        if (import.meta.env.DEV) {
+          console.log('[Auth] getSession result:', session ? 'has session' : 'no session', 'elapsed:', Date.now() - bootStart);
+        }
+        if (!isMounted) return;
+        if (session) {
+          resolveWithSession(session, 'getSession');
+        } else if (!bootstrapResolved) {
+          resolveWithSession(null, 'getSession');
+        }
+        await handleSession(session, 'getSession');
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('timed out')) {
           if (import.meta.env.DEV) {
-            console.log('[Auth] getSession result:', session ? 'has session' : 'no session', 'elapsed:', Date.now() - bootStart);
+            console.warn('[Auth] getSession timeout (non-blocking)');
           }
-          if (!isMounted) return;
-          await handleSession(session, 'getSession');
-          return;
-        } catch (err) {
-          if (err instanceof DOMException && err.name === 'AbortError') {
-            console.log('[Auth] getSession AbortError, retrying...', i + 1);
-            await new Promise(r => setTimeout(r, 100 * (i + 1)));
-            continue;
-          }
-          // Log timeout and other errors, then retry
-          if (err instanceof Error && err.message.includes('timed out')) {
-            console.warn('[Auth] getSession timeout, retrying...', i + 1);
-            await new Promise(r => setTimeout(r, 500 * (i + 1)));
-            continue;
-          }
+        } else {
           console.error('[Auth] getSession error:', err);
-          return;
+        }
+        if (!bootstrapResolved) {
+          resolveWithSession(null, 'getSession-timeout');
         }
       }
-      console.warn('[Auth] getSession failed after retries');
     };
 
-    // Bootstrap: whichever resolves first (getSession or onAuthStateChange) unblocks UI
-    // The finally block is a safety net in case both paths fail
-    getSessionWithRetry().finally(() => {
-      if (isMounted) {
-        // Always ensure loading is false after bootstrap attempt
-        setIsLoading(false);
-        if (import.meta.env.DEV) {
-          console.log('[Auth] Bootstrap finally block. Elapsed:', Date.now() - bootStart, 'ms');
-        }
+    // Hard stop watchdog: never allow bootstrap spinner beyond 2500ms
+    const watchdog = setTimeout(() => {
+      if (!bootstrapResolved && isMounted) {
+        resolveWithSession(null, 'watchdog');
       }
-    });
+    }, 2500);
+
+    getSessionOnce();
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      clearTimeout(watchdog);
     };
   }, []);
 
