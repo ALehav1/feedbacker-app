@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export function ProfileSetup() {
   const navigate = useNavigate();
-  const { user, presenter, refetchPresenter, isLoading: isAuthLoading } = useAuth();
+  const { user, presenter, presenterStatus, refetchPresenter, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
 
   // Track if we've done the initial presenter check
@@ -128,13 +128,35 @@ export function ProfileSetup() {
   };
 
   // Show loading spinner while checking auth/presenter state
-  if (isAuthLoading || !hasCheckedPresenter) {
+  if (isAuthLoading || presenterStatus === 'loading' || !hasCheckedPresenter) {
     return (
       <div className="flex min-h-[100svh] items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
           <p className="text-gray-600">Loading profile...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Presenter fetch failed — show retry
+  if (presenterStatus === 'error') {
+    return (
+      <div className="flex min-h-[100svh] items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Unable to load profile</CardTitle>
+            <CardDescription>There was a problem loading your profile.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button onClick={() => refetchPresenter()} className="w-full min-h-[48px]">
+              Retry
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/dashboard')} className="w-full min-h-[48px]">
+              Back to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

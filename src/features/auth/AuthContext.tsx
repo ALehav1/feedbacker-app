@@ -10,9 +10,12 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Presenter } from '@/types';
 
+export type PresenterStatus = 'loading' | 'ready' | 'not_found' | 'error';
+
 interface AuthContextType {
   user: User | null;
   presenter: Presenter | null;
+  presenterStatus: PresenterStatus;
   isAuthenticated: boolean;
   isLoading: boolean;
   signIn: (email: string) => Promise<{ error: Error | null }>;
@@ -29,6 +32,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [presenter, setPresenter] = useState<Presenter | null>(null);
+  const [presenterStatus, setPresenterStatus] = useState<PresenterStatus>('loading');
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchPresenter = async (userId: string) => {
@@ -41,10 +45,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (error) {
         console.error('Error fetching presenter:', error);
+        setPresenterStatus('error');
         return null;
       }
 
       if (data) {
+        setPresenterStatus('ready');
         return {
           id: data.id,
           email: data.email,
@@ -57,18 +63,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } as Presenter;
       }
 
+      setPresenterStatus('not_found');
       return null;
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         return null;
       }
       console.error('Unexpected error fetching presenter:', err);
+      setPresenterStatus('error');
       return null;
     }
   };
 
   const refetchPresenter = async () => {
     if (user) {
+      setPresenterStatus('loading');
       const presenterData = await fetchPresenter(user.id);
       setPresenter(presenterData);
     }
@@ -113,6 +122,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!nextUserId) {
           setUser(null);
           setPresenter(null);
+          setPresenterStatus('loading');
           return;
         }
 
@@ -252,6 +262,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value: AuthContextType = {
     user,
     presenter,
+    presenterStatus,
     isAuthenticated: !!user,
     isLoading,
     signIn,

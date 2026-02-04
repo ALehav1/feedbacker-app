@@ -43,7 +43,7 @@ const emptyWizardData: WizardData = {
 
 export function SessionCreateWizard() {
   const navigate = useNavigate()
-  const { user, presenter, isLoading } = useAuth()
+  const { user, presenter, presenterStatus, isLoading, refetchPresenter } = useAuth()
   const { toast } = useToast()
 
   const [currentStep, setCurrentStep] = useState(1)
@@ -405,7 +405,7 @@ export function SessionCreateWizard() {
       return
     }
 
-    if (!presenter) {
+    if (presenterStatus !== 'ready' || !presenter) {
       toast({
         variant: 'destructive',
         title: 'Profile required',
@@ -935,7 +935,35 @@ Case study`}
     )
   }
 
-  if (!presenter) {
+  if (presenterStatus === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (presenterStatus === 'error') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <div className="text-center max-w-md space-y-4">
+          <h1 className="text-2xl font-bold text-gray-900">Unable to load profile</h1>
+          <p className="text-gray-600">There was a problem loading your profile.</p>
+          <Button onClick={() => refetchPresenter()} className="min-h-[48px]">
+            Retry
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/dashboard')} className="min-h-[48px] ml-3">
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (presenterStatus === 'not_found') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <div className="text-center max-w-md">

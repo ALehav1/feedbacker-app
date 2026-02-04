@@ -14,7 +14,7 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [showStillLoading, setShowStillLoading] = useState(false);
-  const { signIn, isAuthenticated, presenter, isLoading } = useAuth();
+  const { signIn, isAuthenticated, presenterStatus, isLoading, refetchPresenter } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -38,13 +38,17 @@ export function LoginPage() {
   }, [isLoading]);
 
   // Redirect authenticated users to dashboard
-  // Note: Using push navigation (not replace) to preserve history entry
-  // This ensures browser back doesn't exit the app
+  // Wait for presenterStatus to resolve before routing
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate(presenter ? '/dashboard' : '/dashboard/profile');
+      if (presenterStatus === 'ready') {
+        navigate('/dashboard');
+      } else if (presenterStatus === 'not_found') {
+        navigate('/dashboard/profile');
+      }
+      // 'loading' and 'error' — don't redirect yet
     }
-  }, [isLoading, isAuthenticated, presenter, navigate]);
+  }, [isLoading, isAuthenticated, presenterStatus, navigate]);
 
   // Show loading while checking auth state
   if (isLoading) {
@@ -67,6 +71,37 @@ export function LoginPage() {
             </div>
           )}
         </div>
+      </div>
+    );
+  }
+
+  // Authenticated but presenter check still running
+  if (isAuthenticated && presenterStatus === 'loading') {
+    return (
+      <div className="flex min-h-[100svh] items-center justify-center bg-gray-50 p-4">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-violet-600" />
+          <p className="text-gray-600">Finalizing profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated but presenter fetch failed — offer retry
+  if (isAuthenticated && presenterStatus === 'error') {
+    return (
+      <div className="flex min-h-[100svh] items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Unable to load profile</CardTitle>
+            <CardDescription>There was a problem loading your profile. Please try again.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => refetchPresenter()} className="w-full min-h-[48px]">
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

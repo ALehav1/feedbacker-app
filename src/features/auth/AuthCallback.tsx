@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 
 export function AuthCallback() {
   const navigate = useNavigate()
-  const { user, presenter, isLoading } = useAuth()
+  const { user, presenterStatus, isLoading } = useAuth()
   const didNavigate = useRef(false)
   const timeoutRef = useRef<number | null>(null)
 
@@ -56,13 +56,16 @@ export function AuthCallback() {
     // If we have auth tokens in URL but no user yet, wait for Supabase to process them
     if (hasAuthToken && !user) return
 
+    // Wait for presenter check to complete before routing
+    if (presenterStatus === 'loading') return
+
     didNavigate.current = true
-    navigate(presenter ? '/dashboard' : '/dashboard/profile', { replace: true })
+    navigate(presenterStatus === 'ready' ? '/dashboard' : '/dashboard/profile', { replace: true })
 
     return () => {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
     }
-  }, [navigate, user, presenter, isLoading, error, isExpiredLink, hasAuthToken])
+  }, [navigate, user, presenterStatus, isLoading, error, isExpiredLink, hasAuthToken])
 
   if (error) {
     // Special handling for expired/used magic links
