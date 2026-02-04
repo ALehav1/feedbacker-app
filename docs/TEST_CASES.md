@@ -173,7 +173,7 @@ Q&A
 - [ ] Panel visible with amber background
 - [ ] Copy: "Feedback collection starts after you confirm & save."
 - [ ] Button: "Confirm & start collecting feedback"
-- [ ] Helper: "This keeps the same participant link. The page becomes interactive."
+- [ ] Helper: "Publishing generates a new participant link. The page becomes interactive."
 
 ### Active State
 **Link status (prominent pill badge):**
@@ -272,6 +272,7 @@ Q&A
 - [ ] "Discard changes" button
 - [ ] "Publish updates" button (amber)
 - [ ] "View live version" link (opens participant link)
+- [ ] Publish rotates participant link when tokenized (`?k=` changes)
 
 ---
 
@@ -435,7 +436,7 @@ Q&A
 
 ### Setup
 1. Create or use an existing **active** session with topics
-2. Note the participant link (`/s/<slug>`)
+2. Note the participant link (`/s/<slug>` or `/s/<slug>?k=<token>` for new sessions)
 
 ### Manual Test Steps
 
@@ -444,14 +445,14 @@ Q&A
    - Window B: Participant view
 
 2. **Participant A submits response:**
-   - [ ] Navigate to participant link
+   - [ ] Navigate to participant link (include `?k=` if present)
    - [ ] Select at least one topic (Cover more/less)
    - [ ] Optionally fill name/email
    - [ ] Submit feedback
    - [ ] Verify "Thank You!" confirmation
 
 3. **Participant B submits response (different selections):**
-   - [ ] Navigate to participant link (different browser/incognito)
+   - [ ] Navigate to participant link (different browser/incognito, include `?k=` if present)
    - [ ] Select different topics
    - [ ] Submit feedback
    - [ ] Verify "Thank You!" confirmation

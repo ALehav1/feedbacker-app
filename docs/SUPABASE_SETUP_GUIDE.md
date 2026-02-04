@@ -230,6 +230,7 @@ If this works, ✅ **Authentication is working!**
 - Check browser console for errors
 - Verify the `presenters` table exists
 - Check that RLS policies allow INSERT with `auth.uid() = id`
+- Verify `sessions.published_share_token` and `sessions.published_version` columns exist (tokenized share links)
 
 ---
 

@@ -25,7 +25,7 @@
 | Empty state | No sessions exist | Shows empty state message |
 | Create session | Click "Create New Presentation" → Complete wizard → Confirm | Session created directly as `active` with published snapshot |
 | Session detail | Click on session card | Shows SessionDetail with "Session details" and "Audience feedback" tabs |
-| Copy link | Click "Copy participant link" | Shareable link copied to clipboard |
+| Copy link | Click "Copy participant link" | Shareable link copied to clipboard (tokenized `?k=` for new sessions; legacy links may be plain `/s/<slug>`) |
 | Close feedback | In active, click "Close participant feedback" → Confirm | State changes to `completed` |
 | Delete session | In completed, click "Delete" → Confirm | Session permanently deleted |
 | Results tab | Click "Audience feedback" tab | Shows Topic Prioritization + Participant Responses + Deck Builder |

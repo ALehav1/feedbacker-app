@@ -32,6 +32,7 @@ CREATE TABLE sessions (
   summary_full TEXT NOT NULL DEFAULT '',
   summary_condensed TEXT NOT NULL DEFAULT '',
   slug TEXT UNIQUE NOT NULL,
+  topics_source TEXT,
   -- Published snapshot fields (what participants see)
   published_welcome_message TEXT,
   published_summary_condensed TEXT,
@@ -39,6 +40,8 @@ CREATE TABLE sessions (
   published_topics JSONB NOT NULL DEFAULT '[]'::jsonb,
   published_at TIMESTAMPTZ,
   has_unpublished_changes BOOLEAN NOT NULL DEFAULT false,
+  published_share_token TEXT,
+  published_version INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

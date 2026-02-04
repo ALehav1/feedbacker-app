@@ -265,7 +265,7 @@ No preview of participant view needed.
 - Copy to clipboard button
 - Session moves to Active state
 
-**URL format:** `[domain]/s/[readable-slug]`
+**URL format:** `[domain]/s/[readable-slug]` (tokenized for new sessions: `/s/<slug>?k=<token>`)
 
 Slug is AI-generated, not editable.
 
@@ -397,7 +397,7 @@ Permanent removal from any state. No recovery.
 
 ### 5.1 Access Session
 
-1. Open shared link (`/s/{slug}`)
+1. Open shared link (`/s/{slug}` or `/s/{slug}?k=<token>`)
 2. **Directly see feedback form** (no email gate)
 3. Session state determines available actions
 

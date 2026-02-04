@@ -44,7 +44,7 @@ npm run lint
 - [ ] Click "Archive Session" → confirm → state changes to `archived`
 
 ### 6. Participant Feedback
-- [ ] Open `/s/:slug` link (while session is `active`)
+- [ ] Open `/s/:slug` link (or `/s/:slug?k=...` if tokenized) while session is `active`
 - [ ] Enter email
 - [ ] Select themes (👍/👎)
 - [ ] Optional: enter name, email, free-form text

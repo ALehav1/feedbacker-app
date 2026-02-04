@@ -310,7 +310,14 @@ participant_token TEXT NOT NULL DEFAULT gen_random_uuid()::text
 ```sql
 UNIQUE(session_id, participant_email)  -- One response per email per session
 UNIQUE(response_id, theme_id)          -- One selection per theme per response
-UNIQUE(session_id, sort_order)         -- No sort_order collisions
+```
+
+**Active themes only (soft delete safe):** implemented via partial unique index
+
+```
+CREATE UNIQUE INDEX themes_session_sort_active_unique
+  ON themes(session_id, sort_order)
+  WHERE is_active = true;
 ```
 
 ### 3. Foreign Key Cascades

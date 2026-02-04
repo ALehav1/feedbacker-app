@@ -759,6 +759,16 @@ CREATE TABLE sessions (
   summary_full TEXT NOT NULL DEFAULT '',
   summary_condensed TEXT NOT NULL DEFAULT '',
   slug TEXT UNIQUE NOT NULL,
+  topics_source TEXT,
+  -- Published snapshot fields (what participants see)
+  published_welcome_message TEXT,
+  published_summary_condensed TEXT,
+  published_summary_full TEXT,
+  published_topics JSONB NOT NULL DEFAULT '[]'::jsonb,
+  published_at TIMESTAMPTZ,
+  has_unpublished_changes BOOLEAN NOT NULL DEFAULT false,
+  published_share_token TEXT,
+  published_version INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -769,8 +779,8 @@ CREATE TABLE themes (
   session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   text TEXT NOT NULL,
   sort_order INTEGER NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(session_id, sort_order)
 );
 
 -- Responses (participant feedback)
@@ -795,6 +805,11 @@ CREATE TABLE theme_selections (
   selection TEXT NOT NULL CHECK (selection IN ('more', 'less')),
   UNIQUE(response_id, theme_id)
 );
+
+-- Uniqueness enforced via partial index (active themes only)
+CREATE UNIQUE INDEX themes_session_sort_active_unique
+  ON themes(session_id, sort_order)
+  WHERE is_active = true;
 ```
 
 ### Security Notes
@@ -821,11 +836,15 @@ The session creation wizard (`SessionCreateWizard.tsx`) follows these write rule
 - `sort_order` is 1-indexed (starts at 1, not 0)
 - Reordering updates all affected themes' `sort_order`
 - Deleting a theme renumbers remaining themes to maintain contiguous sequence
-- Unique constraint: `(session_id, sort_order)` prevents collisions
+- Unique constraint enforced via partial index: `themes_session_sort_active_unique` (`WHERE is_active = true`)
 
 **Transaction Order:**
 1. Insert session (returns `session.id`)
 2. Insert themes with `session_id` reference and 1-indexed `sort_order`
+
+**Published Snapshot + Share Token:**
+- Wizard inserts `published_*` fields on create so sessions start active.
+- When topics exist, wizard sets `published_share_token` (tokenized links) and `published_version = 1`.
 
 **Slug Generation:**
 - Format: 16-character random hex (`Math.random().toString(36).slice(2,10)` × 2)
@@ -985,13 +1004,18 @@ User enters email → Supabase sends magic link → User clicks link
         Returning? → /dashboard (load sessions)
 ```
 
+**Auth bootstrap (current implementation):**
+- `AuthContext` uses both `onAuthStateChange` and a timed `getSession()` retry loop.
+- UI unblocks once a session is known, **before** presenter fetch completes.
+- `presenterStatus` controls routing: `ready`, `not_found`, `error` (no redirect on `error`).
+
 ### Row-Level Security (RLS) Overview
 
 | Table | Presenter Access | Participant Access |
 |-------|-----------------|-------------------|
 | `presenters` | Own profile only (by `id = auth.uid()`) | None |
 | `sessions` | Own sessions (by `presenter_id`) | Active/completed sessions (public read) |
-| `themes` | Own session themes (via session join) | Active session themes (public read) |
+| `themes` | Own session themes (via session join) | Active session themes (public read; participants normally read `sessions.published_topics`) |
 | `responses` | Own session responses (via session join) | Can insert for active sessions |
 | `theme_selections` | Own session selections (via response join) | Can insert/delete for active sessions |
 
