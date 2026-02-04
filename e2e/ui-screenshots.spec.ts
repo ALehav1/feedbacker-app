@@ -73,7 +73,7 @@ test.describe('Golden Path - Public Pages', () => {
       // Navigate first, then clear localStorage
       await page.goto('/')
       await page.evaluate(() => {
-        try { localStorage.clear() } catch {}
+        try { localStorage.clear() } catch { /* noop */ }
       })
 
       // Reload to apply cleared state
@@ -140,7 +140,7 @@ test.describe('Golden Path - Public Pages', () => {
 
       await page.goto('/')
       await page.evaluate(() => {
-        try { localStorage.clear() } catch {}
+        try { localStorage.clear() } catch { /* noop */ }
       })
 
       await page.reload({ waitUntil: 'networkidle' })
@@ -579,5 +579,69 @@ test.describe('Golden Path - Deck Builder (requires auth)', () => {
     await page.waitForTimeout(500)
 
     await page.screenshot({ path: `${SCREENSHOT_DIR}/07-deck-builder-desktop.png`, fullPage: true })
+  })
+})
+
+test.describe('Golden Path - Wizard Step 3 Topics (requires auth)', () => {
+  test('step 3 - list first + inline edit', async ({ page }) => {
+    if (!HAS_AUTH_STATE) {
+      test.skip(true, 'No auth state')
+      return
+    }
+
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/dashboard/sessions/new')
+    await page.waitForLoadState('networkidle')
+
+    const isLogin = await page.locator('text=Send magic link').isVisible({ timeout: 3000 }).catch(() => false)
+    if (isLogin) {
+      test.skip(true, 'Auth state expired')
+      return
+    }
+
+    // Dismiss restore prompt if it appears
+    const startFresh = page.locator('button:has-text("Start fresh")')
+    if (await startFresh.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await startFresh.click()
+      await page.waitForTimeout(500)
+    }
+
+    // Step 1: Fill title and length
+    await page.fill('#title', 'AI and Machine Learning Overview')
+    await page.fill('#lengthMinutes', '30')
+
+    // Next → Step 2
+    await page.locator('button:has-text("Next")').click()
+    await page.waitForTimeout(500)
+
+    // Step 2: Fill outline
+    await page.fill('#summaryFull',
+      'Introduction to AI and Machine Learning\n' +
+      '- Neural network fundamentals\n' +
+      '- Training and optimization\n\n' +
+      'Transformer Architecture\n' +
+      '- Attention mechanisms\n' +
+      '- Self-attention vs cross-attention\n\n' +
+      'Practical Applications\n' +
+      '- Natural language processing\n' +
+      '- Computer vision'
+    )
+
+    // Next → Step 3
+    await page.locator('button:has-text("Next")').click()
+    await page.waitForTimeout(1000)
+
+    // Screenshot 1: List-first view with "Add topic" button
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/08-step3-list-first.png`, fullPage: true })
+
+    // Click Edit on first topic → inline editor
+    const editBtn = page.locator('button:has-text("Edit")').first()
+    if (await editBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await editBtn.click()
+      await page.waitForTimeout(300)
+
+      // Screenshot 2: Inline edit mode
+      await page.screenshot({ path: `${SCREENSHOT_DIR}/08-step3-inline-edit.png`, fullPage: true })
+    }
   })
 })
