@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, LogOut, Copy, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, LogOut, ExternalLink, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { DASHBOARD_BADGES } from '@/lib/copy';
 import type { Session, SessionState } from '@/types';
@@ -189,8 +189,6 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
 
   const responseCount = session.responseCount ?? 0;
 
-  const baseUrl = import.meta.env.VITE_APP_URL || import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
-
   const getStateBadgeClassName = (state: SessionState): string => {
     const baseClasses = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold';
     
@@ -212,26 +210,6 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
     active: 'Feedback open',
     completed: 'Feedback closed',
     archived: 'Archived',
-  };
-
-  const shareableLink = `${baseUrl}/s/${session.slug}`;
-
-  const handleCopyLink = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(shareableLink);
-      toast({
-        title: 'Link copied',
-        description: 'Shareable link copied to clipboard.',
-      });
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      toast({
-        variant: 'destructive',
-        title: 'Copy failed',
-        description: 'Unable to copy link.',
-      });
-    }
   };
 
   const handleViewFeedback = (e: React.MouseEvent) => {
@@ -357,32 +335,12 @@ function SessionCard({ session, onSessionChange }: SessionCardProps) {
           <span>{session.responseCount == null ? '— responses' : session.responseCount === 1 ? '1 response' : `${session.responseCount} responses`}</span>
         </div>
 
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-            <code className="flex-1 truncate text-xs text-gray-700">
-              {baseUrl}/s/{session.slug}
-            </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyLink}
-              className="h-8 w-8 shrink-0 p-0"
-              title="Copy link"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-gray-600 px-1">
-            {session.state === 'draft' && (
-              <span className="font-medium text-amber-700">Draft — preview only</span>
-            )}
-            {session.state === 'active' && (
-              <span className="font-medium text-green-700">Participant feedback open</span>
-            )}
-            {session.state === 'completed' && (
-              <span className="font-medium text-blue-700">Participant feedback closed</span>
-            )}
-          </p>
+        <div className="px-1">
+          {session.publishedTopics && session.publishedTopics.length > 0 ? (
+            <span className="text-xs font-medium text-green-700">Participant link active</span>
+          ) : (
+            <span className="text-xs font-medium text-gray-500">Not published</span>
+          )}
         </div>
 
         {/* Primary action: always Open details */}

@@ -1152,4 +1152,51 @@ Both the session creation wizard and the session editor use **list-first inline 
 
 ---
 
+## Publish-before-share invariant (participant link)
+
+### Definition of "Published"
+
+A session is considered **published** when `session.publishedTopics?.length > 0`. No additional flags or states are used — the presence of at least one published topic is the sole gate.
+
+### Where Enforced
+
+| Location | Behavior |
+|----------|----------|
+| `src/features/sessions/SessionDetail.tsx` | Participant link card is conditionally rendered: "Share with your audience" (with URL, copy button, preview links) when published; "Publish to collect audience feedback" (with publish button, no link) when not published. Draft state shows no participant link at all. |
+| `src/features/presenter/Dashboard.tsx` | Session cards show status labels only — "Participant link active" (green) when published, "Not published" (gray) otherwise. No link or copy button on dashboard cards. |
+| `src/features/sessions/SessionCreateWizard.tsx` | Success toast directs presenter to share from the session page: "Your participant link is ready — share it with your audience from the session page." |
+
+### Presenter Flow
+
+1. **Generate topics** — Create a presentation via the wizard, review and edit topics
+2. **Publish topics** — Wizard publishes automatically on creation; for subsequent edits, presenter clicks "Publish updates" in the unpublished changes bar
+3. **Copy link and share** — From the session detail page, copy the participant link and send to audience
+
+### Guard Snippet
+
+```tsx
+// SessionDetail.tsx — active state link gating
+{session.publishedTopics && session.publishedTopics.length > 0 ? (
+  <Card>
+    <CardHeader>
+      <CardTitle>Share with your audience</CardTitle>
+      ...
+    </CardHeader>
+    <CardContent>
+      {/* URL + Copy link button + Preview/Open links */}
+    </CardContent>
+  </Card>
+) : (
+  <Card className="border-violet-200 bg-violet-50">
+    <CardContent>
+      <h3>Publish to collect audience feedback</h3>
+      <p>Once you publish, we'll generate a participant link...</p>
+      <Button onClick={handlePublishUpdates}>Publish topics</Button>
+    </CardContent>
+  </Card>
+)}
+```
+
+---
+
 *End of Architecture Documentation*

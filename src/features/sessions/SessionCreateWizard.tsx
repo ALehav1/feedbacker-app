@@ -514,7 +514,7 @@ export function SessionCreateWizard() {
 
       toast({
         title: 'Presentation published',
-        description: 'Your presentation is now live and collecting participant feedback.',
+        description: 'Your participant link is ready — share it with your audience from the session page.',
       })
 
       clearWizardState()

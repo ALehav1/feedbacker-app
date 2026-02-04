@@ -706,36 +706,6 @@ export function SessionDetail() {
               </CardContent>
             </Card>
 
-            {/* Participant link for draft */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Participant link</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-mono text-gray-900 flex-1 break-all">
-                    {participantUrl}
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopyLink}
-                    className="min-h-[40px] shrink-0"
-                  >
-                    Copy
-                  </Button>
-                </div>
-                <a
-                  href={participantUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Preview participant page
-                </a>
-              </CardContent>
-            </Card>
           </>
         )}
 
@@ -928,67 +898,96 @@ export function SessionDetail() {
           />
         )}
 
-        {/* Active: Participant link and close feedback */}
+        {/* Active: Participant link (guarded behind publish) and close feedback */}
         {session.state === 'active' && (
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-mono text-gray-900 flex-1 break-all min-w-0">
-                  {participantUrl}
-                </p>
+          <>
+            {session.publishedTopics && session.publishedTopics.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Share with your audience</CardTitle>
+                  <CardDescription>
+                    Copy this link and send it to your participants. They'll use it to
+                    vote on topics and submit feedback before your presentation.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-mono text-gray-900 flex-1 break-all min-w-0">
+                      {participantUrl}
+                    </p>
+                    <Button
+                      onClick={handleCopyLink}
+                      className="min-h-[44px] shrink-0"
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy link
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href={`${participantUrl}?preview=working`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Preview working version
+                    </a>
+                    <a
+                      href={participantUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Open participant page
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-violet-200 bg-violet-50">
+                <CardContent className="pt-6 space-y-3">
+                  <h3 className="text-base font-semibold text-gray-900">Publish to collect audience feedback</h3>
+                  <p className="text-sm text-gray-700">
+                    Once you publish, we'll generate a participant link you can
+                    share with your audience to collect feedback.
+                  </p>
+                  <Button onClick={handlePublishUpdates} disabled={isPublishing} className="min-h-[44px]">
+                    {isPublishing ? 'Publishing...' : 'Publish topics'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-green-700">
+                    Participant feedback open
+                  </span>
+                  <span className="text-sm text-gray-600">{responses.length} responses</span>
+                </div>
                 <Button
-                  onClick={handleCopyLink}
-                  className="min-h-[44px] shrink-0"
+                  variant="outline"
+                  className="w-full min-h-[48px]"
+                  onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
                 >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy link
+                  Edit presentation
                 </Button>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <a
-                  href={`${participantUrl}?preview=working`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
+                <Button
+                  variant="destructive"
+                  className="w-full min-h-[48px]"
+                  onClick={handleCloseClick}
                 >
-                  <ExternalLink className="h-3 w-3" />
-                  Preview working version
-                </a>
-                <a
-                  href={participantUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Open participant page
-                </a>
-              </div>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                <span className="text-sm font-medium text-green-700">
-                  Participant feedback open
-                </span>
-                <span className="text-sm text-gray-600">{responses.length} responses</span>
-              </div>
-              <Button
-                variant="outline"
-                className="w-full min-h-[48px]"
-                onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
-              >
-                Edit presentation
-              </Button>
-              <Button
-                variant="destructive"
-                className="w-full min-h-[48px]"
-                onClick={handleCloseClick}
-              >
-                Close participant feedback
-              </Button>
-              <p className="text-xs text-gray-500 text-center">
-                Participants can no longer submit feedback once this is closed.
-              </p>
-            </CardContent>
-          </Card>
+                  Close participant feedback
+                </Button>
+                <p className="text-xs text-gray-500 text-center">
+                  Participants can no longer submit feedback once this is closed.
+                </p>
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {/* Completed: Status only (participant link hidden) */}
