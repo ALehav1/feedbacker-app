@@ -1,12 +1,14 @@
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UNPUBLISHED_CHANGES_BAR } from '@/lib/copy';
+import { buildParticipantUrl } from '@/lib/shareLink';
 
 interface UnpublishedChangesBarProps {
   onPublish: () => void;
   onDiscard: () => void;
   isPublishing?: boolean;
   slug?: string;
+  publishedShareToken?: string | null;
 }
 
 export function UnpublishedChangesBar({
@@ -14,9 +16,10 @@ export function UnpublishedChangesBar({
   onDiscard,
   isPublishing = false,
   slug,
+  publishedShareToken,
 }: UnpublishedChangesBarProps) {
   const baseUrl = import.meta.env.VITE_APP_URL || import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
-  const liveUrl = slug ? `${baseUrl}/s/${slug}` : null;
+  const liveUrl = slug ? buildParticipantUrl(baseUrl, slug, publishedShareToken) : null;
 
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">

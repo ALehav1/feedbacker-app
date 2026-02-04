@@ -12,7 +12,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:deck-structure": "ENABLE_DEBUG_META=true npx tsx scripts/test-deck-builder-structure.ts --live",
     "test:deck-failures": "npx tsx scripts/test-deck-builder-failures.ts",
-    "test:deck-equivalence": "ENABLE_DEBUG_META=true npx tsx scripts/test-deck-builder-equivalence.ts"
+    "test:deck-equivalence": "ENABLE_DEBUG_META=true npx tsx scripts/test-deck-builder-equivalence.ts",
+    "test:share-token": "npx tsx scripts/test-share-token.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

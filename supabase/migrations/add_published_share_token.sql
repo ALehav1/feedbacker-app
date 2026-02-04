@@ -1,0 +1,2 @@
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS published_share_token TEXT;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS published_version INTEGER NOT NULL DEFAULT 0;

@@ -35,6 +35,8 @@ export interface Session {
   publishedSummaryFull?: string;
   publishedTopics: PublishedTopic[];
   publishedAt?: Date;
+  publishedShareToken?: string | null;
+  publishedVersion?: number | null;
   hasUnpublishedChanges: boolean;
   createdAt: Date;
   updatedAt: Date;

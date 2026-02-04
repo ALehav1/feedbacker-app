@@ -432,6 +432,9 @@ export function SessionCreateWizard() {
         sortOrder: theme.sortOrder,
       }))
 
+      const hasPublishedTopics = publishedTopics.length > 0
+      const publishedShareToken = hasPublishedTopics ? crypto.randomUUID() : null
+
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -447,9 +450,11 @@ export function SessionCreateWizard() {
           published_welcome_message: wizardData.welcomeMessage.trim() || '',
           published_summary_condensed: wizardData.summaryCondensed.trim() || '',
           published_summary_full: wizardData.summaryFull.trim() || '',
-          published_topics: publishedTopics.length > 0 ? publishedTopics : [],
+          published_topics: hasPublishedTopics ? publishedTopics : [],
           published_at: new Date().toISOString(),
           has_unpublished_changes: false,
+          published_share_token: publishedShareToken,
+          published_version: hasPublishedTopics ? 1 : 0,
         })
         .select()
         .single()

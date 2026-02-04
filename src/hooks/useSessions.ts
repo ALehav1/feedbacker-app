@@ -20,6 +20,8 @@ interface SessionRow {
   published_summary_full?: string
   published_topics: { themeId: string; text: string; sortOrder: number }[] // JSONB array from database
   published_at?: string
+  published_share_token?: string | null
+  published_version?: number | null
   has_unpublished_changes: boolean
   created_at: string
   updated_at: string
@@ -106,6 +108,8 @@ export function useSessions(): UseSessionsReturn {
         publishedSummaryFull: row.published_summary_full,
         publishedTopics: row.published_topics || [],
         publishedAt: row.published_at ? new Date(row.published_at) : undefined,
+        publishedShareToken: row.published_share_token ?? null,
+        publishedVersion: row.published_version ?? null,
         hasUnpublishedChanges: row.has_unpublished_changes || false,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),

@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { classifySupabaseError } from '@/lib/supabaseErrors'
 import { PARTICIPANT_COPY } from '@/lib/copy'
+import { validateShareToken } from '@/lib/shareLink'
 import type { Session, Theme } from '@/types'
 
 type ThemeSelection = 'more' | 'less' | null
@@ -29,6 +30,7 @@ export function FeedbackForm() {
   const { user } = useAuth()
   const { toast } = useToast()
   const previewRequested = searchParams.get('preview') === 'working'
+  const shareToken = searchParams.get('k')
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
   const [presenterName, setPresenterName] = useState<string>('')
@@ -90,6 +92,8 @@ export function FeedbackForm() {
             publishedSummaryCondensed: sessionData.published_summary_condensed,
             publishedTopics: sessionData.published_topics || [],
             publishedAt: sessionData.published_at ? new Date(sessionData.published_at) : undefined,
+            publishedShareToken: sessionData.published_share_token ?? null,
+            publishedVersion: sessionData.published_version ?? null,
             hasUnpublishedChanges: sessionData.has_unpublished_changes || false,
             createdAt: new Date(sessionData.created_at),
             updatedAt: new Date(sessionData.updated_at),
@@ -111,6 +115,27 @@ export function FeedbackForm() {
           // Access control: Only presenter can preview working version
           const canPreview = !!(previewRequested && user && user.id === mappedSession.presenterId)
           setIsPreviewMode(canPreview)
+
+          if (previewRequested && !canPreview) {
+            setError('Sign in to preview this presentation.')
+            setLoading(false)
+            return
+          }
+
+          const hasPublishedTopics = (mappedSession.publishedTopics || []).length > 0
+
+          if (!canPreview && hasPublishedTopics) {
+            const tokenStatus = validateShareToken(
+              mappedSession.publishedShareToken,
+              shareToken
+            )
+
+            if (tokenStatus === 'expired') {
+              setError('This link has expired. Please ask the presenter for a new link.')
+              setLoading(false)
+              return
+            }
+          }
 
           // If preview mode (and authorized), fetch working themes; otherwise use published topics
           if (canPreview) {
@@ -160,7 +185,7 @@ export function FeedbackForm() {
     }
 
     fetchSessionAndThemes()
-  }, [slug, previewRequested, user])
+  }, [slug, previewRequested, shareToken, user])
 
   if (loading) {
     return (
@@ -174,11 +199,18 @@ export function FeedbackForm() {
   }
 
   if (error || !session) {
+    const errorTitle = canRetry
+      ? 'Connection Issue'
+      : error?.includes('expired')
+        ? 'Link expired'
+        : error?.includes('Sign in')
+          ? 'Sign in required'
+          : 'Presentation Not Found'
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>{canRetry ? 'Connection Issue' : 'Presentation Not Found'}</CardTitle>
+            <CardTitle>{errorTitle}</CardTitle>
             <CardDescription>{error || 'This session does not exist'}</CardDescription>
           </CardHeader>
           {canRetry && (

@@ -27,6 +27,7 @@ import { classifySupabaseError } from '@/lib/supabaseErrors'
 import { UnpublishedChangesBar } from '@/components/UnpublishedChangesBar'
 import { DevResponseGenerator } from './DevResponseGenerator'
 import { DeckBuilderPanel } from './DeckBuilderPanel'
+import { buildParticipantUrl, buildPreviewUrl } from '@/lib/shareLink'
 import type { Session, SessionState, PublishedTopic } from '@/types'
 
 interface ThemeResult {
@@ -151,6 +152,8 @@ export function SessionDetail() {
             publishedSummaryFull: data.published_summary_full,
             publishedTopics: data.published_topics || [],
             publishedAt: data.published_at ? new Date(data.published_at) : undefined,
+            publishedShareToken: data.published_share_token ?? null,
+            publishedVersion: data.published_version ?? null,
             hasUnpublishedChanges: data.has_unpublished_changes || false,
             createdAt: new Date(data.created_at),
             updatedAt: new Date(data.updated_at),
@@ -261,7 +264,7 @@ export function SessionDetail() {
   const handleCopyLink = async () => {
     if (!session) return
 
-    const link = `${baseUrl}/s/${session.slug}`
+    const link = buildParticipantUrl(baseUrl, session.slug, session.publishedShareToken)
     try {
       await navigator.clipboard.writeText(link)
       toast({
@@ -309,6 +312,9 @@ export function SessionDetail() {
       }))
 
       // 3. Update session: copy working → published
+      const newShareToken = crypto.randomUUID()
+      const nextPublishedVersion = (session.publishedVersion ?? 0) + 1
+
       const { error: updateError } = await supabase
         .from('sessions')
         .update({
@@ -318,6 +324,8 @@ export function SessionDetail() {
           published_topics: publishedTopics,
           published_at: new Date().toISOString(),
           has_unpublished_changes: false,
+          published_share_token: newShareToken,
+          published_version: nextPublishedVersion,
         })
         .eq('id', sessionId)
 
@@ -336,6 +344,8 @@ export function SessionDetail() {
         publishedSummaryFull: session.summaryFull,
         publishedTopics: publishedTopics,
         publishedAt: new Date(),
+        publishedShareToken: newShareToken,
+        publishedVersion: nextPublishedVersion,
         hasUnpublishedChanges: false,
       })
 
@@ -624,7 +634,7 @@ export function SessionDetail() {
     archived: 'Archived',
   }
 
-  const participantUrl = `${baseUrl}/s/${session.slug}`
+  const participantUrl = buildParticipantUrl(baseUrl, session.slug, session.publishedShareToken)
 
   const handleBack = () => {
     if (session.hasUnpublishedChanges) {
@@ -895,6 +905,7 @@ export function SessionDetail() {
             onDiscard={() => setShowDiscardDialog(true)}
             isPublishing={isPublishing}
             slug={session.slug}
+            publishedShareToken={session.publishedShareToken}
           />
         )}
 
@@ -925,7 +936,7 @@ export function SessionDetail() {
                   </div>
                   <div className="flex flex-wrap gap-3">
                     <a
-                      href={`${participantUrl}?preview=working`}
+                      href={buildPreviewUrl(baseUrl, session.slug, session.publishedShareToken)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
