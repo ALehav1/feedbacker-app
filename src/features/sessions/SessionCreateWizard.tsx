@@ -579,7 +579,7 @@ export function SessionCreateWizard() {
       })
 
       clearWizardState()
-      navigate(`/dashboard/sessions/${sessionData.id}`)
+      navigate(`/dashboard/sessions/${sessionData.id}`, { replace: true })
     } catch (err) {
       console.error('Unexpected error:', err)
       toast({

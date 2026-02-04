@@ -506,6 +506,15 @@ export function DeckBuilderPanel({
             {/* Action buttons */}
             <div className="flex flex-col gap-2 pt-2">
               <Button
+                variant="outline"
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className="w-full min-h-[44px]"
+              >
+                {isAnalyzing ? 'Regenerating...' : 'Regenerate Outline'}
+              </Button>
+
+              <Button
                 onClick={handleGeneratePptx}
                 disabled={isGeneratingPptx}
                 className="w-full min-h-[48px]"
@@ -521,15 +530,6 @@ export function DeckBuilderPanel({
                     Generate PowerPoint
                   </>
                 )}
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={handleAnalyze}
-                disabled={isAnalyzing}
-                className="w-full min-h-[44px]"
-              >
-                {isAnalyzing ? 'Regenerating...' : 'Regenerate Outline'}
               </Button>
             </div>
           </div>
