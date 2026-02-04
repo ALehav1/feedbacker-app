@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 
 export function AuthCallback() {
   const navigate = useNavigate()
-  const { user, presenterStatus, isLoading } = useAuth()
+  const { user, presenterStatus, isLoading, refetchPresenter } = useAuth()
   const didNavigate = useRef(false)
   const timeoutRef = useRef<number | null>(null)
 
@@ -56,8 +56,11 @@ export function AuthCallback() {
     // If we have auth tokens in URL but no user yet, wait for Supabase to process them
     if (hasAuthToken && !user) return
 
-    // Wait for presenter check to complete before routing
+    // Wait for presenter check to resolve before routing
     if (presenterStatus === 'loading') return
+
+    // Error — don't redirect, let render show retry UI
+    if (presenterStatus === 'error') return
 
     didNavigate.current = true
     navigate(presenterStatus === 'ready' ? '/dashboard' : '/dashboard/profile', { replace: true })
@@ -95,6 +98,26 @@ export function AuthCallback() {
           <h1 className="mb-2 text-2xl font-bold text-gray-900">Authentication Error</h1>
           <p className="mb-4 text-gray-600">{error}</p>
           <p className="text-sm text-gray-500">Redirecting to login...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Presenter fetch failed — stay on callback and offer retry
+  if (presenterStatus === 'error') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <div className="text-center max-w-md space-y-4">
+          <h1 className="text-2xl font-bold text-gray-900">Unable to load profile</h1>
+          <p className="text-gray-600">There was a problem loading your profile. Please try again.</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button onClick={() => refetchPresenter()} className="min-h-[48px]">
+              Retry
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/dashboard', { replace: true })} className="min-h-[48px]">
+              Continue to Dashboard
+            </Button>
+          </div>
         </div>
       </div>
     )
