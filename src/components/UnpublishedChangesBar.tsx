@@ -9,6 +9,7 @@ interface UnpublishedChangesBarProps {
   isPublishing?: boolean;
   slug?: string;
   publishedShareToken?: string | null;
+  linkRotationNote?: string;
 }
 
 export function UnpublishedChangesBar({
@@ -17,6 +18,7 @@ export function UnpublishedChangesBar({
   isPublishing = false,
   slug,
   publishedShareToken,
+  linkRotationNote,
 }: UnpublishedChangesBarProps) {
   const baseUrl = import.meta.env.VITE_APP_URL || import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin;
   const liveUrl = slug ? buildParticipantUrl(baseUrl, slug, publishedShareToken) : null;
@@ -64,6 +66,11 @@ export function UnpublishedChangesBar({
       <p className="text-xs text-amber-600">
         {UNPUBLISHED_CHANGES_BAR.activeReassurance}
       </p>
+      {linkRotationNote && (
+        <p className="text-xs text-amber-700">
+          {linkRotationNote}
+        </p>
+      )}
     </div>
   );
 }

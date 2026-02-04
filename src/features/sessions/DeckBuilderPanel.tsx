@@ -32,6 +32,9 @@ interface DeckBuilderPanelProps {
   themeResults: ThemeResult[];
   responses: Response[];
   presenterName?: string;
+  heading?: string;
+  description?: string;
+  analyzeLabel?: string;
 }
 
 
@@ -42,6 +45,9 @@ export function DeckBuilderPanel({
   themeResults,
   responses,
   presenterName,
+  heading = 'Deck Builder',
+  description = 'Generate a presentation outline from audience feedback, then export to PowerPoint. Your outline should represent what you could cover — participants will help prioritize.',
+  analyzeLabel = 'Analyze Responses',
 }: DeckBuilderPanelProps) {
   const { toast } = useToast();
   const [outline, setOutline] = useState<DeckOutline | null>(null);
@@ -262,11 +268,10 @@ export function DeckBuilderPanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-violet-600" />
-          Deck Builder
+          {heading}
         </CardTitle>
         <CardDescription>
-          Generate a presentation outline from audience feedback, then export to PowerPoint.
-          Your outline should represent what you could cover — participants will help prioritize.
+          {description}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -286,7 +291,7 @@ export function DeckBuilderPanel({
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Analyze Responses
+                  {analyzeLabel}
                 </>
               )}
             </Button>

@@ -87,6 +87,7 @@ export function SessionDetail() {
 
   const [showCloseDialog, setShowCloseDialog] = useState(false)
   const [showNoResponseDialog, setShowNoResponseDialog] = useState(false)
+  const [hasCopiedLink, setHasCopiedLink] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showNavigateAwayDialog, setShowNavigateAwayDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
@@ -95,6 +96,14 @@ export function SessionDetail() {
   // responseCount is used to determine initial tab but not stored in state
   // since we set activeTab directly in the fetch effect
   const [activeTab, setActiveTab] = useState<string>('details')
+
+  useEffect(() => {
+    if (!session?.id) {
+      return
+    }
+    const copied = localStorage.getItem(`shareLinkCopied:${session.id}`) === 'true'
+    setHasCopiedLink(copied)
+  }, [session?.id])
 
   // Handle URL params for tab and focus (from close feedback navigation)
   useEffect(() => {
@@ -267,6 +276,8 @@ export function SessionDetail() {
     const link = buildParticipantUrl(baseUrl, session.slug, session.publishedShareToken)
     try {
       await navigator.clipboard.writeText(link)
+      localStorage.setItem(`shareLinkCopied:${session.id}`, 'true')
+      setHasCopiedLink(true)
       toast({
         title: 'Link copied',
         description: 'Shareable link copied to clipboard.',
@@ -634,6 +645,9 @@ export function SessionDetail() {
     archived: 'Archived',
   }
 
+  const isPublished = !!(session.publishedTopics && session.publishedTopics.length > 0)
+  const isFeedbackClosed = session.state === 'completed' || session.state === 'archived'
+
   const participantUrl = buildParticipantUrl(baseUrl, session.slug, session.publishedShareToken)
 
   const handleBack = () => {
@@ -644,6 +658,91 @@ export function SessionDetail() {
       navigate('/dashboard')
     }
   }
+
+  const shareCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Share with your audience</CardTitle>
+        <CardDescription>
+          Copy this link and send it to your participants. They'll use it to
+          vote on topics and submit feedback before your presentation.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-mono text-gray-900 flex-1 break-all min-w-0">
+            {participantUrl}
+          </p>
+          <Button
+            onClick={handleCopyLink}
+            className="min-h-[44px] shrink-0"
+          >
+            <Copy className="mr-2 h-4 w-4" />
+            Copy link
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={buildPreviewUrl(baseUrl, session.slug, session.publishedShareToken)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Preview working version
+          </a>
+          <a
+            href={participantUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Open participant page
+          </a>
+        </div>
+        <p className="text-xs text-gray-600">
+          Editing and republishing will generate a new link.
+        </p>
+      </CardContent>
+    </Card>
+  )
+
+  const publishCard = (
+    <Card className="border-violet-200 bg-violet-50">
+      <CardContent className="pt-6 space-y-3">
+        <h3 className="text-base font-semibold text-gray-900">Publish to collect audience feedback</h3>
+        <p className="text-sm text-gray-700">
+          Publish topics to generate your participant link. After you publish,
+          the share link appears here.
+        </p>
+        <Button onClick={handlePublishUpdates} disabled={isPublishing} className="min-h-[44px]">
+          {isPublishing ? 'Publishing...' : 'Publish topics'}
+        </Button>
+      </CardContent>
+    </Card>
+  )
+
+  const deckBuilderHeading = isFeedbackClosed ? 'Analyze responses' : 'Analyze so far'
+  const deckBuilderDescription = isFeedbackClosed
+    ? 'Analyze the full set of responses and generate a presentation outline.'
+    : 'Analyze responses so far. Results update as more feedback arrives.'
+  const deckBuilderAnalyzeLabel = isFeedbackClosed ? 'Analyze responses' : 'Analyze so far'
+
+  const deckBuilderBlock = (
+    <div id="deck-builder">
+      <DeckBuilderPanel
+        sessionTitle={session.title}
+        sessionSummary={session.summaryFull || session.summaryCondensed || ''}
+        lengthMinutes={session.lengthMinutes}
+        themeResults={themeResults}
+        responses={responses}
+        heading={deckBuilderHeading}
+        description={deckBuilderDescription}
+        analyzeLabel={deckBuilderAnalyzeLabel}
+      />
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -719,6 +818,13 @@ export function SessionDetail() {
           </>
         )}
 
+        {/* Active + Published: Share card primary before results */}
+        {session.state === 'active' && isPublished && !hasCopiedLink && (
+          <div className="space-y-4">
+            {shareCard}
+          </div>
+        )}
+
         {/* Active/Completed: Tabs FIRST (main content) */}
         {(session.state === 'active' || session.state === 'completed') && (
           <Tabs value={activeTab} onValueChange={(value) => {
@@ -766,6 +872,12 @@ export function SessionDetail() {
                       sessionId={session.id}
                       onResponsesGenerated={fetchResults}
                     />
+                  )}
+
+                  {isFeedbackClosed && (
+                    <>
+                      {deckBuilderBlock}
+                    </>
                   )}
 
                   {/* Topic Prioritization */}
@@ -832,16 +944,11 @@ export function SessionDetail() {
                     </Card>
                   )}
 
-                  {/* Deck Builder - AI outline + PPTX export */}
-                  <div id="deck-builder">
-                    <DeckBuilderPanel
-                      sessionTitle={session.title}
-                      sessionSummary={session.summaryFull || session.summaryCondensed || ''}
-                      lengthMinutes={session.lengthMinutes}
-                      themeResults={themeResults}
-                      responses={responses}
-                    />
-                  </div>
+                  {!isFeedbackClosed && (
+                    <>
+                      {deckBuilderBlock}
+                    </>
+                  )}
                 </>
               )}
             </TabsContent>
@@ -906,101 +1013,44 @@ export function SessionDetail() {
             isPublishing={isPublishing}
             slug={session.slug}
             publishedShareToken={session.publishedShareToken}
+            linkRotationNote="Publishing updates will generate a new link."
           />
         )}
 
         {/* Active: Participant link (guarded behind publish) and close feedback */}
         {session.state === 'active' && (
           <>
-            {session.publishedTopics && session.publishedTopics.length > 0 ? (
+            {isPublished ? (hasCopiedLink ? shareCard : null) : publishCard}
+
+            {isPublished && (
               <Card>
-                <CardHeader>
-                  <CardTitle>Share with your audience</CardTitle>
-                  <CardDescription>
-                    Copy this link and send it to your participants. They'll use it to
-                    vote on topics and submit feedback before your presentation.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-mono text-gray-900 flex-1 break-all min-w-0">
-                      {participantUrl}
-                    </p>
-                    <Button
-                      onClick={handleCopyLink}
-                      className="min-h-[44px] shrink-0"
-                    >
-                      <Copy className="mr-2 h-4 w-4" />
-                      Copy link
-                    </Button>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-green-700">
+                      Participant feedback open
+                    </span>
+                    <span className="text-sm text-gray-600">{responses.length} responses</span>
                   </div>
-                  <div className="flex flex-wrap gap-3">
-                    <a
-                      href={buildPreviewUrl(baseUrl, session.slug, session.publishedShareToken)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Preview working version
-                    </a>
-                    <a
-                      href={participantUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm text-violet-600 hover:text-violet-800"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Open participant page
-                    </a>
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    Editing and republishing will generate a new link.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-violet-200 bg-violet-50">
-                <CardContent className="pt-6 space-y-3">
-                  <h3 className="text-base font-semibold text-gray-900">Publish to collect audience feedback</h3>
-                  <p className="text-sm text-gray-700">
-                    Publish topics to generate your participant link. After you publish,
-                    the share link appears here.
-                  </p>
-                  <Button onClick={handlePublishUpdates} disabled={isPublishing} className="min-h-[44px]">
-                    {isPublishing ? 'Publishing...' : 'Publish topics'}
+                  <Button
+                    variant="outline"
+                    className="w-full min-h-[48px]"
+                    onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
+                  >
+                    Edit presentation
                   </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full min-h-[48px]"
+                    onClick={handleCloseClick}
+                  >
+                    Close participant feedback
+                  </Button>
+                  <p className="text-xs text-gray-500 text-center">
+                    Participants can no longer submit feedback once this is closed.
+                  </p>
                 </CardContent>
               </Card>
             )}
-
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-green-700">
-                    Participant feedback open
-                  </span>
-                  <span className="text-sm text-gray-600">{responses.length} responses</span>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full min-h-[48px]"
-                  onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
-                >
-                  Edit presentation
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="w-full min-h-[48px]"
-                  onClick={handleCloseClick}
-                >
-                  Close participant feedback
-                </Button>
-                <p className="text-xs text-gray-500 text-center">
-                  Participants can no longer submit feedback once this is closed.
-                </p>
-              </CardContent>
-            </Card>
           </>
         )}
 
