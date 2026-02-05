@@ -240,7 +240,7 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 **Scope:** UI copy + ordering only; no data model changes.
 
-**Commit:** `<pending>`
+**Commit:** `e2dd6d4`
 
 ### Canonical Base URL for Share Links (January 20, 2026)
 
