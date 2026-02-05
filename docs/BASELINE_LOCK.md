@@ -199,6 +199,20 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Diff size:** ~20 lines
 **Commit:** `f3e9503`
 
+### Presenter/Participant UX Ordering (February 5, 2026)
+
+**Files:**
+- `src/features/participant/FeedbackForm.tsx`
+- `src/features/sessions/SessionDetail.tsx`
+
+**Change:** Streamline suggested topics instructions, reorder audience feedback sections (Topic Prioritization → Participant suggestions → Individual Responses), and surface suggested topics/additional notes within individual response cards. Add a collapsed "Reference" section to reduce repeated scrolling.
+
+**Justification:** UX fix - reduce confusion on the participant form and make presenter review flow align with the intended feedback → analysis → deck workflow.
+
+**Scope:** UI layout + copy only; no data model or routing changes.
+
+**Commit:** `1f923f5`
+
 ### Canonical Base URL for Share Links (January 20, 2026)
 
 **File:** `src/features/sessions/SessionDetail.tsx`
