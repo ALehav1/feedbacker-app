@@ -828,6 +828,22 @@ export function SessionDetail() {
       }
     })
     .filter((item) => item.lines.length > 0)
+  const coverMoreThemes = themeResults.filter((theme) => theme.net > 0)
+  const coverLessThemes = themeResults.filter((theme) => theme.net < 0)
+  const neutralThemes = themeResults.filter((theme) => theme.net === 0)
+
+  const renderThemeCard = (theme: ThemeResult) => (
+    <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
+      <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <span className="text-green-600">👍 {theme.more}</span>
+        <span className="text-red-600">👎 {theme.less}</span>
+        <span className={`font-medium ${theme.net > 0 ? 'text-green-700' : theme.net < 0 ? 'text-red-700' : 'text-gray-600'}`}>
+          Net: {theme.net > 0 ? '+' : ''}{theme.net}
+        </span>
+      </div>
+    </div>
+  )
 
   const topicPrioritizationCard = (
     <Card>
@@ -840,25 +856,52 @@ export function SessionDetail() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {themeResults.length > 0 ? (
-          <div className="space-y-3">
-            {themeResults.map((theme) => (
-              <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
-                <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                  <span className="text-green-600">👍 {theme.more}</span>
-                  <span className="text-red-600">👎 {theme.less}</span>
-                  <span className={`font-medium ${theme.net > 0 ? 'text-green-700' : theme.net < 0 ? 'text-red-700' : 'text-gray-600'}`}>
-                    Net: {theme.net > 0 ? '+' : ''}{theme.net}
-                  </span>
+        {noResponsesYet ? (
+          <p className="text-sm text-gray-600">
+            Responses will appear here once participants submit feedback.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Cover more</p>
+                <p className="text-xs text-gray-500">Score &gt; 0</p>
+              </div>
+              {coverMoreThemes.length > 0 ? (
+                <div className="space-y-2">
+                  {coverMoreThemes.map(renderThemeCard)}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No positive signals yet.</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Cover less</p>
+                <p className="text-xs text-gray-500">Score &lt; 0</p>
+              </div>
+              {coverLessThemes.length > 0 ? (
+                <div className="space-y-2">
+                  {coverLessThemes.map(renderThemeCard)}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No negative signals yet.</p>
+              )}
+            </div>
+
+            {neutralThemes.length > 0 && (
+              <div className="space-y-2">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">No signal yet</p>
+                  <p className="text-xs text-gray-500">Score = 0</p>
+                </div>
+                <div className="space-y-2">
+                  {neutralThemes.map(renderThemeCard)}
                 </div>
               </div>
-            ))}
+            )}
           </div>
-        ) : (
-          <p className="text-sm text-gray-600">
-            No votes yet.
-          </p>
         )}
       </CardContent>
     </Card>

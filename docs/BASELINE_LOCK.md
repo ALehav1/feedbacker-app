@@ -241,6 +241,20 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 **Scope:** Copy-only instructions.
 
+**Commit:** `83bc982`
+
+### Vote Semantics: Neutral Signal (February 5, 2026)
+
+**Files:**
+- `src/features/sessions/SessionDetail.tsx`
+- `src/features/sessions/DeckBuilderPanel.tsx`
+
+**Change:** Treat no-vote topics as neutral (score = 0) and keep them out of "Cover less" and AI prioritization input; only explicit votes are passed into outline generation.
+
+**Justification:** Signal integrity - missing votes must not be interpreted as negative interest.
+
+**Scope:** UI grouping + analysis payload filtering.
+
 **Commit:** Pending
 
 ### Presenter/Participant UX Ordering (February 5, 2026)

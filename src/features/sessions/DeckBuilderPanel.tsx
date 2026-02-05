@@ -72,6 +72,7 @@ export function DeckBuilderPanel({
   const [expandedSlides, setExpandedSlides] = useState<Set<number>>(new Set());
 
   const normalizeText = (value: string) => value.trim().toLowerCase();
+  const explicitThemeResults = themeResults.filter((theme) => theme.more + theme.less > 0);
 
   const inferPlacement = (label: string, slides: DeckSlide[]): string | null => {
     const normalizedLabel = normalizeText(label);
@@ -122,7 +123,7 @@ export function DeckBuilderPanel({
           sessionTitle,
           sessionSummary,
           lengthMinutes,
-          themeResults: themeResults.map((t) => ({
+          themeResults: explicitThemeResults.map((t) => ({
             text: t.text,
             more: t.more,
             less: t.less,
@@ -375,7 +376,7 @@ export function DeckBuilderPanel({
     setExpandedSlides(newExpanded);
   };
 
-  const hasResponses = themeResults.length > 0 || responses.length > 0;
+  const hasResponses = explicitThemeResults.length > 0 || responses.length > 0;
   return (
     <Card>
       <CardHeader>
