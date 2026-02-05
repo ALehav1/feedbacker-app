@@ -151,14 +151,14 @@ export function Dashboard() {
             <div>
               <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-lg font-medium text-gray-900">Active Presentations</h3>
-                <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white p-1">
+                <div className="flex flex-wrap items-center gap-4 border-b border-gray-200">
                   <button
                     type="button"
                     onClick={() => setActiveFilter('open')}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    className={`-mb-px border-b-2 px-1 pb-2 text-sm font-medium transition ${
                       activeFilter === 'open'
-                        ? 'bg-green-100 text-green-800'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'border-violet-600 text-violet-700'
+                        : 'border-transparent text-gray-500 hover:text-gray-900'
                     }`}
                   >
                     Feedback open
@@ -166,10 +166,10 @@ export function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setActiveFilter('closed')}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    className={`-mb-px border-b-2 px-1 pb-2 text-sm font-medium transition ${
                       activeFilter === 'closed'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'border-violet-600 text-violet-700'
+                        : 'border-transparent text-gray-500 hover:text-gray-900'
                     }`}
                   >
                     Feedback closed
