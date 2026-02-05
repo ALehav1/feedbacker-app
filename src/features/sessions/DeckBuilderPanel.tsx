@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { generatePptx, type DeckOutline, type DeckSlide } from '@/lib/generatePptx';
-import { Sparkles, FileDown, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Sparkles, FileDown, Plus, Trash2, ChevronDown, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { buildSuggestionGroupsFromResponses, parseSuggestionsAndFreeform } from '@/lib/suggestions';
 
 interface ThemeResult {
@@ -214,6 +214,33 @@ export function DeckBuilderPanel({
     setOutline({ ...outline, slides: newSlides });
   };
 
+  const moveItem = <T,>(items: T[], fromIndex: number, toIndex: number) => {
+    const result = [...items];
+    const [movedItem] = result.splice(fromIndex, 1);
+    result.splice(toIndex, 0, movedItem);
+    return result;
+  };
+
+  const moveSlide = (fromIndex: number, toIndex: number) => {
+    if (!outline) return;
+    if (toIndex < 0 || toIndex >= outline.slides.length) return;
+
+    const expandedSlideItems = new Set(
+      [...expandedSlides]
+        .map((index) => outline.slides[index])
+        .filter(Boolean)
+    );
+    const newSlides = moveItem(outline.slides, fromIndex, toIndex);
+    setOutline({ ...outline, slides: newSlides });
+    const newExpanded = new Set<number>();
+    newSlides.forEach((slide, index) => {
+      if (expandedSlideItems.has(slide)) {
+        newExpanded.add(index);
+      }
+    });
+    setExpandedSlides(newExpanded);
+  };
+
   const addSlide = () => {
     if (!outline) return;
     const newSlide: DeckSlide = {
@@ -410,6 +437,36 @@ export function DeckBuilderPanel({
                         {' '}
                         ({slide.interest.score > 0 ? '+' : ''}{slide.interest.score})
                       </span>
+                    )}
+                    {outline.slides.length > 1 && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveSlide(slideIndex, slideIndex - 1);
+                          }}
+                          disabled={slideIndex === 0}
+                          className="h-7 w-7 p-0 text-gray-400 hover:text-violet-600 disabled:opacity-30"
+                          title="Move up"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveSlide(slideIndex, slideIndex + 1);
+                          }}
+                          disabled={slideIndex === outline.slides.length - 1}
+                          className="h-7 w-7 p-0 text-gray-400 hover:text-violet-600 disabled:opacity-30"
+                          title="Move down"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     )}
                     {outline.slides.length > 1 && (
                       <Button

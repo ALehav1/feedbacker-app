@@ -495,14 +495,14 @@ export function FeedbackForm() {
                   />
                   <div className="text-xs text-gray-500 space-y-1">
                     <p>Add topics you want covered that aren’t listed.</p>
-                    <p>Use one topic per line.</p>
-                    <p>Use bullets and sub-bullets like this:</p>
-                    <pre className="bg-gray-50 border border-gray-200 rounded p-2 text-gray-700">
+                    <p>One topic per line.</p>
+                    <p>Sub-bullets start with - and start at the beginning of the line.</p>
+                    <p>Blank line = new bullet.</p>
+                    <p className="whitespace-pre-line text-gray-700">
 Pricing strategy
 - Packaging
 - Renewal motion
-                    </pre>
-                    <p>Sub-bullets start with - and begin at the start of the line.</p>
+                    </p>
                   </div>
                 </div>
 

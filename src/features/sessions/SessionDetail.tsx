@@ -94,6 +94,7 @@ export function SessionDetail() {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
   const [isPublishing, setIsPublishing] = useState(false)
   const [showDiscardDialog, setShowDiscardDialog] = useState(false)
+  const [referenceOpen, setReferenceOpen] = useState(false)
   // responseCount is used to determine initial tab but not stored in state
   // since we set activeTab directly in the fetch effect
   const [activeTab, setActiveTab] = useState<string>('details')
@@ -794,6 +795,122 @@ export function SessionDetail() {
 
   const suggestionData = buildSuggestionGroupsFromResponses(responses)
 
+  const topicPrioritizationCard = themeResults.length > 0 ? (
+    <Card>
+      <CardHeader>
+        <CardTitle>Topic Prioritization</CardTitle>
+        <CardDescription>
+          Sorted by net interest (more minus less)
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {themeResults.map((theme) => (
+            <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
+              <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                <span className="text-green-600">👍 {theme.more}</span>
+                <span className="text-red-600">👎 {theme.less}</span>
+                <span className={`font-medium ${theme.net > 0 ? 'text-green-700' : theme.net < 0 ? 'text-red-700' : 'text-gray-600'}`}>
+                  Net: {theme.net > 0 ? '+' : ''}{theme.net}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  ) : null
+
+  const participantSuggestionsCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Participant suggestions</CardTitle>
+        <CardDescription>
+          Topics participants typed in (separate from Cover more/less votes).
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {suggestionData.groups.length > 0 ? (
+          <div className="space-y-2">
+            {suggestionData.groups.map((group) => (
+              <div
+                key={group.normalized}
+                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2"
+              >
+                <p className="text-sm text-gray-900">{group.label}</p>
+                <span className="text-xs font-medium text-violet-700">+{group.count}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-600">
+            No participant suggestions yet.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  )
+
+  const individualResponsesCard = responses.length > 0 ? (
+    <Card>
+      <CardHeader>
+        <CardTitle>Individual Responses</CardTitle>
+        <CardDescription>{responses.length} responses</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {responses.map((response) => {
+            const parsedResponse = parseSuggestionsAndFreeform(response.freeFormText)
+            const suggestedLines = parsedResponse.suggestedTopicsRaw
+              ? parsedResponse.suggestedTopicsRaw.split('\n').map((line) => line.trim()).filter(Boolean)
+              : []
+
+            return (
+              <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-sm font-medium text-gray-900 break-words min-w-0">
+                    {response.participantName || 'Anonymous'}
+                  </span>
+                  <span className="text-xs text-gray-500 shrink-0">
+                    {response.createdAt.toLocaleDateString()}
+                  </span>
+                </div>
+                {response.participantEmail && (
+                  <p className="text-xs text-gray-600 mb-2 break-all">
+                    {response.participantEmail}
+                  </p>
+                )}
+                {suggestedLines.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-gray-500">Suggested topics</p>
+                    <ul className="mt-1 space-y-1">
+                      {suggestedLines.map((line, idx) => (
+                        <li key={idx} className="text-sm text-gray-700">
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {parsedResponse.freeformText && (
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-gray-500">Additional notes</p>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                      {parsedResponse.freeformText}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  ) : null
+
+  const hasReferenceContent = !!(topicPrioritizationCard || participantSuggestionsCard || individualResponsesCard)
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sticky top bar with safe-area for iPhone notch */}
@@ -924,111 +1041,34 @@ export function SessionDetail() {
                     />
                   )}
 
-                  {isFeedbackClosed && (
-                    <>
-                      {deckBuilderBlock}
-                    </>
-                  )}
+                  {topicPrioritizationCard}
+                  {participantSuggestionsCard}
+                  {individualResponsesCard}
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Participant suggestions</CardTitle>
-                      <CardDescription>
-                        Topics participants typed in (separate from Cover more/less votes).
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {suggestionData.groups.length > 0 ? (
-                        <div className="space-y-2">
-                          {suggestionData.groups.map((group) => (
-                            <div
-                              key={group.normalized}
-                              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2"
-                            >
-                              <p className="text-sm text-gray-900">{group.label}</p>
-                              <span className="text-xs font-medium text-violet-700">+{group.count}</span>
-                            </div>
-                          ))}
+                  {deckBuilderBlock}
+
+                  {hasReferenceContent && (
+                    <Card>
+                      <CardHeader
+                        className="flex cursor-pointer flex-row items-start justify-between gap-3"
+                        onClick={() => setReferenceOpen(!referenceOpen)}
+                      >
+                        <div>
+                          <CardTitle>Reference</CardTitle>
+                          <CardDescription>Raw inputs used to generate the outline.</CardDescription>
                         </div>
-                      ) : (
-                        <p className="text-sm text-gray-600">
-                          No participant suggestions yet.
-                        </p>
+                        <Button variant="ghost" size="sm" className="min-h-[32px]">
+                          {referenceOpen ? 'Hide' : 'Show'}
+                        </Button>
+                      </CardHeader>
+                      {referenceOpen && (
+                        <CardContent className="space-y-4">
+                          {topicPrioritizationCard}
+                          {participantSuggestionsCard}
+                          {individualResponsesCard}
+                        </CardContent>
                       )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Topic Prioritization */}
-                  {themeResults.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Topic Prioritization</CardTitle>
-                        <CardDescription>
-                          Sorted by net interest (more minus less)
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {themeResults.map((theme) => (
-                            <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
-                              <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                                <span className="text-green-600">👍 {theme.more}</span>
-                                <span className="text-red-600">👎 {theme.less}</span>
-                                <span className={`font-medium ${theme.net > 0 ? 'text-green-700' : theme.net < 0 ? 'text-red-700' : 'text-gray-600'}`}>
-                                  Net: {theme.net > 0 ? '+' : ''}{theme.net}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
                     </Card>
-                  )}
-
-                  {/* Individual Responses */}
-                  {responses.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Individual Responses</CardTitle>
-                        <CardDescription>{responses.length} responses</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {responses.map((response) => {
-                            const parsedResponse = parseSuggestionsAndFreeform(response.freeFormText)
-                            return (
-                              <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
-                              <div className="flex items-center justify-between gap-2 mb-2">
-                                <span className="text-sm font-medium text-gray-900 break-words min-w-0">
-                                  {response.participantName || 'Anonymous'}
-                                </span>
-                                <span className="text-xs text-gray-500 shrink-0">
-                                  {response.createdAt.toLocaleDateString()}
-                                </span>
-                              </div>
-                              {response.participantEmail && (
-                                <p className="text-xs text-gray-600 mb-2 break-all">
-                                  {response.participantEmail}
-                                </p>
-                              )}
-                              {parsedResponse.freeformText && (
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-                                  {parsedResponse.freeformText}
-                                </p>
-                              )}
-                            </div>
-                            )
-                          })}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {!isFeedbackClosed && (
-                    <>
-                      {deckBuilderBlock}
-                    </>
                   )}
                 </>
               )}
