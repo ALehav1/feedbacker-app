@@ -46,7 +46,6 @@ export function FeedbackForm() {
   const [participantName, setParticipantName] = useState('')
   const [participantEmail, setParticipantEmail] = useState('')
   const [suggestedTopicsRaw, setSuggestedTopicsRaw] = useState('')
-  const [freeform, setFreeform] = useState('')
 
   useEffect(() => {
     const fetchSessionAndThemes = async () => {
@@ -303,7 +302,7 @@ export function FeedbackForm() {
 
     try {
       const participantToken = crypto.randomUUID()
-      const freeformPayload = serializeSuggestionsAndFreeform(suggestedTopicsRaw, freeform)
+      const freeformPayload = serializeSuggestionsAndFreeform(suggestedTopicsRaw, null)
 
       const { data: responseData, error: responseError } = await supabase
         .from('responses')
@@ -486,28 +485,20 @@ export function FeedbackForm() {
                   <Label htmlFor="suggestedTopics">Suggested topics (optional)</Label>
                   <Textarea
                     id="suggestedTopics"
-                    placeholder={`Pricing strategy\n- Packaging\n- Renewal motion`}
+                    placeholder="Pricing strategy"
                     value={suggestedTopicsRaw}
                     onChange={(e) => setSuggestedTopicsRaw(e.target.value)}
                     disabled={isSubmitting}
                     rows={4}
                     className="resize-none"
                   />
-                  <div className="text-xs text-gray-500 space-y-1">
-                    <p>Add topics you want covered that aren’t listed.</p>
-                    <p>One topic per line.</p>
-                    <p>Sub-bullets start with - and start at the beginning of the line.</p>
-                    <p>Blank line = new bullet.</p>
-                    <p className="whitespace-pre-line text-gray-700">
-Pricing strategy
-- Packaging
-- Renewal motion
-                    </p>
-                  </div>
+                  <p className="text-xs text-gray-500">
+                    One topic per line. Use - for sub-bullets directly under the topic.
+                  </p>
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-gray-900">Optional: Tell us more</h3>
+                  <h3 className="text-sm font-medium text-gray-900">Optional: Your info</h3>
 
                   <div className="space-y-2">
                     <Label htmlFor="participantName">Your Name</Label>
@@ -535,18 +526,6 @@ Pricing strategy
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="freeform">Additional Thoughts</Label>
-                    <Textarea
-                      id="freeform"
-                      placeholder="Any specific questions or topics you'd like covered..."
-                      value={freeform}
-                      onChange={(e) => setFreeform(e.target.value)}
-                      disabled={isSubmitting}
-                      rows={4}
-                      className="resize-none"
-                    />
-                  </div>
                 </div>
 
                 <Button

@@ -772,11 +772,16 @@ export function SessionDetail() {
     </Card>
   )
 
-  const deckBuilderHeading = isFeedbackClosed ? 'Analyze responses' : 'Analyze so far'
+  const deckBuilderHeading = 'Deck Builder'
   const deckBuilderDescription = isFeedbackClosed
-    ? 'Analyze the full set of responses and generate a presentation outline.'
-    : 'Analyze responses so far. Results update as more feedback arrives.'
-  const deckBuilderAnalyzeLabel = isFeedbackClosed ? 'Analyze responses' : 'Analyze so far'
+    ? 'Generate a presentation outline from the full set of responses.'
+    : 'Generate a presentation outline from feedback received so far.'
+  const deckBuilderAnalyzeLabel = isFeedbackClosed
+    ? 'Generate final outline'
+    : 'Generate draft outline'
+  const deckBuilderSubtext = isFeedbackClosed
+    ? 'Uses the full set of responses.'
+    : 'Uses votes and suggested topics received so far. You can regenerate as more feedback arrives.'
 
   const deckBuilderBlock = (
     <div id="deck-builder">
@@ -789,11 +794,31 @@ export function SessionDetail() {
         heading={deckBuilderHeading}
         description={deckBuilderDescription}
         analyzeLabel={deckBuilderAnalyzeLabel}
+        generationSubtext={deckBuilderSubtext}
+        isFeedbackClosed={isFeedbackClosed}
       />
     </div>
   )
 
   const suggestionData = buildSuggestionGroupsFromResponses(responses)
+  const suggestionsByRespondent = responses
+    .map((response) => {
+      const parsed = parseSuggestionsAndFreeform(response.freeFormText)
+      const lines = parsed.suggestedTopicsRaw
+        ? parsed.suggestedTopicsRaw
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+        : []
+
+      return {
+        id: response.id,
+        name: response.participantName || 'Anonymous',
+        email: response.participantEmail,
+        lines,
+      }
+    })
+    .filter((item) => item.lines.length > 0)
 
   const topicPrioritizationCard = themeResults.length > 0 ? (
     <Card>
@@ -832,16 +857,51 @@ export function SessionDetail() {
       </CardHeader>
       <CardContent>
         {suggestionData.groups.length > 0 ? (
-          <div className="space-y-2">
-            {suggestionData.groups.map((group) => (
-              <div
-                key={group.normalized}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2"
-              >
-                <p className="text-sm text-gray-900">{group.label}</p>
-                <span className="text-xs font-medium text-violet-700">+{group.count}</span>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {suggestionData.groups.map((group) => (
+                <div
+                  key={group.normalized}
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2"
+                >
+                  <p className="text-sm text-gray-900 break-words">{group.label}</p>
+                  <span className="text-xs font-medium text-violet-700">+{group.count}</span>
+                </div>
+              ))}
+            </div>
+
+            {suggestionsByRespondent.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-gray-500">By respondent</p>
+                <div className="space-y-3">
+                  {suggestionsByRespondent.map((item) => (
+                    <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-3">
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {item.name}
+                      </p>
+                      {item.email && (
+                        <p className="text-xs text-gray-500 break-all mt-1">
+                          {item.email}
+                        </p>
+                      )}
+                      <ul className="mt-2 space-y-1">
+                        {item.lines.map((line, idx) => {
+                          const isSubBullet = line.startsWith('-')
+                          return (
+                            <li
+                              key={idx}
+                              className={`text-sm ${isSubBullet ? 'pl-4 text-gray-600' : 'text-gray-800'} break-words`}
+                            >
+                              {line}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         ) : (
           <p className="text-sm text-gray-600">

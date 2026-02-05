@@ -1,8 +1,18 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { generatePptx, type DeckOutline, type DeckSlide } from '@/lib/generatePptx';
 import { Sparkles, FileDown, Plus, Trash2, ChevronDown, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
@@ -36,6 +46,8 @@ interface DeckBuilderPanelProps {
   heading?: string;
   description?: string;
   analyzeLabel?: string;
+  generationSubtext?: string;
+  isFeedbackClosed?: boolean;
 }
 
 
@@ -49,19 +61,32 @@ export function DeckBuilderPanel({
   heading = 'Deck Builder',
   description = 'Generate a presentation outline from audience feedback, then export to PowerPoint. Your outline should represent what you could cover — participants will help prioritize.',
   analyzeLabel = 'Analyze Responses',
+  generationSubtext,
+  isFeedbackClosed = false,
 }: DeckBuilderPanelProps) {
   const { toast } = useToast();
   const [outline, setOutline] = useState<DeckOutline | null>(null);
+  const outlineVersionsRef = useRef<Array<{ outline: DeckOutline; createdAt: string }>>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [isGeneratingPptx, setIsGeneratingPptx] = useState(false);
   const [expandedSlides, setExpandedSlides] = useState<Set<number>>(new Set());
+  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
+  const [regeneratePreference, setRegeneratePreference] = useState<'replace' | 'save' | null>(null);
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (options?: { saveCurrentVersion?: boolean }) => {
     setIsAnalyzing(true);
     setAnalyzeError(null);
 
     try {
+      if (outline && options?.saveCurrentVersion) {
+        const snapshot = JSON.parse(JSON.stringify(outline)) as DeckOutline;
+        outlineVersionsRef.current = [
+          ...outlineVersionsRef.current,
+          { outline: snapshot, createdAt: new Date().toISOString() },
+        ];
+      }
+
       const suggestionData = buildSuggestionGroupsFromResponses(responses);
       const response = await fetch('/api/generate-outline', {
         method: 'POST',
@@ -157,6 +182,17 @@ export function DeckBuilderPanel({
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const openRegenerateDialog = (preference?: 'replace' | 'save') => {
+    setRegeneratePreference(preference ?? null);
+    setShowRegenerateDialog(true);
+  };
+
+  const handleRegenerate = async (mode: 'replace' | 'save') => {
+    setShowRegenerateDialog(false);
+    setRegeneratePreference(null);
+    await handleAnalyze({ saveCurrentVersion: mode === 'save' });
   };
 
   const handleGeneratePptx = async () => {
@@ -308,6 +344,9 @@ export function DeckBuilderPanel({
   };
 
   const hasResponses = themeResults.length > 0 || responses.length > 0;
+  const showSaveVersionPrimary = regeneratePreference
+    ? regeneratePreference === 'save'
+    : !isFeedbackClosed;
 
   return (
     <Card>
@@ -325,7 +364,7 @@ export function DeckBuilderPanel({
         {!outline && (
           <>
             <Button
-              onClick={handleAnalyze}
+              onClick={() => handleAnalyze()}
               disabled={isAnalyzing || !hasResponses}
               className="w-full min-h-[48px]"
             >
@@ -341,6 +380,12 @@ export function DeckBuilderPanel({
                 </>
               )}
             </Button>
+
+            {generationSubtext && (
+              <p className="text-xs text-gray-600 text-center">
+                {generationSubtext}
+              </p>
+            )}
 
             {!hasResponses && (
               <p className="text-sm text-gray-500 text-center">
@@ -583,11 +628,20 @@ export function DeckBuilderPanel({
             <div className="flex flex-col gap-2 pt-2">
               <Button
                 variant="outline"
-                onClick={handleAnalyze}
+                onClick={() => openRegenerateDialog()}
                 disabled={isAnalyzing}
                 className="w-full min-h-[44px]"
               >
-                {isAnalyzing ? 'Regenerating...' : 'Regenerate Outline'}
+                {isAnalyzing ? 'Updating...' : 'Update outline from new feedback'}
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={() => openRegenerateDialog('save')}
+                disabled={isAnalyzing}
+                className="w-full min-h-[40px] text-sm text-gray-600"
+              >
+                Save current draft as version
               </Button>
 
               <Button
@@ -610,6 +664,46 @@ export function DeckBuilderPanel({
             </div>
           </div>
         )}
+
+        <AlertDialog open={showRegenerateDialog} onOpenChange={setShowRegenerateDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Regenerate outline</AlertDialogTitle>
+              <AlertDialogDescription>
+                This creates a new AI draft using the latest votes and suggested topics.
+                Choose what to do with your current edits.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex flex-col gap-2 sm:flex-row">
+              {showSaveVersionPrimary ? (
+                <>
+                  <AlertDialogAction onClick={() => handleRegenerate('save')}>
+                    Save current draft as version
+                  </AlertDialogAction>
+                  <AlertDialogAction
+                    onClick={() => handleRegenerate('replace')}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Replace current draft
+                  </AlertDialogAction>
+                </>
+              ) : (
+                <>
+                  <AlertDialogAction
+                    onClick={() => handleRegenerate('replace')}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Replace current draft
+                  </AlertDialogAction>
+                  <AlertDialogAction onClick={() => handleRegenerate('save')}>
+                    Save current draft as version
+                  </AlertDialogAction>
+                </>
+              )}
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
