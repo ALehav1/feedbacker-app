@@ -852,7 +852,7 @@ export function SessionDetail() {
         <CardDescription>
           {noResponsesYet
             ? 'Responses will appear here once participants submit feedback.'
-            : 'Sorted by net interest (more minus less)'}
+            : 'Grouped by audience signal: more / less / no signal yet.'}
         </CardDescription>
       </CardHeader>
       <CardContent>

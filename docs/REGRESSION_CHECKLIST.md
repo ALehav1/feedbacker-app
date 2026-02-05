@@ -55,9 +55,10 @@ npm run lint
 - [ ] Navigate to session detail
 - [ ] Click "Audience feedback" tab
 - [ ] See Topic Prioritization first, then Participant suggestions
+- [ ] No-vote topics appear only in “No signal yet” and never influence AI analysis
 - [ ] Audience-suggested themes appear above the outline with placement notes
 - [ ] Individual responses are collapsed under "Reference: Individual responses"
-- [ ] Verify sorting: net desc, total desc, sort_order asc
+- [ ] Verify grouping: more / less / no signal, then ordered by signal strength
 
 ### 8. Edit Session Flow
 - [ ] Navigate to Session Detail → Edit Session

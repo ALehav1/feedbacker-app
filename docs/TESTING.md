@@ -74,7 +74,7 @@
 | Test | Steps | Expected |
 |------|-------|----------|
 | Theme aggregation | Multiple participants submit → Check Results | Counts match actual submissions |
-| Sorting | Themes with different feedback | Sorted by net desc, total desc, sort_order asc |
+| Sorting | Themes with different feedback | Grouped by audience signal (more / less / no signal), then ordered by signal strength |
 | Response display | Submit with free-form text | Text appears in Participant Responses section |
 
 ---

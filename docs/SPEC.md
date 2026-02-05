@@ -303,7 +303,7 @@ Presenter can edit summary and themes even after sharing and receiving responses
 
 2. **Aggregated by theme**
    - Each theme with count of "more interested" and "less interested"
-   - Sorted by net interest (more minus less)
+   - Grouped by audience signal (more / less / no signal yet)
 
 3. **Generated outline**
    - Sections with sub-points

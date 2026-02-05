@@ -383,7 +383,7 @@ Participants indicate interest using a three-state model per theme:
 **Aggregation:**
 ```
 Net Interest = (more_count) - (less_count)
-Themes sorted by net interest descending
+Themes grouped by audience signal (more / less / no signal yet), then ordered by signal strength
 ```
 
 ### 3. AI Generation Pipeline
