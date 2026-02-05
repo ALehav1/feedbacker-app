@@ -1,7 +1,7 @@
 # Feedbacker App - Architecture Documentation
 
-**Last Updated:** February 2, 2026
-**Version:** 1.3
+**Last Updated:** February 5, 2026
+**Version:** 1.4
 
 ---
 
@@ -475,7 +475,7 @@ score = cover_more_count − cover_less_count
 - Interest is computed server-side at outline generation time (`api/generate-outline.ts`)
 - Slides are matched to themes via fuzzy text matching (title substring or word overlap)
 - Interest data persists through slide title edits (spread operator preserves properties)
-- Interest does NOT re-compute unless "Regenerate Outline" is clicked
+- Interest scores are computed when an outline is generated. There is no regenerate button in the current UX; to update the outline, a new draft must be generated when no outline exists.
 
 #### AI Outline Behavior
 
@@ -601,13 +601,16 @@ FeedbackForm.tsx (single component handles all states)
     ├─▶ [Active state] ──▶ Full feedback experience
     │       │
     │       ├─▶ Select topics (Cover more/Cover less)
-    │       ├─▶ Optional: name, email, freeform text
+    │       ├─▶ Optional: suggested topics (one per line)
+    │       ├─▶ Optional: name, email
     │       └─▶ Submit ──▶ "Thank You" confirmation (same component)
     │
     └─▶ [Completed/Archived] ──▶ "Feedback closed" banner, content visible
 ```
 
 **Note:** Email is optional for participants. Anonymous submissions use generated email `anon-{token}@feedbacker.app`.
+Suggested topics are stored in `responses.free_form_text` using a delimiter block:
+`[SUGGESTED_TOPICS]...[/SUGGESTED_TOPICS]`.
 
 ---
 
@@ -662,10 +665,13 @@ Toast notification system (shadcn/ui).
 #### `AuthContext` (`src/features/auth/AuthContext.tsx`)
 ```typescript
 {
-  user: User | null;           // Supabase auth user
-  presenter: Presenter | null; // Presenter profile from DB
-  isLoading: boolean;
+  user: User | null;              // Supabase auth user
+  presenter: Presenter | null;    // Presenter profile from DB
+  presenterStatus: 'loading' | 'ready' | 'not_found' | 'error';
+  isAuthenticated: boolean;
+  isLoading: boolean;             // Auth bootstrap (session) only
   signOut: () => Promise<void>;
+  refetchPresenter: () => Promise<void>;
 }
 ```
 
@@ -709,16 +715,20 @@ This pattern provides:
 **Purpose:** PowerPoint generation from Deck Builder outline
 **Location:** `src/lib/generatePptx.ts`
 
-### OpenAI (Planned - Not Yet Implemented)
+### OpenAI (Implemented)
 
-**Planned Model:** `gpt-4o`
+**Model:** `gpt-4o` (via serverless API route)
 
-**Planned Features:**
-- Theme generation from outline
-- AI-powered outline prioritization
-- Write-in response summarization
+**Current Features:**
+- Outline generation from votes + suggested topics
+- Interest labeling (high/low/neutral) in generated outline
 
-**Note:** Currently, topics are manually entered in the wizard. AI generation requires OPENAI_API_KEY in Edge Functions.
+**Implementation:**
+- API route: `api/generate-outline.ts`
+- Client: `src/features/sessions/DeckBuilderPanel.tsx`
+
+**Local dev:** If the API route returns non‑JSON or 404 in dev, the UI shows a message to use `vercel dev` or deploy.
+**Config:** `OPENAI_API_KEY` required in Vercel environment variables.
 
 ### Resend (Planned - Not Yet Implemented)
 
@@ -790,7 +800,7 @@ CREATE TABLE responses (
   participant_email TEXT NOT NULL,
   name TEXT,
   followup_email TEXT,
-  free_form_text TEXT,
+  free_form_text TEXT, -- stores suggested topics via [SUGGESTED_TOPICS]...[/SUGGESTED_TOPICS] delimiter
   participant_token TEXT NOT NULL DEFAULT gen_random_uuid()::text,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -922,6 +932,19 @@ Requirements:
 - Async: Always show loading + error states
 - Forms: Controlled components
 
+### Deployment Caching (Vercel)
+
+SPA HTML must not be cached on iOS browsers, or stale bundles can persist.
+
+**Rule:** ensure `vercel.json` sets `Cache-Control: no-cache, no-store, must-revalidate` for:
+- `/`
+- `/index.html`
+- `/dashboard/*`
+- `/s/*`
+- `/auth/*`
+
+Static assets under `/assets/*` remain immutable.
+
 ### Toast Notifications
 
 Use shadcn/ui toast (built on Radix UI) for user feedback. The Toaster component is already set up in App.tsx.
@@ -1005,8 +1028,9 @@ User enters email → Supabase sends magic link → User clicks link
 ```
 
 **Auth bootstrap (current implementation):**
-- `AuthContext` uses both `onAuthStateChange` and a timed `getSession()` retry loop.
-- UI unblocks once a session is known, **before** presenter fetch completes.
+- `AuthContext` uses both `onAuthStateChange` and a **single** timed `getSession()` call (no retry loop).
+- UI unblocks once any valid session is observed (from either source), **before** presenter fetch completes.
+- `getSession()` is best‑effort with a 2s timeout; a 2.5s watchdog guarantees the spinner never blocks indefinitely.
 - `presenterStatus` controls routing: `ready`, `not_found`, `error` (no redirect on `error`).
 
 ### Row-Level Security (RLS) Overview

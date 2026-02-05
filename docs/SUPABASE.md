@@ -1,25 +1,26 @@
 # Supabase Integration — Runtime Contracts
 
-**Last Updated:** February 4, 2026
+**Last Updated:** February 5, 2026
 
 ---
 
 ## Auth + Presenter Routing Contract
 
-After Supabase `getSession()` resolves, the app fetches the presenter profile via `.maybeSingle()`. The result is exposed as `presenterStatus` from `AuthContext`:
+Auth bootstrap resolves as soon as a valid session is observed (via `onAuthStateChange` or a single timed `getSession()` call). The presenter profile is then fetched via `.maybeSingle()`. The result is exposed as `presenterStatus` from `AuthContext`:
 
 | Status | Meaning | Routing behavior |
 |--------|---------|-----------------|
 | `loading` | Auth or presenter fetch in progress | Show spinner, wait |
 | `ready` | Presenter profile found | Navigate to `/dashboard` |
 | `not_found` | User authenticated but no presenter row | Navigate to `/dashboard/profile` (profile setup) |
-| `error` | Presenter fetch failed (network, RLS, etc.) | Stay on current route, show "Unable to load profile" with **Retry** and **Continue to Dashboard** buttons |
+| `error` | Presenter fetch failed (network, RLS, etc.) | Stay on current route, show "Unable to load profile" with **Retry** button |
 
 ### Key rules
 
 - **Never redirect on `error`.** The user stays on the current page with retry UI. Redirecting to `/dashboard/profile` on error would force profile setup on users who already have profiles.
 - `presenterStatus` is used in: `AuthCallback.tsx`, `LoginPage.tsx`, `ProfileSetup.tsx`, `SessionCreateWizard.tsx`.
 - `refetchPresenter()` resets status to `loading` before re-fetching.
+ - `getSession()` is best‑effort with a 2s timeout; a 2.5s watchdog prevents indefinite spinners.
 
 ### Implementation
 
@@ -44,7 +45,7 @@ Distinguish `PGRST116` (no rows on `.single()`) from network, RLS, and unknown e
 | `not_found` | PostgREST code `PGRST116` | `.single()` returned 0 rows |
 | `rls` | Code `42501` or message contains "permission denied" / "policy" | Row-level security violation |
 | `network` | Message contains "failed to fetch", "network", "timeout", "load failed" | Offline, DNS failure, Supabase outage |
-| `schema` | Code `42703` / `42P01` or "column does not exist" | Missing column after migration |
+| `schema` | Code `42703` / `42P01` or "column does not exist" / "schema cache" | Missing column after migration or stale PostgREST schema cache |
 | `unknown` | Everything else | Unclassified server error |
 
 ### Usage
@@ -125,6 +126,7 @@ LIMIT 20;
 - **Share link:** `/s/:slug?k=<token>` when a token exists.
 - **Legacy sessions:** no token → no gate (plain `/s/:slug` still works).
 - **Preview:** `?preview=working` is allowed only for the authenticated presenter.
+- **Schema drift fallback:** If `published_share_token` / `published_version` are missing in the PostgREST schema cache, publish/create retries without those columns and shows a warning toast (links remain legacy until migration is applied).
 
 ### Implementation
 
@@ -132,3 +134,22 @@ LIMIT 20;
 - `src/features/sessions/SessionCreateWizard.tsx` — initial token on publish-at-create
 - `src/features/participant/FeedbackForm.tsx` — token validation + preview restriction
 - `src/lib/shareLink.ts` — shared URL building + token validation
+- `src/lib/supabaseErrors.ts` — schema cache detection for fallback
+
+---
+
+## Suggested Topics Storage (`responses.free_form_text`)
+
+Participant suggested topics are stored inside `responses.free_form_text` using a delimiter block:
+
+```
+[SUGGESTED_TOPICS]
+<one topic per line>
+- <sub-bullet>
+[/SUGGESTED_TOPICS]
+```
+
+**Parsing helpers:**
+- `src/lib/suggestions.ts` — `parseSuggestionsAndFreeform` / `serializeSuggestionsAndFreeform`
+
+**Note:** The current participant UX does not collect additional free‑form notes; the delimiter block is the primary payload.

@@ -29,6 +29,7 @@ npm run lint
 - [ ] Click magic link
 - [ ] Redirect to `/auth/callback`
 - [ ] Land on dashboard or profile setup
+- [ ] iOS Chrome (non-incognito) loads latest build without persistent spinner (stale cache should not stick)
 
 ### 4. Session Creation
 - [ ] Click "Create New Session"
@@ -45,17 +46,16 @@ npm run lint
 
 ### 6. Participant Feedback
 - [ ] Open `/s/:slug` link (or `/s/:slug?k=...` if tokenized) while session is `active`
-- [ ] Enter email
 - [ ] Select themes (👍/👎)
-- [ ] Optional: enter name, email, free-form text
+- [ ] Optional: enter suggested topics (one per line) + name/email
 - [ ] Submit
 - [ ] See "Thank you" message
 
 ### 7. Results View
 - [ ] Navigate to session detail
-- [ ] Click "Results" tab
-- [ ] See theme leaderboard with counts
-- [ ] See participant responses list
+- [ ] Click "Audience feedback" tab
+- [ ] See Topic Prioritization first, then Participant suggestions
+- [ ] Individual responses are collapsed under "Reference: Individual responses"
 - [ ] Verify sorting: net desc, total desc, sort_order asc
 
 ### 8. Edit Session Flow
@@ -135,7 +135,7 @@ TEST_SESSION_SLUG=your-slug npx playwright test e2e/ui-screenshots.spec.ts
 
 ### 15. Deck Builder (AI Behavior)
 - [ ] Open a completed session with responses
-- [ ] Click "Generate Outline" in Deck Builder panel
+- [ ] Click "Generate final outline" in Deck Builder panel
 - [ ] Verify outline generates with interest labels (high/low/neutral)
 - [ ] Verify "Generate PowerPoint" produces downloadable .pptx
 - [ ] Run `npm run test:deck-equivalence` — structural equivalence confirmed

@@ -427,12 +427,14 @@ Permanent removal from any state. No recovery.
 
 **Interaction:** Tap "Cover more" or "Cover less" per topic. Cannot select both for same topic.
 
-5. **Optional section: Tell us more**
+5. **Optional section: Suggested topics**
+   - Suggested topics (optional textarea; one topic per line, sub-bullets start with `-`)
+
+6. **Optional section: Your info**
    - Your Name (optional text field)
    - Your Email (optional email field)
-   - Additional Thoughts (optional textarea)
 
-6. **Submit Feedback button**
+7. **Submit Feedback button**
 
 **Required for submission:** At least one topic must be selected.
 
