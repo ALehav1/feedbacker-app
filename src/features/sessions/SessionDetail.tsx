@@ -94,7 +94,7 @@ export function SessionDetail() {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
   const [isPublishing, setIsPublishing] = useState(false)
   const [showDiscardDialog, setShowDiscardDialog] = useState(false)
-  const [referenceOpen, setReferenceOpen] = useState(false)
+  const [showIndividualResponses, setShowIndividualResponses] = useState(false)
   // responseCount is used to determine initial tab but not stored in state
   // since we set activeTab directly in the fetch effect
   const [activeTab, setActiveTab] = useState<string>('details')
@@ -277,9 +277,15 @@ export function SessionDetail() {
 
     const link = buildParticipantUrl(baseUrl, session.slug, session.publishedShareToken)
     try {
+      const previousScrollY = window.scrollY
       await navigator.clipboard.writeText(link)
       localStorage.setItem(`shareLinkCopied:${session.id}`, 'true')
       setHasCopiedLink(true)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: previousScrollY, left: 0, behavior: 'auto' })
+        })
+      })
       toast({
         title: 'Link copied',
         description: 'Shareable link copied to clipboard.',
@@ -757,6 +763,23 @@ export function SessionDetail() {
     </Card>
   )
 
+  const shareStepBlock = (
+    <div className="space-y-4">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Step 1 — Share with your audience
+        </p>
+        <p className="text-sm text-gray-600">
+          Send this link to collect votes and suggested topics.
+        </p>
+      </div>
+      {shareCard}
+      <div className="border-t pt-3 text-sm text-gray-600">
+        After sharing, monitor responses below.
+      </div>
+    </div>
+  )
+
   const publishCard = (
     <Card className="border-violet-200 bg-violet-50">
       <CardContent className="pt-6 space-y-3">
@@ -781,7 +804,7 @@ export function SessionDetail() {
     : 'Generate draft outline'
   const deckBuilderSubtext = isFeedbackClosed
     ? 'Uses the full set of responses.'
-    : 'Uses votes and suggested topics received so far. You can regenerate as more feedback arrives.'
+    : 'Uses votes and suggested topics received so far.'
 
   const deckBuilderBlock = (
     <div id="deck-builder">
@@ -795,12 +818,12 @@ export function SessionDetail() {
         description={deckBuilderDescription}
         analyzeLabel={deckBuilderAnalyzeLabel}
         generationSubtext={deckBuilderSubtext}
-        isFeedbackClosed={isFeedbackClosed}
       />
     </div>
   )
 
   const suggestionData = buildSuggestionGroupsFromResponses(responses)
+  const noResponsesYet = themeResults.length === 0 && responses.length === 0
   const suggestionsByRespondent = responses
     .map((response) => {
       const parsed = parseSuggestionsAndFreeform(response.freeFormText)
@@ -820,39 +843,49 @@ export function SessionDetail() {
     })
     .filter((item) => item.lines.length > 0)
 
-  const topicPrioritizationCard = themeResults.length > 0 ? (
+  const topicPrioritizationCard = (
     <Card>
       <CardHeader>
         <CardTitle>Topic Prioritization</CardTitle>
         <CardDescription>
-          Sorted by net interest (more minus less)
+          {noResponsesYet
+            ? 'Responses will appear here once participants submit feedback.'
+            : 'Sorted by net interest (more minus less)'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {themeResults.map((theme) => (
-            <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
-              <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                <span className="text-green-600">👍 {theme.more}</span>
-                <span className="text-red-600">👎 {theme.less}</span>
-                <span className={`font-medium ${theme.net > 0 ? 'text-green-700' : theme.net < 0 ? 'text-red-700' : 'text-gray-600'}`}>
-                  Net: {theme.net > 0 ? '+' : ''}{theme.net}
-                </span>
+        {themeResults.length > 0 ? (
+          <div className="space-y-3">
+            {themeResults.map((theme) => (
+              <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
+                <p className="text-sm font-medium text-gray-900 mb-2 break-words">{theme.text}</p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                  <span className="text-green-600">👍 {theme.more}</span>
+                  <span className="text-red-600">👎 {theme.less}</span>
+                  <span className={`font-medium ${theme.net > 0 ? 'text-green-700' : theme.net < 0 ? 'text-red-700' : 'text-gray-600'}`}>
+                    Net: {theme.net > 0 ? '+' : ''}{theme.net}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-600">
+            No votes yet.
+          </p>
+        )}
       </CardContent>
     </Card>
-  ) : null
+  )
 
   const participantSuggestionsCard = (
     <Card>
       <CardHeader>
         <CardTitle>Participant suggestions</CardTitle>
         <CardDescription>
-          Topics participants typed in (separate from Cover more/less votes).
+          {noResponsesYet
+            ? 'Responses will appear here once participants submit feedback.'
+            : 'Topics participants typed in (separate from Cover more/less votes).'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -912,64 +945,82 @@ export function SessionDetail() {
     </Card>
   )
 
+  const responsesWithSuggestions = responses
+    .map((response) => {
+      const parsed = parseSuggestionsAndFreeform(response.freeFormText)
+      const lines = parsed.suggestedTopicsRaw
+        ? parsed.suggestedTopicsRaw
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+        : []
+
+      return {
+        id: response.id,
+        name: response.participantName || 'Anonymous',
+        email: response.participantEmail,
+        createdAt: response.createdAt,
+        lines,
+      }
+    })
+    .filter((item) => item.lines.length > 0)
+
   const individualResponsesCard = responses.length > 0 ? (
     <Card>
-      <CardHeader>
-        <CardTitle>Individual Responses</CardTitle>
-        <CardDescription>{responses.length} responses</CardDescription>
+      <CardHeader
+        className="flex cursor-pointer flex-row items-start justify-between gap-3"
+        onClick={() => setShowIndividualResponses(!showIndividualResponses)}
+      >
+        <div>
+          <CardTitle>Reference: Individual responses</CardTitle>
+          <CardDescription>{responses.length} responses</CardDescription>
+        </div>
+        <Button variant="ghost" size="sm" className="min-h-[32px]">
+          {showIndividualResponses ? 'Hide' : 'Show'}
+        </Button>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {responses.map((response) => {
-            const parsedResponse = parseSuggestionsAndFreeform(response.freeFormText)
-            const suggestedLines = parsedResponse.suggestedTopicsRaw
-              ? parsedResponse.suggestedTopicsRaw.split('\n').map((line) => line.trim()).filter(Boolean)
-              : []
-
-            return (
-              <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-sm font-medium text-gray-900 break-words min-w-0">
-                    {response.participantName || 'Anonymous'}
-                  </span>
-                  <span className="text-xs text-gray-500 shrink-0">
-                    {response.createdAt.toLocaleDateString()}
-                  </span>
-                </div>
-                {response.participantEmail && (
-                  <p className="text-xs text-gray-600 mb-2 break-all">
-                    {response.participantEmail}
-                  </p>
-                )}
-                {suggestedLines.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-xs font-medium text-gray-500">Suggested topics</p>
-                    <ul className="mt-1 space-y-1">
-                      {suggestedLines.map((line, idx) => (
-                        <li key={idx} className="text-sm text-gray-700">
+      {showIndividualResponses && (
+        <CardContent>
+          {responsesWithSuggestions.length > 0 ? (
+            <div className="space-y-3">
+              {responsesWithSuggestions.map((response) => (
+                <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-gray-900 break-words min-w-0">
+                      {response.name}
+                    </span>
+                    <span className="text-xs text-gray-500 shrink-0">
+                      {response.createdAt.toLocaleDateString()}
+                    </span>
+                  </div>
+                  {response.email && (
+                    <p className="text-xs text-gray-600 mt-1 break-all">
+                      {response.email}
+                    </p>
+                  )}
+                  <ul className="mt-2 space-y-1">
+                    {response.lines.map((line, idx) => {
+                      const isSubBullet = line.startsWith('-')
+                      return (
+                        <li
+                          key={idx}
+                          className={`text-sm ${isSubBullet ? 'pl-4 text-gray-600' : 'text-gray-800'} break-words`}
+                        >
                           {line}
                         </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {parsedResponse.freeformText && (
-                  <div className="mt-2">
-                    <p className="text-xs font-medium text-gray-500">Additional notes</p>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-                      {parsedResponse.freeformText}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </CardContent>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">No suggested topics submitted yet.</p>
+          )}
+        </CardContent>
+      )}
     </Card>
   ) : null
-
-  const hasReferenceContent = !!(topicPrioritizationCard || participantSuggestionsCard || individualResponsesCard)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1048,7 +1099,7 @@ export function SessionDetail() {
         {/* Active + Published: Share card primary before results */}
         {session.state === 'active' && isPublished && !hasCopiedLink && (
           <div className="space-y-4">
-            {shareCard}
+            {shareStepBlock}
           </div>
         )}
 
@@ -1082,15 +1133,6 @@ export function SessionDetail() {
                     </Button>
                   </CardContent>
                 </Card>
-              ) : themeResults.length === 0 && responses.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <p className="text-gray-600">No responses yet.</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Share the participant link to start collecting feedback.
-                    </p>
-                  </CardContent>
-                </Card>
               ) : (
                 <>
                   {/* DEV ONLY: Response Generator for testing */}
@@ -1103,32 +1145,12 @@ export function SessionDetail() {
 
                   {topicPrioritizationCard}
                   {participantSuggestionsCard}
-                  {individualResponsesCard}
 
-                  {deckBuilderBlock}
-
-                  {hasReferenceContent && (
-                    <Card>
-                      <CardHeader
-                        className="flex cursor-pointer flex-row items-start justify-between gap-3"
-                        onClick={() => setReferenceOpen(!referenceOpen)}
-                      >
-                        <div>
-                          <CardTitle>Reference</CardTitle>
-                          <CardDescription>Raw inputs used to generate the outline.</CardDescription>
-                        </div>
-                        <Button variant="ghost" size="sm" className="min-h-[32px]">
-                          {referenceOpen ? 'Hide' : 'Show'}
-                        </Button>
-                      </CardHeader>
-                      {referenceOpen && (
-                        <CardContent className="space-y-4">
-                          {topicPrioritizationCard}
-                          {participantSuggestionsCard}
-                          {individualResponsesCard}
-                        </CardContent>
-                      )}
-                    </Card>
+                  {!noResponsesYet && (
+                    <>
+                      {deckBuilderBlock}
+                      {individualResponsesCard}
+                    </>
                   )}
                 </>
               )}
@@ -1201,7 +1223,7 @@ export function SessionDetail() {
         {/* Active: Participant link (guarded behind publish) and close feedback */}
         {session.state === 'active' && (
           <>
-            {isPublished ? (hasCopiedLink ? shareCard : null) : publishCard}
+            {isPublished ? (hasCopiedLink ? shareStepBlock : null) : publishCard}
 
             {isPublished && (
               <Card>

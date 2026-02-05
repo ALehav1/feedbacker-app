@@ -227,6 +227,21 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 **Commit:** `b5a42cc`
 
+### Presenter Monitoring Flow + Outline CTA Cleanup (February 5, 2026)
+
+**Files:**
+- `src/features/participant/FeedbackForm.tsx`
+- `src/features/sessions/SessionDetail.tsx`
+- `src/features/sessions/DeckBuilderPanel.tsx`
+
+**Change:** Add step framing around the share card, enforce vote-first ordering, collapse individual responses into a reference-only section, remove regenerate outline UI, and simplify participant suggested topics instructions.
+
+**Justification:** UX clarity - ensure the presenter flow reads as share → monitor → analyze and avoid premature or destructive actions.
+
+**Scope:** UI copy + ordering only; no data model changes.
+
+**Commit:** `<pending>`
+
 ### Canonical Base URL for Share Links (January 20, 2026)
 
 **File:** `src/features/sessions/SessionDetail.tsx`
