@@ -255,7 +255,7 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 **Scope:** UI grouping + analysis payload filtering.
 
-**Commit:** Pending
+**Commit:** `35b127f`
 
 ### Presenter/Participant UX Ordering (February 5, 2026)
 
