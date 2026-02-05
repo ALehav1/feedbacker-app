@@ -601,7 +601,7 @@ FeedbackForm.tsx (single component handles all states)
     ├─▶ [Active state] ──▶ Full feedback experience
     │       │
     │       ├─▶ Select topics (Cover more/Cover less)
-    │       ├─▶ Optional: suggested topics (one per line)
+    │       ├─▶ Optional: suggested topics (one per line; stored as delimiter block)
     │       ├─▶ Optional: name, email
     │       └─▶ Submit ──▶ "Thank You" confirmation (same component)
     │
@@ -609,7 +609,7 @@ FeedbackForm.tsx (single component handles all states)
 ```
 
 **Note:** Email is optional for participants. Anonymous submissions use generated email `anon-{token}@feedbacker.app`.
-Suggested topics are stored in `responses.free_form_text` using a delimiter block:
+Suggested topics are stored in `responses.free_form_text` using a delimiter block (no additional free-form text):
 `[SUGGESTED_TOPICS]...[/SUGGESTED_TOPICS]`.
 
 ---
@@ -633,7 +633,7 @@ Suggested topics are stored in `responses.free_form_text` using a delimiter bloc
 | `SessionCreateWizard` | Multi-step creation | Local state + Supabase insert |
 | `SessionDetail` | Session view + results tabs | Direct Supabase queries |
 | `SessionEdit` | Edit working version | Direct Supabase queries + useSessions |
-| `DeckBuilderPanel` | AI outline + PPTX export | Props from SessionDetail + API |
+| `DeckBuilderPanel` | AI outline + PPTX export + audience-suggested annotations | Props from SessionDetail + API |
 | `FeedbackForm` | Participant feedback (all states) | Direct Supabase queries |
 
 ### shadcn/ui Components Used
@@ -720,7 +720,7 @@ This pattern provides:
 **Model:** `gpt-4o` (via serverless API route)
 
 **Current Features:**
-- Outline generation from votes + suggested topics
+- Outline generation from votes + suggested topics (audience-suggested items are labeled in the outline)
 - Interest labeling (high/low/neutral) in generated outline
 
 **Implementation:**

@@ -83,7 +83,7 @@ The person responding to a session with their interests.
 - Active sessions use Working vs Live model: presenter edits Working version, participants see Live version (last published snapshot).
 - Explicit "Publish updates" action prevents accidental changes to participant experience. The publish/discard bar appears on the session detail page when unpublished changes exist, with two actions: **Publish updates** (copies working → published, clears flag) and **Discard changes** (restores working from published, with confirmation dialog).
 - Topic edits use soft-delete to preserve participant feedback: renamed/reordered topics keep their feedback; removed topics are deactivated but their historical feedback is retained in the database.
-- Archive state exists in schema but Dashboard currently shows only Active and Completed sections.
+- Archive state exists in schema but Dashboard focuses on Active and Completed states.
 
 ### 3.2 State Transitions
 
@@ -97,9 +97,9 @@ Any state → Deleted (permanent removal via Delete button with confirmation)
 
 **Current Implementation Note:** The creation wizard now creates presentations directly as Active (skipping Draft state). This simplifies the flow: presenter enters info → reviews topics → clicks "Confirm & Publish" → presentation is immediately live.
 
-**Current Implementation Note:** Dashboard shows two sections:
-- "Active Sessions — Participant Feedback Open" (state = 'active')
-- "Closed Sessions — Participant Feedback Closed" (state = 'completed')
+**Current Implementation Note:** Dashboard shows one Active Presentations section with a toggle:
+- "Feedback open" (state = 'active')
+- "Feedback closed" (state = 'completed')
 
 Archived state exists in schema but is not actively used in current UI.
 
@@ -297,36 +297,27 @@ Presenter can edit summary and themes even after sharing and receiving responses
 
 **Six components:**
 
-1. **Individual responses by participant**
-   - Each participant's selections and free-form input
-   - Email and optional name shown
+1. **Participant suggestions (by respondent)**
+   - Suggested topics only (no additional free-form prose)
+   - Respondent label shows name/email or Anonymous
 
 2. **Aggregated by theme**
    - Each theme with count of "more interested" and "less interested"
    - Sorted by net interest (more minus less)
 
-3. **AI-suggested spotlights**
-   - Unique or interesting suggestions AI identifies across all feedback
-   - Helps surface great ideas even if only one person mentioned them
-
-4. **Participant write-ins (summarized)**
-   - AI summary of all free-form responses
-   - Grouped by type: theme requests, questions, general context
-
-5. **Generated outline**
+3. **Generated outline**
    - Sections with sub-points
-   - Based on aggregated feedback prioritization
-   - Only generated with 2+ responses
+   - Based on aggregated feedback prioritization + suggested topics
+   - Audience-suggested themes are labeled in the outline output
 
-   **Rationale:** With 1 response, there's nothing to aggregate. Just show raw data.
-
-6. **Export options**
+4. **Export options**
    - Copy to clipboard (plain text, markdown)
    - Download as file (PDF, Word, plain text)
 
 ### 4.7.1 Deck Builder (Feedback Synthesis v1)
 
 The Deck Builder transforms aggregated feedback into an editable presentation outline.
+Audience-suggested themes are called out with placement notes for traceability.
 
 **Interest Scoring:**
 
@@ -713,7 +704,7 @@ See thank you message
 - participant_email
 - name (optional)
 - followup_email (optional)
-- free_form_text (optional)
+- free_form_text (optional, suggested topics block only; no additional free-form notes)
 - participant_token
 - created_at
 - updated_at

@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { generatePptx, type DeckOutline, type DeckSlide } from '@/lib/generatePptx';
 import { Sparkles, FileDown, Plus, Trash2, ChevronDown, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
-import { buildSuggestionGroupsFromResponses } from '@/lib/suggestions';
+import { buildSuggestionGroupsFromResponses, parseSuggestionsAndFreeform } from '@/lib/suggestions';
 
 interface ThemeResult {
   themeId: string;
@@ -39,6 +39,18 @@ interface DeckBuilderPanelProps {
   generationSubtext?: string;
 }
 
+type SuggestedTopicUsed = {
+  label: string;
+  count: number;
+  where_in_outline: string;
+  note?: string;
+};
+
+const getSuggestedTopics = (outline: DeckOutline | null): SuggestedTopicUsed[] => {
+  if (!outline?.suggested_topics_used) return [];
+  return outline.suggested_topics_used as SuggestedTopicUsed[];
+};
+
 
 export function DeckBuilderPanel({
   sessionTitle,
@@ -59,12 +71,50 @@ export function DeckBuilderPanel({
   const [isGeneratingPptx, setIsGeneratingPptx] = useState(false);
   const [expandedSlides, setExpandedSlides] = useState<Set<number>>(new Set());
 
+  const normalizeText = (value: string) => value.trim().toLowerCase();
+
+  const inferPlacement = (label: string, slides: DeckSlide[]): string | null => {
+    const normalizedLabel = normalizeText(label);
+    for (const slide of slides) {
+      if (normalizeText(slide.title || '').includes(normalizedLabel)) {
+        return slide.title;
+      }
+      for (const bullet of slide.bullets || []) {
+        if (normalizeText(bullet.text || '').includes(normalizedLabel)) {
+          return slide.title;
+        }
+        for (const sub of bullet.subBullets || []) {
+          if (normalizeText(sub || '').includes(normalizedLabel)) {
+            return slide.title;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     setAnalyzeError(null);
 
     try {
       const suggestionData = buildSuggestionGroupsFromResponses(responses);
+      const rawSuggestions = responses
+        .map((response) => {
+          const parsed = parseSuggestionsAndFreeform(response.freeFormText);
+          const lines = parsed.suggestedTopicsRaw
+            ? parsed.suggestedTopicsRaw
+              .split('\n')
+              .map((line) => line.trim())
+              .filter(Boolean)
+            : [];
+
+          return {
+            respondent: response.participantName || response.participantEmail || 'Anonymous',
+            lines,
+          };
+        })
+        .filter((item) => item.lines.length > 0);
       const response = await fetch('/api/generate-outline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,7 +136,7 @@ export function DeckBuilderPanel({
             label: group.label,
             count: group.count,
           })),
-          rawSuggestions: suggestionData.rawSuggestions,
+          rawSuggestions,
         }),
       });
 
@@ -135,9 +185,25 @@ export function DeckBuilderPanel({
         outlineData.suggested_topics_used = suggestionData.groups.map((group) => ({
           label: group.label,
           count: group.count,
-          where_in_outline: 'unspecified',
+          where_in_outline: 'Unspecified',
+          note: `Audience-suggested (+${group.count})`,
         }));
       }
+
+      outlineData.suggested_topics_used = outlineData.suggested_topics_used.map((topic) => {
+        const inferredPlacement = inferPlacement(topic.label, outlineData.slides);
+        const placement = topic.where_in_outline && topic.where_in_outline !== 'unspecified'
+          ? topic.where_in_outline
+          : inferredPlacement || 'Unspecified';
+        const note = topic.note && topic.note.toLowerCase().includes('audience-suggested')
+          ? topic.note
+          : `Audience-suggested (+${topic.count})`;
+        return {
+          ...topic,
+          where_in_outline: placement,
+          note,
+        };
+      });
 
       setOutline(outlineData);
       // Expand all slides by default
@@ -389,6 +455,25 @@ export function DeckBuilderPanel({
               />
             </div>
 
+            {getSuggestedTopics(outline).length > 0 && (
+              <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
+                <p className="text-xs font-semibold text-violet-900">Audience-suggested themes</p>
+                <div className="mt-2 space-y-2">
+                  {getSuggestedTopics(outline).map((topic) => (
+                    <div key={`${topic.label}-${topic.where_in_outline}`} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="text-sm text-gray-900">
+                        {topic.label}{' '}
+                        <span className="font-medium text-violet-700">+{topic.count}</span>
+                      </span>
+                      <span className="text-xs text-gray-600">
+                        Woven into: {topic.where_in_outline || 'Unspecified'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Slides */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -408,11 +493,25 @@ export function DeckBuilderPanel({
                 </p>
               )}
 
-              {outline.slides.map((slide, slideIndex) => (
-                <div
-                  key={slideIndex}
-                  className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden"
-                >
+              {outline.slides.map((slide, slideIndex) => {
+                const suggestedBySlide = new Map<string, { count: number; labels: string[] }>();
+                getSuggestedTopics(outline).forEach((topic) => {
+                  if (!topic.where_in_outline || topic.where_in_outline === 'Unspecified') return;
+                  const key = normalizeText(topic.where_in_outline);
+                  const entry = suggestedBySlide.get(key) || { count: 0, labels: [] };
+                  entry.count += topic.count || 0;
+                  entry.labels.push(topic.label);
+                  suggestedBySlide.set(key, entry);
+                });
+                const suggestedTag = slide.title
+                  ? suggestedBySlide.get(normalizeText(slide.title))
+                  : undefined;
+
+                return (
+                  <div
+                    key={slideIndex}
+                    className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden"
+                  >
                   {/* Slide header */}
                   <div
                     className="flex items-center gap-2 p-3 bg-white cursor-pointer hover:bg-gray-50"
@@ -429,6 +528,14 @@ export function DeckBuilderPanel({
                     <span className={`text-sm font-medium truncate flex-1 min-w-0 ${slide.title ? 'text-gray-900' : 'text-gray-400'}`}>
                       {slide.title || 'New Slide'}
                     </span>
+                    {suggestedTag && (
+                      <span
+                        className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded bg-violet-100 text-violet-700"
+                        title={`Audience-suggested: ${suggestedTag.labels.join(', ')}`}
+                      >
+                        Audience-suggested (+{suggestedTag.count})
+                      </span>
+                    )}
                     {slide.interest && (
                       <span
                         className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded ${
@@ -582,8 +689,8 @@ export function DeckBuilderPanel({
                       </div>
                     </div>
                   )}
-                </div>
-              ))}
+                  </div>
+              )})}
             </div>
 
             {/* Action buttons */}

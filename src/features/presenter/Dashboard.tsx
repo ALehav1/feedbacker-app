@@ -24,6 +24,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { activeSessions, archivedSessions, loading, error, refetch } = useSessions();
+  const [activeFilter, setActiveFilter] = useState<'open' | 'closed'>('open');
   // Prevent browser back from exiting the app when on Dashboard
   // Uses a simple sentinel approach: push an extra history entry so first back stays in app
   useEffect(() => {
@@ -79,6 +80,9 @@ export function Dashboard() {
   const hasNoSessions = activeSessions.length === 0 && archivedSessions.length === 0;
   const activeFeedbackSessions = activeSessions.filter((s) => s.state === 'active');
   const closedFeedbackSessions = activeSessions.filter((s) => s.state === 'completed');
+  const activeSessionsToShow = activeFilter === 'open'
+    ? activeFeedbackSessions
+    : closedFeedbackSessions;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -145,28 +149,48 @@ export function Dashboard() {
             </div>
 
             <div>
-              <h3 className="mb-3 text-lg font-medium text-gray-900">Active Presentations — Participant Feedback Open</h3>
-              {activeFeedbackSessions.length > 0 ? (
+              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-lg font-medium text-gray-900">Active Presentations</h3>
+                <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white p-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveFilter('open')}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                      activeFilter === 'open'
+                        ? 'bg-green-100 text-green-800'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Feedback open
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveFilter('closed')}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                      activeFilter === 'closed'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Feedback closed
+                  </button>
+                </div>
+              </div>
+
+              {activeSessionsToShow.length > 0 ? (
                 <div className="space-y-3">
-                  {activeFeedbackSessions.map((session) => (
+                  {activeSessionsToShow.map((session) => (
                     <SessionCard key={session.id} session={session} onSessionChange={refetch} />
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No active presentations.</p>
+                <p className="text-sm text-gray-500">
+                  {activeFilter === 'open'
+                    ? 'No active presentations with feedback open.'
+                    : 'No active presentations with feedback closed.'}
+                </p>
               )}
             </div>
-
-            {closedFeedbackSessions.length > 0 && (
-              <div>
-                <h3 className="mb-3 text-lg font-medium text-gray-900">Closed Presentations — Participant Feedback Closed</h3>
-                <div className="space-y-3">
-                  {closedFeedbackSessions.map((session) => (
-                    <SessionCard key={session.id} session={session} onSessionChange={refetch} />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </main>

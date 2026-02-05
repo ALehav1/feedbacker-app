@@ -150,6 +150,6 @@ Participant suggested topics are stored inside `responses.free_form_text` using 
 ```
 
 **Parsing helpers:**
-- `src/lib/suggestions.ts` — `parseSuggestionsAndFreeform` / `serializeSuggestionsAndFreeform`
+- `src/lib/suggestions.ts` — `parseSuggestionsAndFreeform` / `serializeSuggestedTopics`
 
-**Note:** The current participant UX does not collect additional free‑form notes; the delimiter block is the primary payload.
+**Note:** The current participant UX does not collect additional free‑form notes; only suggested topics are stored.

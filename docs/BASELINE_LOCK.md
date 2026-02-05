@@ -205,11 +205,28 @@ Application enforces active-only submission; RLS policies are currently permissi
 - `src/features/participant/FeedbackForm.tsx`
 - `src/features/sessions/SessionDetail.tsx`
 
-**Change:** Tighten participant suggested-topics helper copy, remove additional-thoughts prompt remnants, serialize suggested topics only, keep Topic Prioritization above Participant suggestions, show share-step framing above monitoring, and use a single "Analyze so far" CTA only after at least one response exists.
+**Change:** Tighten participant suggested-topics helper copy, remove additional-thoughts prompt remnants, serialize suggested topics only, keep Topic Prioritization above Participant suggestions, show share-step framing above monitoring, use a single "Analyze so far" CTA only after at least one response exists, and label audience-suggested themes in outline output.
 
 **Justification:** UX cleanup - analysis UI was visible with zero responses and participant form still reflected outdated guidance. Required to align presenter/participant flow with current UX spec.
 
 **Scope:** Copy + conditional rendering adjustments only. No schema or state-machine changes.
+
+### Audience-Suggested Outline + Dashboard Filter (February 5, 2026)
+
+**Files:**
+- `api/generate-outline.ts`
+- `src/features/sessions/DeckBuilderPanel.tsx`
+- `src/features/sessions/SessionDetail.tsx`
+- `src/features/sessions/SessionEdit.tsx`
+- `src/features/presenter/Dashboard.tsx`
+- `src/lib/generatePptx.ts`
+- `docs/ARCHITECTURE.md`, `docs/SPEC.md`, `docs/SUPABASE.md`, `docs/TESTING.md`, `docs/REGRESSION_CHECKLIST.md`
+
+**Change:** Ensure audience-suggested topics are passed to the outline generator and labeled in the output, surface those labels in the outline UI, rename "Edit Presentation" to "Edit Outline", remove the redundant individual response reference block, and add a dashboard toggle for feedback-open vs feedback-closed active sessions.
+
+**Justification:** UX/AI integration - enforce traceability of audience-suggested topics, align copy with outline editing, and simplify active session navigation.
+
+**Scope:** API prompt contract + UI annotations + dashboard filtering + copy updates; no schema changes.
 
 ### Presenter/Participant UX Ordering (February 5, 2026)
 
@@ -1209,7 +1226,7 @@ Application enforces active-only submission; RLS policies are currently permissi
 - Both Dashboard.tsx (line 192) and SessionDetail.tsx (line 78)
 
 **Fix 2: Edit Button for Active Sessions**
-- Added "Edit presentation" button in active state block (SessionDetail.tsx lines 771-776)
+- Added "Edit outline" button in active state block (SessionDetail.tsx lines 771-776)
 - Placed before "Close participant feedback" button
 - Uses outline variant, links to `/dashboard/sessions/${session.id}/edit`
 

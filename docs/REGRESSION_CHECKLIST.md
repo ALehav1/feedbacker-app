@@ -55,6 +55,7 @@ npm run lint
 - [ ] Navigate to session detail
 - [ ] Click "Audience feedback" tab
 - [ ] See Topic Prioritization first, then Participant suggestions
+- [ ] Audience-suggested themes appear above the outline with placement notes
 - [ ] Individual responses are collapsed under "Reference: Individual responses"
 - [ ] Verify sorting: net desc, total desc, sort_order asc
 
@@ -82,6 +83,7 @@ npm run lint
 ### 12. Multi-Participant Count Consistency
 - [ ] Two participants submit to same active session
 - [ ] Dashboard shows updated response count
+- [ ] Dashboard Active Presentations toggle switches between Feedback open and Feedback closed
 - [ ] SessionDetail shows same count on first load (no tab toggle needed)
 - [ ] Audience feedback tab shows all responses immediately
 
@@ -130,8 +132,8 @@ TEST_SESSION_SLUG=your-slug npx playwright test e2e/ui-screenshots.spec.ts
 
 ### 14. SessionDetail Edit Button (Active Sessions)
 - [ ] Open an active session's detail page
-- [ ] Verify "Edit presentation" button is visible below participant link
-- [ ] Click "Edit presentation" → lands on SessionEdit page
+- [ ] Verify "Edit outline" button is visible below participant link
+- [ ] Click "Edit outline" → lands on SessionEdit page
 
 ### 15. Deck Builder (AI Behavior)
 - [ ] Open a completed session with responses

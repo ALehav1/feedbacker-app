@@ -93,7 +93,6 @@ export function SessionDetail() {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
   const [isPublishing, setIsPublishing] = useState(false)
   const [showDiscardDialog, setShowDiscardDialog] = useState(false)
-  const [showIndividualResponses, setShowIndividualResponses] = useState(false)
   // responseCount is used to determine initial tab but not stored in state
   // since we set activeTab directly in the fetch effect
   const [activeTab, setActiveTab] = useState<string>('details')
@@ -932,82 +931,6 @@ export function SessionDetail() {
     </Card>
   )
 
-  const responsesWithSuggestions = responses
-    .map((response) => {
-      const parsed = parseSuggestionsAndFreeform(response.freeFormText)
-      const lines = parsed.suggestedTopicsRaw
-        ? parsed.suggestedTopicsRaw
-          .split('\n')
-          .map((line) => line.trim())
-          .filter(Boolean)
-        : []
-
-      return {
-        id: response.id,
-        name: response.participantName || 'Anonymous',
-        email: response.participantEmail,
-        createdAt: response.createdAt,
-        lines,
-      }
-    })
-    .filter((item) => item.lines.length > 0)
-
-  const individualResponsesCard = responses.length > 0 ? (
-    <Card>
-      <CardHeader
-        className="flex cursor-pointer flex-row items-start justify-between gap-3"
-        onClick={() => setShowIndividualResponses(!showIndividualResponses)}
-      >
-        <div>
-          <CardTitle>Reference: Individual responses</CardTitle>
-          <CardDescription>{responses.length} responses</CardDescription>
-        </div>
-        <Button variant="ghost" size="sm" className="min-h-[32px]">
-          {showIndividualResponses ? 'Hide' : 'Show'}
-        </Button>
-      </CardHeader>
-      {showIndividualResponses && (
-        <CardContent>
-          {responsesWithSuggestions.length > 0 ? (
-            <div className="space-y-3">
-              {responsesWithSuggestions.map((response) => (
-                <div key={response.id} className="rounded-lg border border-gray-200 bg-white p-3 max-w-full overflow-hidden">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-gray-900 break-words min-w-0">
-                      {response.name}
-                    </span>
-                    <span className="text-xs text-gray-500 shrink-0">
-                      {response.createdAt.toLocaleDateString()}
-                    </span>
-                  </div>
-                  {response.email && (
-                    <p className="text-xs text-gray-600 mt-1 break-all">
-                      {response.email}
-                    </p>
-                  )}
-                  <ul className="mt-2 space-y-1">
-                    {response.lines.map((line, idx) => {
-                      const isSubBullet = line.startsWith('-')
-                      return (
-                        <li
-                          key={idx}
-                          className={`text-sm ${isSubBullet ? 'pl-4 text-gray-600' : 'text-gray-800'} break-words`}
-                        >
-                          {line}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-600">No suggested topics submitted yet.</p>
-          )}
-        </CardContent>
-      )}
-    </Card>
-  ) : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1049,7 +972,7 @@ export function SessionDetail() {
                   className="w-full min-h-[48px]"
                   onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
                 >
-                  Edit presentation
+                  Edit outline
                 </Button>
                 <p className="text-sm text-gray-600 text-center">
                   Update welcome text, outline, and topics.
@@ -1136,7 +1059,6 @@ export function SessionDetail() {
                   {!noResponsesYet && (
                     <>
                       {deckBuilderBlock}
-                      {individualResponsesCard}
                     </>
                   )}
                 </>
@@ -1226,7 +1148,7 @@ export function SessionDetail() {
                     className="w-full min-h-[48px]"
                     onClick={() => navigate(`/dashboard/sessions/${session.id}/edit`)}
                   >
-                    Edit presentation
+                    Edit outline
                   </Button>
                   <Button
                     variant="destructive"

@@ -26,6 +26,7 @@ export interface DeckOutline {
     label: string;
     count: number;
     where_in_outline: string;
+    note?: string;
   }>;
 }
 

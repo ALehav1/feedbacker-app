@@ -52,6 +52,11 @@ interface SuggestedTheme {
   count: number;
 }
 
+interface RawSuggestion {
+  respondent: string;
+  lines: string[];
+}
+
 interface RequestBody {
   sessionTitle: string;
   sessionSummary: string;
@@ -59,7 +64,7 @@ interface RequestBody {
   themeResults: ThemeResult[];
   responses: ResponseData[];
   suggestedThemes?: SuggestedTheme[];
-  rawSuggestions?: string[];
+  rawSuggestions?: RawSuggestion[] | string[];
 }
 
 interface InterestData {
@@ -86,6 +91,7 @@ interface DeckOutline {
     label: string;
     count: number;
     where_in_outline: string;
+    note?: string;
   }>;
 }
 
@@ -143,7 +149,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .join('\n');
 
     const rawSuggestionsSummary = (rawSuggestions || [])
-      .map((s) => `- ${s}`)
+      .map((item) => {
+        if (typeof item === 'string') {
+          return `- ${item}`;
+        }
+        const lines = item.lines?.length ? item.lines.join('; ') : 'No topics provided';
+        return `- ${item.respondent}: ${lines}`;
+      })
       .join('\n');
 
     // Calculate target slide count based on presentation length
@@ -166,7 +178,7 @@ ${freeFormResponses || 'No written feedback yet'}
 Grouped themes with counts:
 ${suggestedThemesSummary || 'No participant suggestions yet'}
 
-Raw suggestions:
+Per-respondent suggested topics (raw lines):
 ${rawSuggestionsSummary || 'No raw suggestions yet'}
 
 ## Your Task
@@ -198,7 +210,8 @@ Respond with ONLY valid JSON matching this exact structure:
     {
       "label": "string",
       "count": 1,
-      "where_in_outline": "string"
+      "where_in_outline": "string", // must match the exact slide title where it appears
+      "note": "Audience-suggested ..." // must include the phrase "Audience-suggested"
     }
   ]
 }`;

@@ -21,7 +21,7 @@
 
 | Test | Steps | Expected |
 |------|-------|----------|
-| Dashboard load | Navigate to `/dashboard` | Shows two sections: Active Sessions, Closed Sessions |
+| Dashboard load | Navigate to `/dashboard` | Shows Active Presentations with toggle: Feedback open / Feedback closed |
 | Empty state | No sessions exist | Shows empty state message |
 | Create session | Click "Create New Presentation" → Complete wizard → Confirm | Session created directly as `active` with published snapshot |
 | Session detail | Click on session card | Shows SessionDetail with "Session details" and "Audience feedback" tabs |
@@ -117,8 +117,8 @@ INSERT INTO themes (session_id, text, sort_order) VALUES
 
 INSERT INTO responses (session_id, participant_email, name, free_form_text)
 VALUES
-  ('SESSION_ID', 'test1@example.com', 'Alice', 'Great session idea!'),
-  ('SESSION_ID', 'test2@example.com', 'Bob', 'Looking forward to this'),
+  ('SESSION_ID', 'test1@example.com', 'Alice', '[SUGGESTED_TOPICS]\nPricing strategy\n- Packaging\n- Renewal motion\n[/SUGGESTED_TOPICS]'),
+  ('SESSION_ID', 'test2@example.com', 'Bob', '[SUGGESTED_TOPICS]\nPricing strategy\n[/SUGGESTED_TOPICS]'),
   ('SESSION_ID', 'test3@example.com', 'Charlie', NULL)
 RETURNING id, participant_email;
 
