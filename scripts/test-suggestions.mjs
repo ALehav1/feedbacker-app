@@ -17,9 +17,9 @@ const mod = await import(moduleUrl)
 const { extractSuggestions, extractSuggestionsFromSuggestedRaw, groupSuggestions } = mod
 
 const freeformSamples = [
-  '- Pricing strategy',
-  'Topic: pricing strategy',
-  'pricing strategy.',
+  '- Market positioning',
+  'Topic: market positioning',
+  'market positioning.',
   'Suggestion: Competitive landscape',
   'This is a long paragraph that should not be treated as a suggestion because it exceeds the character threshold and contains no bullet or label to indicate a specific topic.'
 ]
@@ -29,9 +29,9 @@ const groups = groupSuggestions(extracted)
 
 const findGroup = (label) => groups.find(g => g.normalized.includes(label))
 
-const pricing = findGroup('pricing strategy')
-if (!pricing || pricing.count !== 3) {
-  console.error('[FAIL] pricing strategy should group to +3', pricing)
+const positioning = findGroup('market positioning')
+if (!positioning || positioning.count !== 3) {
+  console.error('[FAIL] market positioning should group to +3', positioning)
   process.exit(1)
 }
 
@@ -47,9 +47,9 @@ if (longExtracted.length !== 0) {
   process.exit(1)
 }
 
-const suggestedRaw = `Pricing strategy\n- Packaging\n- Renewal motion`
+const suggestedRaw = `Market positioning\n- Packaging\n- Renewal motion`
 const suggestedExtracted = extractSuggestionsFromSuggestedRaw(suggestedRaw)
-if (suggestedExtracted.length !== 1 || suggestedExtracted[0] !== 'Pricing strategy') {
+if (suggestedExtracted.length !== 1 || suggestedExtracted[0] !== 'Market positioning') {
   console.error('[FAIL] suggested raw should yield only top-level topic', suggestedExtracted)
   process.exit(1)
 }

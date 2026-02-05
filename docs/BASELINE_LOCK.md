@@ -199,6 +199,18 @@ Application enforces active-only submission; RLS policies are currently permissi
 **Diff size:** ~20 lines
 **Commit:** `f3e9503`
 
+### Participant Feedback UX Cleanup (February 5, 2026)
+
+**Files:**
+- `src/features/participant/FeedbackForm.tsx`
+- `src/features/sessions/SessionDetail.tsx`
+
+**Change:** Tighten participant suggested-topics helper copy, remove additional-thoughts prompt remnants, serialize suggested topics only, keep Topic Prioritization above Participant suggestions, show share-step framing above monitoring, and use a single "Analyze so far" CTA only after at least one response exists.
+
+**Justification:** UX cleanup - analysis UI was visible with zero responses and participant form still reflected outdated guidance. Required to align presenter/participant flow with current UX spec.
+
+**Scope:** Copy + conditional rendering adjustments only. No schema or state-machine changes.
+
 ### Presenter/Participant UX Ordering (February 5, 2026)
 
 **Files:**

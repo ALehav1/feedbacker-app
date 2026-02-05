@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { generatePptx, type DeckOutline, type DeckSlide } from '@/lib/generatePptx';
 import { Sparkles, FileDown, Plus, Trash2, ChevronDown, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
-import { buildSuggestionGroupsFromResponses, parseSuggestionsAndFreeform } from '@/lib/suggestions';
+import { buildSuggestionGroupsFromResponses } from '@/lib/suggestions';
 
 interface ThemeResult {
   themeId: string;
@@ -80,7 +80,7 @@ export function DeckBuilderPanel({
           })),
           responses: responses.map((r) => ({
             participantName: r.participantName,
-            freeFormText: parseSuggestionsAndFreeform(r.freeFormText).freeformText,
+            freeFormText: null,
           })),
           suggestedThemes: suggestionData.groups.map((group) => ({
             label: group.label,

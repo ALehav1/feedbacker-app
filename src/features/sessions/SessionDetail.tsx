@@ -88,7 +88,6 @@ export function SessionDetail() {
 
   const [showCloseDialog, setShowCloseDialog] = useState(false)
   const [showNoResponseDialog, setShowNoResponseDialog] = useState(false)
-  const [hasCopiedLink, setHasCopiedLink] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showNavigateAwayDialog, setShowNavigateAwayDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
@@ -98,14 +97,6 @@ export function SessionDetail() {
   // responseCount is used to determine initial tab but not stored in state
   // since we set activeTab directly in the fetch effect
   const [activeTab, setActiveTab] = useState<string>('details')
-
-  useEffect(() => {
-    if (!session?.id) {
-      return
-    }
-    const copied = localStorage.getItem(`shareLinkCopied:${session.id}`) === 'true'
-    setHasCopiedLink(copied)
-  }, [session?.id])
 
   // Handle URL params for tab and focus (from close feedback navigation)
   useEffect(() => {
@@ -279,8 +270,6 @@ export function SessionDetail() {
     try {
       const previousScrollY = window.scrollY
       await navigator.clipboard.writeText(link)
-      localStorage.setItem(`shareLinkCopied:${session.id}`, 'true')
-      setHasCopiedLink(true)
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           window.scrollTo({ top: previousScrollY, left: 0, behavior: 'auto' })
@@ -799,9 +788,7 @@ export function SessionDetail() {
   const deckBuilderDescription = isFeedbackClosed
     ? 'Generate a presentation outline from the full set of responses.'
     : 'Generate a presentation outline from feedback received so far.'
-  const deckBuilderAnalyzeLabel = isFeedbackClosed
-    ? 'Generate final outline'
-    : 'Generate draft outline'
+  const deckBuilderAnalyzeLabel = 'Analyze so far'
   const deckBuilderSubtext = isFeedbackClosed
     ? 'Uses the full set of responses.'
     : 'Uses votes and suggested topics received so far.'
@@ -823,7 +810,7 @@ export function SessionDetail() {
   )
 
   const suggestionData = buildSuggestionGroupsFromResponses(responses)
-  const noResponsesYet = themeResults.length === 0 && responses.length === 0
+  const noResponsesYet = responses.length === 0
   const suggestionsByRespondent = responses
     .map((response) => {
       const parsed = parseSuggestionsAndFreeform(response.freeFormText)
@@ -1097,7 +1084,7 @@ export function SessionDetail() {
         )}
 
         {/* Active + Published: Share card primary before results */}
-        {session.state === 'active' && isPublished && !hasCopiedLink && (
+        {session.state === 'active' && isPublished && (
           <div className="space-y-4">
             {shareStepBlock}
           </div>
@@ -1223,7 +1210,7 @@ export function SessionDetail() {
         {/* Active: Participant link (guarded behind publish) and close feedback */}
         {session.state === 'active' && (
           <>
-            {isPublished ? (hasCopiedLink ? shareStepBlock : null) : publishCard}
+            {!isPublished && publishCard}
 
             {isPublished && (
               <Card>

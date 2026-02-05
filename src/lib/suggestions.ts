@@ -65,6 +65,14 @@ export function extractSuggestionsFromSuggestedRaw(text: string | null | undefin
   return extracted;
 }
 
+export function serializeSuggestedTopics(
+  suggestedTopicsRaw: string | null | undefined
+): string | null {
+  const suggestions = (suggestedTopicsRaw || '').trim();
+  if (!suggestions) return null;
+  return `${suggestedStart}\n${suggestions}\n${suggestedEnd}`;
+}
+
 export function serializeSuggestionsAndFreeform(
   suggestedTopicsRaw: string | null | undefined,
   freeformText: string | null | undefined
@@ -139,7 +147,7 @@ export function buildSuggestionGroupsFromResponses(
     const parsed = parseSuggestionsAndFreeform(response.freeFormText);
     const extracted = parsed.suggestedTopicsRaw
       ? extractSuggestionsFromSuggestedRaw(parsed.suggestedTopicsRaw)
-      : extractSuggestions(parsed.freeformText);
+      : [];
     rawSuggestions.push(...extracted);
   });
 

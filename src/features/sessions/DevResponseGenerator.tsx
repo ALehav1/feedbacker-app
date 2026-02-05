@@ -28,38 +28,32 @@ const SEED_RESPONSES = [
   {
     name: 'Alice Test',
     email: 'alice.test@example.com',
-    freeform: 'Great session! Would love more detail on the technical implementation.',
     // Each seed has different topic selection patterns
     selectionPattern: 'first-two-more', // selects first 2 topics as "more"
   },
   {
     name: 'Bob Tester',
     email: 'bob.tester@example.com',
-    freeform: 'Interesting overview. The market context section was particularly valuable.',
     selectionPattern: 'first-more-second-less', // mixed selections
   },
   {
     name: 'Carol Demo',
     email: 'carol.demo@example.com',
-    freeform: 'Please cover the Q&A section in more depth next time.',
     selectionPattern: 'all-more', // all topics as "more"
   },
   {
     name: 'Dave Example',
     email: 'dave.example@example.com',
-    freeform: 'Concise and well-structured presentation.',
     selectionPattern: 'alternating', // alternates more/less
   },
   {
     name: null, // Anonymous
     email: null,
-    freeform: 'Anonymous feedback: The pacing was just right.',
     selectionPattern: 'last-two-more',
   },
   {
     name: 'Eve Reviewer',
     email: 'eve.reviewer@example.com',
-    freeform: null, // No additional comments
     selectionPattern: 'random',
   },
 ]
@@ -181,7 +175,7 @@ export function DevResponseGenerator({ sessionId, onResponsesGenerated }: DevRes
             participant_email: email,
             name: seed.name ? `${seed.name} (seed #${i + 1})` : null,
             followup_email: seed.email ? email : null,
-            free_form_text: seed.freeform ? `${seed.freeform} (Generated #${i + 1})` : null,
+            free_form_text: null,
             participant_token: participantToken,
           })
           .select()

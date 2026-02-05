@@ -18,7 +18,7 @@ import { supabase } from '@/lib/supabase'
 import { classifySupabaseError } from '@/lib/supabaseErrors'
 import { PARTICIPANT_COPY } from '@/lib/copy'
 import { validateShareToken } from '@/lib/shareLink'
-import { serializeSuggestionsAndFreeform } from '@/lib/suggestions'
+import { serializeSuggestedTopics } from '@/lib/suggestions'
 import type { Session, Theme } from '@/types'
 
 type ThemeSelection = 'more' | 'less' | null
@@ -302,7 +302,7 @@ export function FeedbackForm() {
 
     try {
       const participantToken = crypto.randomUUID()
-      const freeformPayload = serializeSuggestionsAndFreeform(suggestedTopicsRaw, null)
+      const freeformPayload = serializeSuggestedTopics(suggestedTopicsRaw)
 
       const { data: responseData, error: responseError } = await supabase
         .from('responses')
@@ -485,16 +485,18 @@ export function FeedbackForm() {
                   <Label htmlFor="suggestedTopics">Suggested topics (optional)</Label>
                   <Textarea
                     id="suggestedTopics"
-                    placeholder="Pricing strategy"
+                    placeholder="Market positioning"
                     value={suggestedTopicsRaw}
                     onChange={(e) => setSuggestedTopicsRaw(e.target.value)}
                     disabled={isSubmitting}
                     rows={4}
                     className="resize-none"
                   />
-                  <p className="text-xs text-gray-500">
-                    One topic per line. Use - for sub-bullets directly under the topic.
-                  </p>
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <p>Add topics you want covered that aren't listed.</p>
+                    <p>One topic per line.</p>
+                    <p>Sub-bullets: start the line with - (no spaces before it).</p>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
