@@ -878,8 +878,9 @@ export function SessionDetail() {
 
             <div className="space-y-2">
               <div>
-                <p className="text-sm font-semibold text-gray-900">Cover less</p>
+                <p className="text-sm font-semibold text-gray-900">Emphasize less</p>
                 <p className="text-xs text-gray-500">Score &lt; 0</p>
+                <p className="text-xs text-gray-500">These topics stay in the presentation. They get less time.</p>
               </div>
               {coverLessThemes.length > 0 ? (
                 <div className="space-y-2">

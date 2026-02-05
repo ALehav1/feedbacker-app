@@ -331,6 +331,8 @@ Labels:
 - **Neutral:** score == 0
 - **Low interest:** score <= -1
 
+Future enhancement: if topics accumulate both "more" and "less" votes, consider a "Mixed feedback" bucket to prompt presenter judgment. Current behavior intentionally allows appearing in both lists.
+
 **Presenter Controls:**
 
 Low-interest sections are flagged with guidance text but NOT auto-removed:
