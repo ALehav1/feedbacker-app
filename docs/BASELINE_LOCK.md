@@ -213,6 +213,20 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 **Commit:** `1f923f5`
 
+### Outline Draft Lifecycle + Participant Form Simplification (February 5, 2026)
+
+**Files:**
+- `src/features/participant/FeedbackForm.tsx`
+- `src/features/sessions/SessionDetail.tsx`
+
+**Change:** Remove additional-thoughts field from participant form, simplify suggested topic instructions, add per-respondent suggested topics list, and update outline generation UI to support update/replace versioning semantics.
+
+**Justification:** UX and workflow clarity - align participant input with suggested-topics focus and make outline regeneration explicit and safe.
+
+**Scope:** UI layout + prompt flow; no schema changes.
+
+**Commit:** `b5a42cc`
+
 ### Canonical Base URL for Share Links (January 20, 2026)
 
 **File:** `src/features/sessions/SessionDetail.tsx`
