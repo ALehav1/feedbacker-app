@@ -333,6 +333,8 @@ Labels:
 
 Future enhancement: if topics accumulate both "more" and "less" votes, consider a "Mixed feedback" bucket to prompt presenter judgment. Current behavior intentionally allows appearing in both lists.
 
+Bucket assignment follows net sign (net > 0 or net < 0). Equal splits (net = 0) are treated as neutral for now.
+
 **Presenter Controls:**
 
 Low-interest sections are flagged with guidance text but NOT auto-removed:

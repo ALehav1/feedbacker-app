@@ -787,7 +787,7 @@ export function SessionDetail() {
   const deckBuilderDescription = isFeedbackClosed
     ? 'Generate a presentation outline from the full set of responses.'
     : 'Generate a presentation outline from feedback received so far.'
-  const deckBuilderAnalyzeLabel = 'Analyze so far'
+  const deckBuilderAnalyzeLabel = isFeedbackClosed ? 'Analyze final' : 'Analyze so far'
   const deckBuilderSubtext = isFeedbackClosed
     ? 'Uses the full set of responses.'
     : 'Uses votes and suggested topics received so far.'
@@ -828,9 +828,9 @@ export function SessionDetail() {
       }
     })
     .filter((item) => item.lines.length > 0)
-  const coverMoreThemes = themeResults.filter((theme) => theme.more > 0)
-  const coverLessThemes = themeResults.filter((theme) => theme.less > 0)
-  const neutralThemes = themeResults.filter((theme) => theme.more === 0 && theme.less === 0)
+  const coverMoreThemes = themeResults.filter((theme) => theme.net > 0)
+  const coverLessThemes = themeResults.filter((theme) => theme.net < 0)
+  const neutralThemes = themeResults.filter((theme) => theme.net === 0)
 
   const renderThemeCard = (theme: ThemeResult) => (
     <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
@@ -865,7 +865,7 @@ export function SessionDetail() {
             <div className="space-y-2">
               <div>
                 <p className="text-sm font-semibold text-gray-900">Cover more</p>
-                <p className="text-xs text-gray-500">Score &gt; 0</p>
+                <p className="text-xs text-gray-500">Net &gt; 0</p>
               </div>
               {coverMoreThemes.length > 0 ? (
                 <div className="space-y-2">
@@ -879,7 +879,7 @@ export function SessionDetail() {
             <div className="space-y-2">
               <div>
                 <p className="text-sm font-semibold text-gray-900">Emphasize less</p>
-                <p className="text-xs text-gray-500">Score &lt; 0</p>
+                <p className="text-xs text-gray-500">Net &lt; 0</p>
                 <p className="text-xs text-gray-500">These topics stay in the presentation. They get less time.</p>
               </div>
               {coverLessThemes.length > 0 ? (
@@ -895,7 +895,7 @@ export function SessionDetail() {
               <div className="space-y-2">
                 <div>
                   <p className="text-sm font-semibold text-gray-900">No signal yet</p>
-                  <p className="text-xs text-gray-500">Score = 0</p>
+                  <p className="text-xs text-gray-500">Net = 0</p>
                 </div>
                 <div className="space-y-2">
                   {neutralThemes.map(renderThemeCard)}
