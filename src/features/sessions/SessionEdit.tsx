@@ -733,6 +733,9 @@ export function SessionEdit() {
                 <p className="text-xs text-gray-500">
                   For your reference only. Not shown to participants.
                 </p>
+                <p className="text-xs text-gray-500">
+                  Leave a blank line before a new topic. Sub-bullets: a line starting with - (no leading spaces).
+                </p>
               </div>
             </details>
 
@@ -757,7 +760,7 @@ export function SessionEdit() {
               <div className="mb-4">
                 <div className="flex items-start gap-2">
                   <Textarea
-                    placeholder="Add a topic and optional sub-bullets."
+                    placeholder="Title on first line. Sub-bullets start with - (no leading spaces)."
                     value={newTopicText}
                     onChange={(e) => setNewTopicText(e.target.value)}
                     onKeyDown={(e) => {
@@ -777,7 +780,7 @@ export function SessionEdit() {
                     Add
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Add a topic and optional sub-bullets.</p>
+                <p className="text-xs text-gray-500 mt-1">Title on first line. Sub-bullets start with - (no leading spaces).</p>
               </div>
 
               {/* Topic list */}
@@ -816,7 +819,7 @@ export function SessionEdit() {
                               className="w-full min-h-[60px] resize-none"
                               autoFocus
                             />
-                            <p className="text-xs text-gray-500">Add a topic and optional sub-bullets.</p>
+                            <p className="text-xs text-gray-500">Title on first line. Sub-bullets start with - (no leading spaces).</p>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"

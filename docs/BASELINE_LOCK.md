@@ -228,6 +228,21 @@ Application enforces active-only submission; RLS policies are currently permissi
 
 **Scope:** API prompt contract + UI annotations + dashboard filtering + copy updates; no schema changes.
 
+### Topic Entry Formatting Guidance (February 5, 2026)
+
+**Files:**
+- `src/features/participant/FeedbackForm.tsx`
+- `src/features/sessions/SessionCreateWizard.tsx`
+- `src/features/sessions/SessionEdit.tsx`
+
+**Change:** Add explicit formatting guidance for line-delimited topics: blank line between topics and sub-bullets denoted by `-` with no leading spaces.
+
+**Justification:** Reduce formatting errors and keep topic parsing consistent across presenter and participant flows.
+
+**Scope:** Copy-only instructions.
+
+**Commit:** Pending
+
 ### Presenter/Participant UX Ordering (February 5, 2026)
 
 **Files:**

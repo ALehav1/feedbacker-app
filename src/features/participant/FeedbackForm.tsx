@@ -494,8 +494,8 @@ export function FeedbackForm() {
                   />
                   <div className="text-xs text-gray-500 space-y-1">
                     <p>Add topics you want covered that aren't listed.</p>
-                    <p>One topic per line.</p>
-                    <p>Sub-bullets: start the line with - (no spaces before it).</p>
+                    <p>One topic per line. Leave a blank line before a new topic.</p>
+                    <p>Sub-bullets: a line starting with - (no leading spaces).</p>
                   </div>
                 </div>
 

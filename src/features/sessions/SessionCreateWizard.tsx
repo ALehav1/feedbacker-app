@@ -754,6 +754,9 @@ Case study`}
         <p className="text-xs text-gray-500">
           Write your outline. We'll organize it into topics your audience will prioritize.
         </p>
+        <p className="text-xs text-gray-500">
+          Leave a blank line before a new topic. Sub-bullets: a line starting with - (no leading spaces).
+        </p>
       </div>
     </div>
   )
@@ -797,7 +800,7 @@ Case study`}
                 setNewTopicText('')
               }
             }}
-            placeholder="Title on first line, then sub-bullets with dashes (- Sub 1)"
+            placeholder="Title on first line. Sub-bullets start with - (no leading spaces)"
             rows={3}
             className="w-full min-h-[60px] resize-none"
             autoFocus
@@ -850,7 +853,7 @@ Case study`}
                       className="w-full min-h-[60px] resize-none"
                       autoFocus
                     />
-                    <p className="text-xs text-gray-500">Title on first line, then sub-bullets with dashes (- Sub 1).</p>
+                    <p className="text-xs text-gray-500">Title on first line. Sub-bullets start with - (no leading spaces).</p>
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleSaveTheme} className="min-h-[40px]">
                         Save
