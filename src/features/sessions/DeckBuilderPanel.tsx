@@ -404,7 +404,7 @@ export function DeckBuilderPanel({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleAnalyze}
+                  onClick={() => handleAnalyze()}
                   className="mt-2"
                 >
                   Try again
