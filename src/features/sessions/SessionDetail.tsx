@@ -828,9 +828,9 @@ export function SessionDetail() {
       }
     })
     .filter((item) => item.lines.length > 0)
-  const coverMoreThemes = themeResults.filter((theme) => theme.net > 0)
-  const coverLessThemes = themeResults.filter((theme) => theme.net < 0)
-  const neutralThemes = themeResults.filter((theme) => theme.net === 0)
+  const coverMoreThemes = themeResults.filter((theme) => theme.more > 0)
+  const coverLessThemes = themeResults.filter((theme) => theme.less > 0)
+  const neutralThemes = themeResults.filter((theme) => theme.more === 0 && theme.less === 0)
 
   const renderThemeCard = (theme: ThemeResult) => (
     <div key={theme.themeId} className="rounded-lg border border-gray-200 bg-white p-3">
